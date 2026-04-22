@@ -1,19 +1,53 @@
 (() => {
-    const navToggle = document.getElementById("nav-toggle");
+    const body = document.body;
+    const menuButton = document.querySelector(".menu-btn");
+    const closeButton = document.querySelector(".sidebar-close");
+    const overlay = document.querySelector(".nav-overlay");
+    const navLinks = document.querySelectorAll(".nav-links .nav-link");
+    const isMobileViewport = () => window.matchMedia("(max-width: 980px)").matches;
+    const setNavState = (isOpen) => {
+        body.classList.toggle("nav-open", isOpen);
+        if (menuButton) {
+            menuButton.setAttribute("aria-expanded", String(isOpen));
+        }
+    };
+    const openNav = () => setNavState(true);
+    const closeNav = () => setNavState(false);
 
-    if (navToggle) {
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" && navToggle.checked) {
-                navToggle.checked = false;
+    if (menuButton && closeButton && overlay) {
+        menuButton.addEventListener("click", () => {
+            if (!isMobileViewport()) {
+                return;
+            }
+            if (body.classList.contains("nav-open")) {
+                closeNav();
+                return;
+            }
+
+            openNav();
+        });
+
+        closeButton.addEventListener("click", closeNav);
+        overlay.addEventListener("click", closeNav);
+
+        navLinks.forEach((link) => {
+            link.addEventListener("click", () => {
+                if (isMobileViewport()) {
+                    closeNav();
+                }
+            });
+        });
+
+        window.addEventListener("resize", () => {
+            if (!isMobileViewport()) {
+                closeNav();
             }
         });
 
-        document.querySelectorAll(".nav-links .nav-link").forEach((link) => {
-            link.addEventListener("click", () => {
-                if (window.matchMedia("(max-width: 980px)").matches) {
-                    navToggle.checked = false;
-                }
-            });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeNav();
+            }
         });
     }
 

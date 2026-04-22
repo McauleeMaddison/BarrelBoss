@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="app-shell">
-<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
-<label for="nav-toggle" class="nav-overlay" aria-hidden="true"></label>
+<button class="nav-overlay" type="button" aria-label="Close navigation"></button>
 <div class="shell-bg"></div>
 <div class="layout">
     <aside class="sidebar" id="main-navigation">
@@ -21,7 +20,7 @@
                     <p>Pub Operations Console</p>
                 </div>
             </a>
-            <label for="nav-toggle" class="sidebar-close" aria-label="Close navigation">✕</label>
+            <button type="button" class="sidebar-close" aria-label="Close navigation">✕</button>
         </div>
 
         {% with current=request.resolver_match.view_name %}
@@ -49,11 +48,11 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-start">
-                <label for="nav-toggle" class="menu-btn" aria-label="Open navigation" role="button" tabindex="0">
+                <button type="button" class="menu-btn" aria-label="Open navigation" aria-controls="main-navigation" aria-expanded="false">
                     <span></span>
                     <span></span>
                     <span></span>
-                </label>
+                </button>
                 <div>
                     <h2>{% block page_title %}Dashboard{% endblock %}</h2>
                     <p>{% now "l, j F Y" %}</p>
