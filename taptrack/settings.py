@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.suppliers.apps.SuppliersConfig",
     "apps.breakages.apps.BreakagesConfig",
     "apps.checklists.apps.ChecklistsConfig",
+    "apps.shifts.apps.ShiftsConfig",
 ]
 
 MIDDLEWARE = [

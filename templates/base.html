@@ -29,6 +29,7 @@
             <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}">Stock</a>
             <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}">Breakages</a>
             <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}">Checklists</a>
+            <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}">Shifts</a>
             {% if is_management %}
             <a class="nav-link{% if current == 'orders:list' %} active{% endif %}" href="{% url 'orders:list' %}">Orders</a>
             <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}">Suppliers</a>

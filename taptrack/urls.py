@@ -21,6 +21,7 @@ urlpatterns = [
     path("suppliers/", include("apps.suppliers.urls")),
     path("breakages/", include("apps.breakages.urls")),
     path("checklists/", include("apps.checklists.urls")),
+    path("shifts/", include("apps.shifts.urls")),
     path("staff/", core_views.staff_page, name="staff"),
     path("reports/", core_views.reports_page, name="reports"),
     path("settings/", core_views.settings_page, name="settings"),

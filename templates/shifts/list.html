@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Shifts | BarrelBoss{% endblock %}
+{% block page_title %}Shifts{% endblock %}
+
+{% block content %}
+<section class="metric-grid">
+    <article class="metric-card ok">
+        <h3>Hours This Week</h3>
+        <p>{{ hours_this_week|floatformat:2 }}</p>
+        <span class="metric-note">Mon-Sun scheduled hours</span>
+    </article>
+    <article class="metric-card warn">
+        <h3>Hours This Month</h3>
+        <p>{{ hours_this_month|floatformat:2 }}</p>
+        <span class="metric-note">Current calendar month</span>
+    </article>
+    <article class="metric-card neutral">
+        <h3>Total Shifts</h3>
+        <p>{{ total_shifts }}</p>
+        <span class="metric-note">Based on current staff scope</span>
+    </article>
+    <article class="metric-card alert">
+        <h3>Next Shift</h3>
+        {% if next_shift %}
+        <p>{{ next_shift.shift_date|date:"D j M" }}</p>
+        <span class="metric-note">{{ next_shift.start_time|time:"H:i" }} - {{ next_shift.end_time|time:"H:i" }}</span>
+        {% else %}
+        <p>-</p>
+        <span class="metric-note">No upcoming shifts</span>
+        {% endif %}
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        {% if is_management %}
+        <h3>Team Shift Planner</h3>
+        <a class="action-btn action-link" href="{% url 'shifts:add' %}">Schedule Shift</a>
+        {% else %}
+        <h3>My Shift Hours</h3>
+        {% endif %}
+    </div>
+
+    <form method="get" class="stock-filter-form">
+        {% if is_management %}
+        <label for="staff">Staff</label>
+        <select id="staff" name="staff">
+            <option value="">All Staff</option>
+            {% for team_member in team_members %}
+            <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
+        <label for="range">Range</label>
+        <select id="range" name="range">
+            {% for value, label in range_choices %}
+            <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="action-btn" type="submit">Apply</button>
+    </form>
+
+    {% if shifts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                {% if is_management %}<th>Staff</th>{% endif %}
+                <th>Start</th>
+                <th>End</th>
+                <th>Break</th>
+                <th>Hours</th>
+                <th>Notes</th>
+                {% if is_management %}<th>Actions</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for shift in shifts %}
+            <tr>
+                <td>{{ shift.shift_date|date:"D, j M Y" }}</td>
+                {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
+                <td>{{ shift.start_time|time:"H:i" }}</td>
+                <td>{{ shift.end_time|time:"H:i" }}</td>
+                <td>{{ shift.break_minutes }} mins</td>
+                <td>{{ shift.duration_hours|floatformat:2 }}</td>
+                <td>{{ shift.notes|default:'-' }}</td>
+                {% if is_management %}
+                <td class="stock-actions-cell">
+                    <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit</a>
+                    <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete</a>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No shifts found for this view yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

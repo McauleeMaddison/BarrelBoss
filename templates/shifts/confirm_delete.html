@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Shift | BarrelBoss{% endblock %}
+{% block page_title %}Shifts{% endblock %}
+
+{% block content %}
+<section class="panel stock-form-panel">
+    <h3>Delete shift for {{ shift.staff.username }} on {{ shift.shift_date }}?</h3>
+    <p>This permanently removes the shift and recorded hours from BarrelBoss.</p>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <button type="submit" class="action-btn">Confirm Delete</button>
+        <a class="table-action" href="{% url 'shifts:list' %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}
