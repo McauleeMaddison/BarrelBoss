@@ -8,6 +8,7 @@ from . import views as core_views
 
 urlpatterns = [
     path("", core_views.home_redirect, name="home"),
+    path("service-worker.js", core_views.service_worker, name="service_worker"),
     path("admin/", admin.site.urls),
     path(
         "accounts/login/",

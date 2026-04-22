@@ -18,6 +18,12 @@
     box-sizing: border-box;
 }
 
+a,
+button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 body {
     margin: 0;
     font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
@@ -61,6 +67,8 @@ h1, h2, h3 {
     top: 0;
     height: 100vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 1.75rem 1.25rem;
     border-right: 1px solid rgba(212, 161, 70, 0.2);
     background: linear-gradient(180deg, rgba(22, 15, 22, 0.95), rgba(12, 11, 15, 0.95));
@@ -164,8 +172,8 @@ h1, h2, h3 {
 
 .menu-btn {
     display: none;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: 1px solid rgba(212, 161, 70, 0.35);
     border-radius: 0.7rem;
     align-items: center;
@@ -950,11 +958,33 @@ tbody tr {
         top: 0;
         left: 0;
         z-index: 10;
-        width: min(340px, 88vw);
+        width: min(360px, 92vw);
+        padding:
+            calc(0.95rem + env(safe-area-inset-top, 0px))
+            1rem
+            calc(1rem + env(safe-area-inset-bottom, 0px));
         transform: translateX(-105%);
         transition: transform 0.22s ease;
         border-right: 1px solid rgba(212, 161, 70, 0.24);
         border-bottom: none;
+    }
+
+    .brand-wrap {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding-bottom: 0.72rem;
+        margin-bottom: 0.35rem;
+        background: linear-gradient(
+            180deg,
+            rgba(22, 15, 22, 0.98) 0%,
+            rgba(22, 15, 22, 0.94) 76%,
+            rgba(22, 15, 22, 0) 100%
+        );
+    }
+
+    .brand-logo {
+        width: min(168px, 100%);
     }
 
     .nav-overlay {
@@ -983,6 +1013,16 @@ tbody tr {
 
     .sidebar-close {
         display: inline-flex;
+        width: 40px;
+        height: 40px;
+        font-size: 1.05rem;
+    }
+
+    .nav-link {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
     }
 
     .nav-links {
@@ -992,6 +1032,11 @@ tbody tr {
 
     .logout-form {
         margin-top: 0.8rem;
+    }
+
+    .logout-btn {
+        min-height: 44px;
+        padding: 0.78rem 0.85rem;
     }
 
     .main-content {
