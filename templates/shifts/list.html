@@ -5,22 +5,22 @@
 
 {% block content %}
 <section class="metric-grid">
-    <article class="metric-card ok">
+    <article class="metric-card ok shift-metric-card">
         <h3>Hours This Week</h3>
         <p>{{ hours_this_week|floatformat:2 }}</p>
         <span class="metric-note">Mon-Sun scheduled hours</span>
     </article>
-    <article class="metric-card warn">
+    <article class="metric-card warn shift-metric-card">
         <h3>Hours This Month</h3>
         <p>{{ hours_this_month|floatformat:2 }}</p>
         <span class="metric-note">Current calendar month</span>
     </article>
-    <article class="metric-card neutral">
-        <h3>Total Shifts</h3>
-        <p>{{ total_shifts }}</p>
-        <span class="metric-note">Based on current staff scope</span>
+    <article class="metric-card neutral shift-metric-card">
+        <h3>Upcoming Shifts</h3>
+        <p>{{ upcoming_shift_count }}</p>
+        <span class="metric-note">Total shifts on or after today</span>
     </article>
-    <article class="metric-card alert">
+    <article class="metric-card alert shift-metric-card">
         <h3>Next Shift</h3>
         {% if next_shift %}
         <p>{{ next_shift.shift_date|date:"D j M" }}</p>
@@ -28,6 +28,47 @@
         {% else %}
         <p>-</p>
         <span class="metric-note">No upcoming shifts</span>
+        {% endif %}
+    </article>
+</section>
+
+<section class="shifts-analytics">
+    <article class="panel shift-chart-panel">
+        <div class="panel-header">
+            <h3>Weekly Hours Chart</h3>
+            <span class="badge">{{ week_window_label }}</span>
+        </div>
+        <div class="shift-chart-grid" aria-label="Weekly shift hours">
+            {% for point in weekly_chart %}
+            <div class="shift-chart-column">
+                <button
+                    type="button"
+                    class="shift-chart-bar{% if peak_day and point.full_date == peak_day.full_date %} active{% endif %}"
+                    data-shift-day="{{ point.label }}"
+                    data-shift-date="{{ point.full_date }}"
+                    data-shift-hours="{{ point.pretty_hours }}"
+                    aria-label="{{ point.full_date }} {{ point.pretty_hours }}"
+                >
+                    <span class="shift-chart-fill" style="height: {{ point.height }}%"></span>
+                </button>
+                <strong>{{ point.label }}</strong>
+                <small>{{ point.hours|floatformat:2 }}h</small>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel shift-chart-insight" id="shiftChartInsight">
+        <p class="kicker">Focused Day</p>
+        {% if peak_day %}
+        <h3 id="shiftChartDay">{{ peak_day.label }}</h3>
+        <p class="shift-chart-hours" id="shiftChartHours">{{ peak_day.pretty_hours }}</p>
+        <p class="shift-chart-date" id="shiftChartDate">{{ peak_day.full_date }}</p>
+        <span class="metric-note">Tap or click a bar to inspect that day.</span>
+        {% else %}
+        <h3 id="shiftChartDay">-</h3>
+        <p class="shift-chart-hours" id="shiftChartHours">0h</p>
+        <p class="shift-chart-date" id="shiftChartDate">No shifts this week</p>
         {% endif %}
     </article>
 </section>
@@ -64,10 +105,11 @@
     </form>
 
     {% if shifts %}
-    <table>
+    <table class="shifts-table">
         <thead>
             <tr>
                 <th>Date</th>
+                <th>Timeline</th>
                 {% if is_management %}<th>Staff</th>{% endif %}
                 <th>Start</th>
                 <th>End</th>
@@ -79,14 +121,23 @@
         </thead>
         <tbody>
             {% for shift in shifts %}
-            <tr>
+            <tr class="shift-row{% if shift.shift_date == today %} shift-row-today{% elif shift.shift_date < today %} shift-row-past{% endif %}">
                 <td>{{ shift.shift_date|date:"D, j M Y" }}</td>
+                <td>
+                    {% if shift.shift_date == today %}
+                    <span class="shift-timeline-pill shift-timeline-today">Today</span>
+                    {% elif shift.shift_date < today %}
+                    <span class="shift-timeline-pill shift-timeline-past">Past</span>
+                    {% else %}
+                    <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
+                    {% endif %}
+                </td>
                 {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
                 <td>{{ shift.start_time|time:"H:i" }}</td>
                 <td>{{ shift.end_time|time:"H:i" }}</td>
                 <td>{{ shift.break_minutes }} mins</td>
-                <td>{{ shift.duration_hours|floatformat:2 }}</td>
-                <td>{{ shift.notes|default:'-' }}</td>
+                <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
+                <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
                 {% if is_management %}
                 <td class="stock-actions-cell">
                     <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit</a>

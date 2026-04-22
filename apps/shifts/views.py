@@ -17,6 +17,22 @@ def _sum_hours(shifts_qs):
     return round(sum(shift.duration_hours for shift in shifts_qs), 2)
 
 
+def _hours_label(hours):
+    whole_hours = int(hours)
+    minutes = int(round((hours - whole_hours) * 60))
+    if minutes == 60:
+        whole_hours += 1
+        minutes = 0
+
+    if whole_hours and minutes:
+        return f"{whole_hours}h {minutes:02d}m"
+    if whole_hours:
+        return f"{whole_hours}h"
+    if minutes:
+        return f"{minutes}m"
+    return "0h"
+
+
 @login_required
 def list_shifts(request):
     today = timezone.localdate()
@@ -45,6 +61,36 @@ def list_shifts(request):
         shifts_qs = shifts_qs.filter(shift_date__lt=today)
 
     shifts = list(shifts_qs.order_by("shift_date", "start_time", "staff__username"))
+    week_shifts = list(
+        visible_qs.filter(shift_date__range=(week_start, week_end)).order_by(
+            "shift_date",
+            "start_time",
+        )
+    )
+    weekly_hours_totals = {week_start + timedelta(days=index): 0.0 for index in range(7)}
+    for shift in week_shifts:
+        weekly_hours_totals[shift.shift_date] += shift.duration_hours
+
+    max_weekly_hours = max(weekly_hours_totals.values(), default=0.0)
+    weekly_chart = []
+    for chart_date, chart_hours in weekly_hours_totals.items():
+        scaled_height = 0
+        if max_weekly_hours > 0:
+            scaled_height = int(round((chart_hours / max_weekly_hours) * 100))
+            if chart_hours > 0 and scaled_height < 8:
+                scaled_height = 8
+
+        weekly_chart.append(
+            {
+                "label": chart_date.strftime("%a"),
+                "full_date": chart_date.strftime("%A %d %b"),
+                "hours": round(chart_hours, 2),
+                "pretty_hours": _hours_label(chart_hours),
+                "height": scaled_height,
+            }
+        )
+
+    peak_day = max(weekly_chart, key=lambda point: point["hours"]) if weekly_chart else None
 
     next_shift = (
         visible_qs.filter(shift_date__gte=today)
@@ -70,6 +116,11 @@ def list_shifts(request):
         "hours_this_month": _sum_hours(
             visible_qs.filter(shift_date__range=(month_start, month_end)).order_by("shift_date")
         ),
+        "weekly_chart": weekly_chart,
+        "peak_day": peak_day,
+        "week_window_label": f"{week_start:%d %b} - {week_end:%d %b}",
+        "upcoming_shift_count": visible_qs.filter(shift_date__gte=today).count(),
+        "today": today,
         "next_shift": next_shift,
     }
     return render(request, "shifts/list.html", context)

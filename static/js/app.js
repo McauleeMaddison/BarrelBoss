@@ -124,4 +124,39 @@
             });
         });
     }
+
+    const shiftChartBars = document.querySelectorAll(".shift-chart-bar[data-shift-day]");
+    const shiftChartDay = document.getElementById("shiftChartDay");
+    const shiftChartHours = document.getElementById("shiftChartHours");
+    const shiftChartDate = document.getElementById("shiftChartDate");
+
+    if (shiftChartBars.length && shiftChartDay && shiftChartHours && shiftChartDate) {
+        const setShiftFocus = (bar) => {
+            shiftChartDay.textContent = bar.dataset.shiftDay || "-";
+            shiftChartHours.textContent = bar.dataset.shiftHours || "0h";
+            shiftChartDate.textContent = bar.dataset.shiftDate || "No shifts this week";
+
+            shiftChartBars.forEach((item) => item.classList.remove("active"));
+            bar.classList.add("active");
+        };
+
+        let hasActiveBar = false;
+        shiftChartBars.forEach((bar) => {
+            if (bar.classList.contains("active")) {
+                hasActiveBar = true;
+            }
+
+            bar.addEventListener("click", () => setShiftFocus(bar));
+            bar.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setShiftFocus(bar);
+                }
+            });
+        });
+
+        if (!hasActiveBar) {
+            setShiftFocus(shiftChartBars[0]);
+        }
+    }
 })();

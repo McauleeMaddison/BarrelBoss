@@ -70,6 +70,15 @@ class ShiftViewTests(TestCase):
         self.assertNotContains(response, "Cellar delivery")
         self.assertEqual(response.context["hours_this_week"], 5.5)
 
+    def test_weekly_chart_context_is_present(self):
+        self.client.login(username="shift_staff", password="strong-pass-123")
+        response = self.client.get(reverse("shifts:list"))
+
+        weekly_chart = response.context["weekly_chart"]
+        self.assertEqual(len(weekly_chart), 7)
+        self.assertIn("week_window_label", response.context)
+        self.assertTrue(any(point["hours"] == 5.5 for point in weekly_chart))
+
     def test_manager_sees_all_shifts(self):
         self.client.login(username="shift_manager", password="strong-pass-123")
         response = self.client.get(reverse("shifts:list"))
