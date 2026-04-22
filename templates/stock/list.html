@@ -4,11 +4,35 @@
 {% block page_title %}Stock{% endblock %}
 
 {% block content %}
+<section class="metric-grid">
+    <article class="metric-card neutral">
+        <h3>Total Active Items</h3>
+        <p>{{ total_items }}</p>
+    </article>
+    <article class="metric-card alert">
+        <h3>Low Stock Items</h3>
+        <p>{{ low_stock_count }}</p>
+    </article>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h3>Current Inventory</h3>
-        <button class="action-btn">Add Item</button>
+        <button class="action-btn" type="button" disabled>Add Item (Day 5)</button>
     </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="category">Category</label>
+        <select id="category" name="category">
+            <option value="">All Categories</option>
+            {% for value, label in category_choices %}
+            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button class="action-btn" type="submit">Apply Filter</button>
+    </form>
+
+    {% if items %}
     <table>
         <thead>
             <tr>
@@ -16,18 +40,33 @@
                 <th>Category</th>
                 <th>Quantity</th>
                 <th>Minimum</th>
+                <th>Supplier</th>
+                <th>Cost</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
             <tr>
                 <td>{{ item.name }}</td>
-                <td>{{ item.category }}</td>
-                <td>{{ item.qty }} {{ item.unit }}</td>
-                <td>{{ item.threshold }}</td>
+                <td>{{ item.get_category_display }}</td>
+                <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
+                <td>{{ item.minimum_level }}</td>
+                <td>{{ item.supplier.name|default:'-' }}</td>
+                <td>{{ item.cost }}</td>
+                <td>
+                    {% if item.is_low_stock %}
+                    <span class="badge stock-badge-low">Low Stock</span>
+                    {% else %}
+                    <span class="badge stock-badge-ok">In Stock</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="empty-state">No stock items found for this filter yet.</p>
+    {% endif %}
 </section>
 {% endblock %}

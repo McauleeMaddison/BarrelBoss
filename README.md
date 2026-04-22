@@ -11,6 +11,8 @@ Day 1 and Day 2 foundations are in place:
 - Role-based login redirect flow
 - Role-based access control for management sections
 - Baseline tests for profile creation, role redirects, and permissions
+- Day 3 dashboard with richer role-based KPI and task panels
+- Day 4 real stock data model + stock page backed by database queries
 
 ## Stack
 

@@ -339,6 +339,46 @@ h1, h2, h3 {
     line-height: 1.5;
 }
 
+.stock-filter-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.stock-filter-form label {
+    display: block;
+    width: 100%;
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.stock-filter-form select {
+    min-width: 220px;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(212, 161, 70, 0.35);
+    background: rgba(16, 12, 16, 0.9);
+    color: var(--text);
+    padding: 0.55rem 0.6rem;
+}
+
+.empty-state {
+    margin: 0;
+    color: var(--muted);
+    padding: 0.8rem 0;
+}
+
+.stock-badge-low {
+    border-color: rgba(212, 72, 85, 0.45);
+    background: rgba(212, 72, 85, 0.2);
+}
+
+.stock-badge-ok {
+    border-color: rgba(49, 157, 120, 0.45);
+    background: rgba(49, 157, 120, 0.2);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
