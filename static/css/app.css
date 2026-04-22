@@ -77,29 +77,23 @@ h1, h2, h3 {
 }
 
 .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    display: grid;
+    gap: 0.55rem;
     text-decoration: none;
 }
 
 .brand-logo {
-    width: 44px;
-    height: 44px;
-    border-radius: 0.7rem;
+    width: min(200px, 100%);
+    height: auto;
+    border-radius: 0.8rem;
     border: 1px solid rgba(212, 161, 70, 0.3);
-    background: rgba(0, 0, 0, 0.22);
-    padding: 0.15rem;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 0.2rem;
     flex-shrink: 0;
 }
 
-.brand h1 {
-    color: var(--gold);
-    font-size: 1.8rem;
-}
-
-.brand p {
-    margin-top: 0.35rem;
+.brand-subtitle {
+    margin: 0;
     color: var(--muted);
     font-size: 0.88rem;
 }
@@ -873,12 +867,12 @@ tbody tr {
 }
 
 .login-logo {
-    width: 52px;
-    height: 52px;
+    width: min(320px, 100%);
+    height: auto;
     border-radius: 0.8rem;
     border: 1px solid rgba(212, 161, 70, 0.35);
     background: rgba(0, 0, 0, 0.22);
-    padding: 0.12rem;
+    padding: 0.18rem;
 }
 
 .eyebrow {
@@ -1112,8 +1106,8 @@ tbody tr {
         padding: 0.8rem;
     }
 
-    .brand h1 {
-        font-size: 1.5rem;
+    .brand-logo {
+        width: min(168px, 100%);
     }
 
     .topbar h2 {
