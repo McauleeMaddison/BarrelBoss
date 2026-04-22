@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Stock Item | TapTrack{% endblock %}
+{% block page_title %}Stock{% endblock %}
+
+{% block content %}
+<section class="panel stock-form-panel">
+    <h3>Remove "{{ item.name }}"?</h3>
+    <p>This will remove the item from active inventory and hide it from the stock list.</p>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <button type="submit" class="action-btn">Confirm Remove</button>
+        <a class="table-action" href="{% url 'stock:list' %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}

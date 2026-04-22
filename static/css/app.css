@@ -332,6 +332,10 @@ h1, h2, h3 {
     cursor: pointer;
 }
 
+.action-link {
+    text-decoration: none;
+}
+
 .activity-list {
     margin: 0;
     padding-left: 1.1rem;
@@ -377,6 +381,84 @@ h1, h2, h3 {
 .stock-badge-ok {
     border-color: rgba(49, 157, 120, 0.45);
     background: rgba(49, 157, 120, 0.2);
+}
+
+.stock-actions-cell {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.table-action {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid rgba(212, 161, 70, 0.28);
+    border-radius: 0.55rem;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.76rem;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.table-action-danger {
+    border-color: rgba(212, 72, 85, 0.45);
+    background: rgba(212, 72, 85, 0.16);
+}
+
+.stock-form-panel {
+    max-width: 980px;
+}
+
+.stock-edit-form {
+    margin-top: 0.8rem;
+}
+
+.form-grid {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.form-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-field label {
+    color: var(--muted);
+    font-size: 0.87rem;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    border-radius: 0.65rem;
+    border: 1px solid rgba(212, 161, 70, 0.35);
+    background: rgba(16, 12, 16, 0.92);
+    color: var(--text);
+    padding: 0.58rem 0.65rem;
+}
+
+.form-field textarea {
+    resize: vertical;
+}
+
+.field-error,
+.form-errors {
+    color: var(--danger);
+    font-size: 0.82rem;
+}
+
+.form-actions,
+.delete-form {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
 }
 
 table {
@@ -545,5 +627,9 @@ tbody tr {
     td {
         font-size: 0.86rem;
         padding: 0.58rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
     }
 }

@@ -18,7 +18,9 @@
 <section class="panel">
     <div class="panel-header">
         <h3>Current Inventory</h3>
-        <button class="action-btn" type="button" disabled>Add Item (Day 5)</button>
+        {% if is_management %}
+        <a class="action-btn action-link" href="{% url 'stock:add' %}">Add Item</a>
+        {% endif %}
     </div>
 
     <form method="get" class="stock-filter-form">
@@ -43,6 +45,7 @@
                 <th>Supplier</th>
                 <th>Cost</th>
                 <th>Status</th>
+                {% if is_management %}<th>Actions</th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -61,6 +64,12 @@
                     <span class="badge stock-badge-ok">In Stock</span>
                     {% endif %}
                 </td>
+                {% if is_management %}
+                <td class="stock-actions-cell">
+                    <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit</a>
+                    <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete</a>
+                </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
