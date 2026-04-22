@@ -71,6 +71,48 @@ If PostgreSQL variables are not all set, the project defaults to SQLite.
 python manage.py test
 ```
 
+## Deployment (Render + Railway)
+
+### 1. Railway database
+
+1. Create a PostgreSQL service in Railway.
+2. Copy the provided connection string.
+3. Use it as `DATABASE_URL` in Render.
+
+### 2. Render web service
+
+1. Connect this GitHub repo in Render.
+2. Render can auto-detect `render.yaml`, or configure manually with:
+- Build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
+- Start command: `gunicorn taptrack.wsgi:application --log-file -`
+3. Add environment variables:
+- `DJANGO_DEBUG=false`
+- `DJANGO_SECRET_KEY=<strong-random-value>`
+- `DJANGO_ALLOWED_HOSTS=<your-render-domain>`
+- `DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-render-domain>`
+- `DATABASE_URL=<railway-postgres-url>`
+- `DATABASE_SSL_REQUIRE=true`
+
+### 3. First production release
+
+After first deploy, run migrations once:
+
+```bash
+python manage.py migrate
+```
+
+Then create an admin user:
+
+```bash
+python manage.py createsuperuser
+```
+
+### 4. Notes
+
+- `DATABASE_URL` is preferred and fully supported.
+- If `DATABASE_URL` is missing, project can still use `POSTGRES_*` fallback or local SQLite.
+- Static files are served via WhiteNoise in production.
+
 ## Next Build Step
 
 Day 8: implement breakage data model and forms, then replace static breakage rows with live database records.

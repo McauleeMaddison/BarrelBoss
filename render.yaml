@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: barrelboss
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn taptrack.wsgi:application --log-file -
+    healthCheckPath: /accounts/login/
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "barrelboss.onrender.com"
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: "https://barrelboss.onrender.com"
+      - key: DATABASE_SSL_REQUIRE
+        value: "true"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
