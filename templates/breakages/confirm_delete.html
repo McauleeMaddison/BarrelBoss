@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Breakage Record | BarrelBoss{% endblock %}
+{% block page_title %}Breakages{% endblock %}
+
+{% block content %}
+<section class="panel stock-form-panel">
+    <h3>Delete breakage record for "{{ record.item_name }}"?</h3>
+    <p>This will permanently remove the incident from the history table.</p>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <button type="submit" class="action-btn">Confirm Delete</button>
+        <a class="table-action" href="{% url 'breakages:list' %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}

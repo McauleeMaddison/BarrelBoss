@@ -16,6 +16,7 @@ Day 1 and Day 2 foundations are in place:
 - Day 5 stock CRUD flows (add, edit, remove from active inventory) for management roles
 - Day 6 suppliers CRUD flows with search/filter and management-only access
 - Day 7 real orders model with line items, status workflow, and management-only CRUD
+- Day 8 breakage model with live logging/history and role-based delete controls
 
 ## Stack
 
@@ -115,4 +116,4 @@ python manage.py createsuperuser
 
 ## Next Build Step
 
-Day 8: implement breakage data model and forms, then replace static breakage rows with live database records.
+Day 9: build checklist data model + assignment workflow, replacing static checklist rows with live task data.

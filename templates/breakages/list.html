@@ -4,11 +4,39 @@
 {% block page_title %}Breakages{% endblock %}
 
 {% block content %}
+<section class="metric-grid">
+    <article class="metric-card neutral">
+        <h3>Total Records</h3>
+        <p>{{ record_count }}</p>
+    </article>
+    <article class="metric-card alert">
+        <h3>Reported (7 Days)</h3>
+        <p>{{ week_count }}</p>
+    </article>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h3>Recent Breakage Reports</h3>
-        <button class="action-btn">Log Incident</button>
+        <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
     </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="q">Search</label>
+        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+
+        <label for="issue">Issue Type</label>
+        <select id="issue" name="issue">
+            <option value="">All Types</option>
+            {% for value, label in issue_choices %}
+            <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="action-btn" type="submit">Apply</button>
+    </form>
+
+    {% if records %}
     <table>
         <thead>
             <tr>
@@ -17,19 +45,28 @@
                 <th>Issue</th>
                 <th>Reported By</th>
                 <th>Date</th>
+                {% if is_management %}<th>Actions</th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for row in records %}
             <tr>
-                <td>{{ row.item }}</td>
-                <td>{{ row.qty }}</td>
-                <td>{{ row.issue }}</td>
-                <td>{{ row.reported_by }}</td>
-                <td>{{ row.date }}</td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.quantity }}</td>
+                <td>{{ row.get_issue_type_display }}</td>
+                <td>{{ row.reported_by.username|default:'-' }}</td>
+                <td>{{ row.created_at|date:'Y-m-d H:i' }}</td>
+                {% if is_management %}
+                <td class="stock-actions-cell">
+                    <a class="table-action table-action-danger" href="{% url 'breakages:delete' row.pk %}">Delete</a>
+                </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="empty-state">No breakage records found for this filter yet.</p>
+    {% endif %}
 </section>
 {% endblock %}
