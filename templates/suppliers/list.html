@@ -4,30 +4,64 @@
 {% block page_title %}Suppliers{% endblock %}
 
 {% block content %}
+<section class="metric-grid">
+    <article class="metric-card neutral">
+        <h3>Suppliers Found</h3>
+        <p>{{ supplier_count }}</p>
+    </article>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h3>Supplier Directory</h3>
-        <button class="action-btn">Add Supplier</button>
+        <a class="action-btn action-link" href="{% url 'suppliers:add' %}">Add Supplier</a>
     </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="q">Search</label>
+        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Name, contact, email or phone">
+
+        <label for="category">Category</label>
+        <select id="category" name="category">
+            <option value="">All Categories</option>
+            {% for value, label in category_choices %}
+            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="action-btn" type="submit">Apply</button>
+    </form>
+
+    {% if suppliers %}
     <table>
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Contact</th>
                 <th>Phone</th>
+                <th>Email</th>
                 <th>Category</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for supplier in suppliers %}
             <tr>
                 <td>{{ supplier.name }}</td>
-                <td>{{ supplier.contact }}</td>
-                <td>{{ supplier.phone }}</td>
-                <td>{{ supplier.category }}</td>
+                <td>{{ supplier.contact_name|default:'-' }}</td>
+                <td>{{ supplier.phone|default:'-' }}</td>
+                <td>{{ supplier.email|default:'-' }}</td>
+                <td>{{ supplier.get_category_supplied_display }}</td>
+                <td class="stock-actions-cell">
+                    <a class="table-action" href="{% url 'suppliers:edit' supplier.pk %}">Edit</a>
+                    <a class="table-action table-action-danger" href="{% url 'suppliers:delete' supplier.pk %}">Delete</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="empty-state">No suppliers found for this filter yet.</p>
+    {% endif %}
 </section>
 {% endblock %}

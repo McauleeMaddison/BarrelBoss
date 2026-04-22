@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Supplier | TapTrack{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+<section class="panel stock-form-panel">
+    <h3>Delete "{{ supplier.name }}"?</h3>
+    <p>This permanently removes the supplier record. Related stock items will keep running and set supplier to empty.</p>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <button type="submit" class="action-btn">Confirm Delete</button>
+        <a class="table-action" href="{% url 'suppliers:list' %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}
