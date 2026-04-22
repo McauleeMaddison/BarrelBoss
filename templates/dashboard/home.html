@@ -4,33 +4,86 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-{% if management_view %}
 <section class="panel">
+    {% if management_view %}
+    <p class="kicker">{{ greeting }}, management team.</p>
     <h3>Management Overview</h3>
     <p>Full operational visibility across inventory, supplier ordering, and team activity.</p>
-</section>
-{% else %}
-<section class="panel">
+    {% else %}
+    <p class="kicker">{{ greeting }}, team member.</p>
     <h3>Staff Shift Overview</h3>
     <p>Your dashboard focuses on checklist completion, low-stock reporting, and breakage logging.</p>
+    {% endif %}
 </section>
-{% endif %}
 
 <section class="metric-grid">
     {% for card in metrics %}
     <article class="metric-card {{ card.tone }}">
         <h3>{{ card.label }}</h3>
         <p>{{ card.value }}</p>
+        <span class="metric-delta">{{ card.delta }}</span>
+        <span class="metric-note">{{ card.note }}</span>
     </article>
     {% endfor %}
+</section>
+
+<section class="dashboard-stack">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Quick Actions</h3>
+        </div>
+        <div class="action-grid">
+            {% for action in quick_actions %}
+            <a class="action-tile" href="{% url action.url_name %}">
+                <strong>{{ action.title }}</strong>
+                <span>{{ action.meta }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Today's Focus</h3>
+        </div>
+        <ul class="focus-list">
+            {% for item in focus_list %}
+            <li>
+                <div>
+                    <strong>{{ item.task }}</strong>
+                    <small>{{ item.owner }} - Due {{ item.due }}</small>
+                </div>
+                <span class="badge">{{ item.state }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </article>
 </section>
 
 <section class="panel">
     <h3>Recent Operational Activity</h3>
     <ul class="activity-list">
         {% for item in activity %}
-        <li>{{ item }}</li>
+        <li><strong>{{ item.time }}</strong> - {{ item.text }}</li>
         {% endfor %}
     </ul>
+</section>
+
+<section class="panel">
+    {% if management_view %}
+    <h3>Weekly Service Throughput</h3>
+    {% else %}
+    <h3>Shift Throughput Projection</h3>
+    {% endif %}
+    <div class="throughput-grid">
+        {% for point in throughput %}
+        <div class="throughput-item">
+            <div class="throughput-bar-wrap">
+                <span class="throughput-bar" style="height: {{ point.value }}%"></span>
+            </div>
+            <strong>{{ point.label }}</strong>
+        </div>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}
