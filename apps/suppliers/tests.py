@@ -28,7 +28,11 @@ class SupplierAccessTests(TestCase):
     def test_suppliers_list_requires_management_role(self):
         self.client.login(username="supp_staff", password="strong-pass-123")
         response = self.client.get(reverse("suppliers:list"))
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
 
     def test_manager_can_view_suppliers_list(self):
         self.client.login(username="supp_manager", password="strong-pass-123")

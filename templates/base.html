@@ -13,7 +13,7 @@
 <div class="layout">
     <aside class="sidebar" id="main-navigation">
         <div class="brand-wrap">
-            <a class="brand" href="{% url 'dashboard:home' %}">
+            <a class="brand" href="{% url role_home_url_name %}">
                 <img class="brand-logo" src="{% static 'images/barrelboss-logo.svg' %}" alt="BarrelBoss logo">
                 <div>
                     <h1>BarrelBoss</h1>
@@ -25,13 +25,13 @@
 
         {% with current=request.resolver_match.view_name %}
         <nav class="nav-links">
-            <a class="nav-link{% if current == 'dashboard:home' %} active{% endif %}" href="{% url 'dashboard:home' %}">Dashboard</a>
+            <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}">Dashboard</a>
             <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}">Stock</a>
             <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}">Breakages</a>
             <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}">Checklists</a>
             <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}">Shifts</a>
+            <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}">Orders</a>
             {% if is_management %}
-            <a class="nav-link{% if current == 'orders:list' %} active{% endif %}" href="{% url 'orders:list' %}">Orders</a>
             <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}">Suppliers</a>
             <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}">Staff</a>
             <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}">Reports</a>

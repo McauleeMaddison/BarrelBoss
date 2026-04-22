@@ -99,7 +99,11 @@ class ShiftViewTests(TestCase):
         self.client.login(username="shift_staff", password="strong-pass-123")
         response = self.client.get(reverse("shifts:add"))
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
 
     def test_manager_can_delete_shift(self):
         self.client.login(username="shift_manager", password="strong-pass-123")

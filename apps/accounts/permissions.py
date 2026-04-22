@@ -29,8 +29,8 @@ def is_management(user):
 
 def role_home_name(user):
     if is_management(user):
-        return "dashboard:home"
-    return "checklists:list"
+        return "dashboard:management_portal"
+    return "dashboard:staff_portal"
 
 
 def role_required(allowed_roles):

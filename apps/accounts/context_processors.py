@@ -1,5 +1,5 @@
 from .models import StaffProfile
-from .permissions import get_user_role, is_management
+from .permissions import get_user_role, is_management, role_home_name
 
 
 def role_context(request):
@@ -13,4 +13,5 @@ def role_context(request):
         "user_role": role,
         "user_role_label": role_label,
         "is_management": is_management(request.user),
+        "role_home_url_name": role_home_name(request.user),
     }

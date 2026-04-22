@@ -34,38 +34,38 @@ class RoleRoutingTests(TestCase):
         self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
         self.manager_user.staff_profile.save(update_fields=["role"])
 
-    def test_staff_login_redirects_to_checklists(self):
+    def test_staff_login_redirects_to_staff_portal(self):
         response = self.client.post(
             reverse("login"),
             {"username": "staff_member", "password": "strong-pass-123"},
         )
         self.assertRedirects(
             response,
-            reverse("checklists:list"),
+            reverse("dashboard:staff_portal"),
             fetch_redirect_response=False,
         )
 
-    def test_manager_login_redirects_to_dashboard(self):
+    def test_manager_login_redirects_to_management_portal(self):
         response = self.client.post(
             reverse("login"),
             {"username": "manager_member", "password": "strong-pass-123"},
         )
         self.assertRedirects(
             response,
-            reverse("dashboard:home"),
+            reverse("dashboard:management_portal"),
             fetch_redirect_response=False,
         )
 
     def test_staff_cannot_access_management_page(self):
         self.client.login(username="staff_member", password="strong-pass-123")
-        response = self.client.get(reverse("orders:list"))
+        response = self.client.get(reverse("suppliers:list"))
         self.assertRedirects(
             response,
-            reverse("checklists:list"),
+            reverse("dashboard:staff_portal"),
             fetch_redirect_response=False,
         )
 
     def test_manager_can_access_management_page(self):
         self.client.login(username="manager_member", password="strong-pass-123")
-        response = self.client.get(reverse("orders:list"))
+        response = self.client.get(reverse("suppliers:list"))
         self.assertEqual(response.status_code, 200)

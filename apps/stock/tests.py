@@ -139,7 +139,11 @@ class StockCrudViewTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
         self.assertFalse(StockItem.objects.filter(name="Illegal Add").exists())
 
     def test_manager_can_edit_stock_item(self):
@@ -180,7 +184,11 @@ class StockCrudViewTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
         self.item.refresh_from_db()
         self.assertNotEqual(self.item.quantity, 99)
 
@@ -196,6 +204,10 @@ class StockCrudViewTests(TestCase):
         self.client.login(username="stock_staff", password="strong-pass-123")
         response = self.client.post(reverse("stock:delete", args=[self.item.pk]))
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
         self.item.refresh_from_db()
         self.assertTrue(self.item.is_active)

@@ -86,7 +86,11 @@ class ChecklistViewTests(TestCase):
     def test_staff_cannot_create_task(self):
         self.client.login(username="task_staff", password="strong-pass-123")
         response = self.client.get(reverse("checklists:add"))
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
 
     def test_staff_can_toggle_their_own_task(self):
         self.client.login(username="task_staff", password="strong-pass-123")

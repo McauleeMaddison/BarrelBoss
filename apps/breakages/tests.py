@@ -56,7 +56,11 @@ class BreakageViewTests(TestCase):
         self.client.login(username="break_staff", password="strong-pass-123")
         response = self.client.post(reverse("breakages:delete", args=[record.pk]))
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
         self.assertTrue(Breakage.objects.filter(pk=record.pk).exists())
 
     def test_manager_can_delete_breakage(self):

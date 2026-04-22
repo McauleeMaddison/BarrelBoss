@@ -5,6 +5,12 @@ from .models import Order, OrderItem
 
 
 class OrderForm(forms.ModelForm):
+    def __init__(self, *args, is_management=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_management = is_management
+        if not is_management:
+            self.fields.pop("status", None)
+
     class Meta:
         model = Order
         fields = ["supplier", "order_date", "delivery_date", "status", "notes"]
