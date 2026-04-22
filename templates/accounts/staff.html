@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff | TapTrack{% endblock %}
+{% block page_title %}Staff{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Team Members</h3>
+        <button class="action-btn">Add Staff</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in team %}
+            <tr>
+                <td>{{ person.name }}</td>
+                <td>{{ person.role }}</td>
+                <td><span class="badge">{{ person.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

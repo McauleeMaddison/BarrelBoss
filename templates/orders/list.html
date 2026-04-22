@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Orders | TapTrack{% endblock %}
+{% block page_title %}Orders{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Barrel and Supplier Orders</h3>
+        <button class="action-btn">Create Order</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Supplier</th>
+                <th>Delivery Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.ref }}</td>
+                <td>{{ order.supplier }}</td>
+                <td>{{ order.delivery }}</td>
+                <td><span class="badge">{{ order.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

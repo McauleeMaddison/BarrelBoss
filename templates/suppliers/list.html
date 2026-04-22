@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Suppliers | TapTrack{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Supplier Directory</h3>
+        <button class="action-btn">Add Supplier</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Phone</th>
+                <th>Category</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+            <tr>
+                <td>{{ supplier.name }}</td>
+                <td>{{ supplier.contact }}</td>
+                <td>{{ supplier.phone }}</td>
+                <td>{{ supplier.category }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock | TapTrack{% endblock %}
+{% block page_title %}Stock{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Current Inventory</h3>
+        <button class="action-btn">Add Item</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Minimum</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.qty }} {{ item.unit }}</td>
+                <td>{{ item.threshold }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

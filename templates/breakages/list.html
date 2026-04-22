@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Breakages | TapTrack{% endblock %}
+{% block page_title %}Breakages{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Recent Breakage Reports</h3>
+        <button class="action-btn">Log Incident</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Issue</th>
+                <th>Reported By</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in records %}
+            <tr>
+                <td>{{ row.item }}</td>
+                <td>{{ row.qty }}</td>
+                <td>{{ row.issue }}</td>
+                <td>{{ row.reported_by }}</td>
+                <td>{{ row.date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

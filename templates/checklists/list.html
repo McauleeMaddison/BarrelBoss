@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Checklists | TapTrack{% endblock %}
+{% block page_title %}Checklists{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Shift Checklists</h3>
+        <button class="action-btn">Assign Task</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Assigned To</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task.title }}</td>
+                <td>{{ task.type }}</td>
+                <td>{{ task.assignee }}</td>
+                <td><span class="badge">{{ task.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
