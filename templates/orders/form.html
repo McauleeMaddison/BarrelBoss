@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} | BarrelBoss{% endblock %}
+{% block page_title %}Orders{% endblock %}
+
+{% block content %}
+<section class="panel stock-form-panel">
+    <div class="panel-header">
+        <h3>{{ page_title }}</h3>
+        <a class="table-action" href="{% url 'orders:list' %}">Back to Orders</a>
+    </div>
+
+    <form method="post" class="stock-edit-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="form-field {% if field.name == 'notes' %}full-width{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <span class="field-error">{{ field.errors|join:', ' }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <h4 class="form-subtitle">Order Items</h4>
+        {{ formset.management_form }}
+        {% if formset.non_form_errors %}
+        <div class="form-errors">{{ formset.non_form_errors }}</div>
+        {% endif %}
+
+        <div class="order-items-grid">
+            {% for item_form in formset %}
+            <div class="order-item-row">
+                {% for hidden_field in item_form.hidden_fields %}
+                    {{ hidden_field }}
+                {% endfor %}
+
+                <div class="form-field">
+                    <label for="{{ item_form.stock_item.id_for_label }}">Stock Item</label>
+                    {{ item_form.stock_item }}
+                    {% if item_form.stock_item.errors %}
+                    <span class="field-error">{{ item_form.stock_item.errors|join:', ' }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ item_form.quantity.id_for_label }}">Quantity</label>
+                    {{ item_form.quantity }}
+                    {% if item_form.quantity.errors %}
+                    <span class="field-error">{{ item_form.quantity.errors|join:', ' }}</span>
+                    {% endif %}
+                </div>
+
+                {% if item_form.DELETE %}
+                <div class="form-field order-item-delete">
+                    <label for="{{ item_form.DELETE.id_for_label }}">Remove Line</label>
+                    {{ item_form.DELETE }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="action-btn">{{ submit_label }}</button>
+            <a class="table-action" href="{% url 'orders:list' %}">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

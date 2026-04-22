@@ -49,13 +49,50 @@ h1, h2, h3 {
     min-height: 100vh;
 }
 
+.nav-toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.nav-overlay {
+    display: none;
+}
+
 .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
     padding: 1.75rem 1.25rem;
     border-right: 1px solid rgba(212, 161, 70, 0.2);
     background: linear-gradient(180deg, rgba(22, 15, 22, 0.95), rgba(12, 11, 15, 0.95));
     display: flex;
     flex-direction: column;
     gap: 1.4rem;
+}
+
+.brand-wrap {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+}
+
+.brand-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 0.7rem;
+    border: 1px solid rgba(212, 161, 70, 0.3);
+    background: rgba(0, 0, 0, 0.22);
+    padding: 0.15rem;
+    flex-shrink: 0;
 }
 
 .brand h1 {
@@ -67,6 +104,18 @@ h1, h2, h3 {
     margin-top: 0.35rem;
     color: var(--muted);
     font-size: 0.88rem;
+}
+
+.sidebar-close {
+    display: none;
+    border: 1px solid rgba(212, 161, 70, 0.35);
+    border-radius: 0.5rem;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    cursor: pointer;
 }
 
 .nav-links {
@@ -112,6 +161,34 @@ h1, h2, h3 {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 1.4rem;
+}
+
+.topbar-start {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.menu-btn {
+    display: none;
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(212, 161, 70, 0.35);
+    border-radius: 0.7rem;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(22, 16, 23, 0.75);
+    padding: 0.5rem;
+}
+
+.menu-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--text);
+    margin: 2.5px 0;
+    border-radius: 999px;
 }
 
 .topbar p {
@@ -470,6 +547,48 @@ h1, h2, h3 {
     gap: 0.65rem;
 }
 
+.inline-status-form {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.inline-status-form select {
+    min-width: 130px;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(212, 161, 70, 0.3);
+    background: rgba(16, 12, 16, 0.92);
+    color: var(--text);
+    padding: 0.25rem 0.35rem;
+    font-size: 0.75rem;
+}
+
+.form-subtitle {
+    margin: 1rem 0 0.6rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    color: var(--gold);
+}
+
+.order-items-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.order-item-row {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr 140px 120px;
+    border: 1px solid rgba(212, 161, 70, 0.12);
+    border-radius: 0.7rem;
+    padding: 0.65rem;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.order-item-delete {
+    align-self: end;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -529,6 +648,15 @@ tbody tr {
     border-radius: 1rem;
     padding: 1.4rem;
     backdrop-filter: blur(8px);
+}
+
+.login-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(212, 161, 70, 0.35);
+    background: rgba(0, 0, 0, 0.22);
+    padding: 0.12rem;
 }
 
 .eyebrow {
@@ -598,15 +726,47 @@ tbody tr {
     }
 
     .sidebar {
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
         z-index: 10;
-        border-right: none;
-        border-bottom: 1px solid rgba(212, 161, 70, 0.2);
+        width: min(340px, 88vw);
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        border-right: 1px solid rgba(212, 161, 70, 0.24);
+        border-bottom: none;
+    }
+
+    .nav-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 5, 8, 0.58);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 8;
+    }
+
+    .nav-toggle:checked ~ .nav-overlay {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .nav-toggle:checked ~ .layout .sidebar {
+        transform: translateX(0);
+    }
+
+    .menu-btn {
+        display: inline-flex;
+    }
+
+    .sidebar-close {
+        display: inline-flex;
     }
 
     .nav-links {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 0.4rem;
     }
 
@@ -620,6 +780,17 @@ tbody tr {
 
     .dashboard-stack {
         grid-template-columns: 1fr;
+    }
+
+    .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        background: rgba(15, 12, 20, 0.92);
+        border: 1px solid rgba(212, 161, 70, 0.2);
+        border-radius: 0.85rem;
+        padding: 0.5rem 0.75rem;
+        backdrop-filter: blur(6px);
     }
 }
 
@@ -639,6 +810,10 @@ tbody tr {
     }
 
     .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .order-item-row {
         grid-template-columns: 1fr;
     }
 }

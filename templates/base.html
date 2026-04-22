@@ -4,17 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}TapTrack{% endblock %}</title>
+    <title>{% block title %}BarrelBoss{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="app-shell">
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+<label for="nav-toggle" class="nav-overlay" aria-hidden="true"></label>
 <div class="shell-bg"></div>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand">
-            <h1>TapTrack</h1>
-            <p>Bar Operations Console</p>
+    <aside class="sidebar" id="main-navigation">
+        <div class="brand-wrap">
+            <a class="brand" href="{% url 'dashboard:home' %}">
+                <img class="brand-logo" src="{% static 'images/barrelboss-logo.svg' %}" alt="BarrelBoss logo">
+                <div>
+                    <h1>BarrelBoss</h1>
+                    <p>Pub Operations Console</p>
+                </div>
+            </a>
+            <label for="nav-toggle" class="sidebar-close" aria-label="Close navigation">✕</label>
         </div>
+
         {% with current=request.resolver_match.view_name %}
         <nav class="nav-links">
             <a class="nav-link{% if current == 'dashboard:home' %} active{% endif %}" href="{% url 'dashboard:home' %}">Dashboard</a>
@@ -30,6 +39,7 @@
             {% endif %}
         </nav>
         {% endwith %}
+
         <form action="{% url 'logout' %}" method="post" class="logout-form">
             {% csrf_token %}
             <button type="submit" class="logout-btn">Logout</button>
@@ -38,9 +48,16 @@
 
     <main class="main-content">
         <header class="topbar">
-            <div>
-                <h2>{% block page_title %}Dashboard{% endblock %}</h2>
-                <p>{% now "l, j F Y" %}</p>
+            <div class="topbar-start">
+                <label for="nav-toggle" class="menu-btn" aria-label="Open navigation" role="button" tabindex="0">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </label>
+                <div>
+                    <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+                    <p>{% now "l, j F Y" %}</p>
+                </div>
             </div>
             <div class="user-pill">{{ request.user.get_username|default:'Guest' }} ({{ user_role_label }})</div>
         </header>

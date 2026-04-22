@@ -54,7 +54,7 @@ def _management_dashboard_payload():
         "quick_actions": [
             {
                 "title": "Create Barrel Order",
-                "url_name": "orders:list",
+                "url_name": "orders:add",
                 "meta": "Add a draft order or mark delivery status.",
             },
             {

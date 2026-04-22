@@ -1,33 +1,94 @@
 {% extends 'base.html' %}
 
-{% block title %}Orders | TapTrack{% endblock %}
+{% block title %}Orders | BarrelBoss{% endblock %}
 {% block page_title %}Orders{% endblock %}
 
 {% block content %}
+<section class="metric-grid">
+    <article class="metric-card neutral">
+        <h3>Total Orders</h3>
+        <p>{{ order_count }}</p>
+    </article>
+    <article class="metric-card warn">
+        <h3>Pending Delivery</h3>
+        <p>{{ pending_count }}</p>
+    </article>
+    <article class="metric-card ok">
+        <h3>Delivered (7 Days)</h3>
+        <p>{{ delivered_recent_count }}</p>
+    </article>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h3>Barrel and Supplier Orders</h3>
-        <button class="action-btn">Create Order</button>
+        <a class="action-btn action-link" href="{% url 'orders:add' %}">Create Order</a>
     </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="supplier">Supplier</label>
+        <select id="supplier" name="supplier">
+            <option value="">All Suppliers</option>
+            {% for supplier in suppliers %}
+            <option value="{{ supplier.id }}" {% if selected_supplier == supplier.id|stringformat:'s' %}selected{% endif %}>{{ supplier.name }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="action-btn" type="submit">Apply</button>
+    </form>
+
+    {% if orders %}
     <table>
         <thead>
             <tr>
                 <th>Reference</th>
                 <th>Supplier</th>
+                <th>Order Date</th>
                 <th>Delivery Date</th>
+                <th>Items</th>
                 <th>Status</th>
+                <th>Created By</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for order in orders %}
             <tr>
-                <td>{{ order.ref }}</td>
-                <td>{{ order.supplier }}</td>
-                <td>{{ order.delivery }}</td>
-                <td><span class="badge">{{ order.status }}</span></td>
+                <td>{{ order.reference }}</td>
+                <td>{{ order.supplier.name }}</td>
+                <td>{{ order.order_date }}</td>
+                <td>{{ order.delivery_date|default:'-' }}</td>
+                <td>{{ order.total_units|default:0 }} units</td>
+                <td>
+                    <span class="badge">{{ order.get_status_display }}</span>
+                </td>
+                <td>{{ order.created_by.username|default:'-' }}</td>
+                <td class="stock-actions-cell">
+                    <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit</a>
+                    <form method="post" action="{% url 'orders:status' order.pk %}" class="inline-status-form">
+                        {% csrf_token %}
+                        <select name="status">
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="table-action" type="submit">Update</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="empty-state">No orders match this filter yet.</p>
+    {% endif %}
 </section>
 {% endblock %}

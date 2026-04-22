@@ -1,4 +1,4 @@
-# TapTrack (BarrelBoss)
+# BarrelBoss
 
 Professional bar and pub management web app for stock control, supplier ordering, breakage logs, and shift checklists.
 
@@ -15,6 +15,7 @@ Day 1 and Day 2 foundations are in place:
 - Day 4 real stock data model + stock page backed by database queries
 - Day 5 stock CRUD flows (add, edit, remove from active inventory) for management roles
 - Day 6 suppliers CRUD flows with search/filter and management-only access
+- Day 7 real orders model with line items, status workflow, and management-only CRUD
 
 ## Stack
 
@@ -72,4 +73,4 @@ python manage.py test
 
 ## Next Build Step
 
-Day 3: Implement real dashboard data wiring and role-specific KPI queries from database models.
+Day 8: implement breakage data model and forms, then replace static breakage rows with live database records.
