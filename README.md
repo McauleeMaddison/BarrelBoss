@@ -17,6 +17,7 @@ Day 1 and Day 2 foundations are in place:
 - Day 6 suppliers CRUD flows with search/filter and management-only access
 - Day 7 real orders model with line items, status workflow, and management-only CRUD
 - Day 8 breakage model with live logging/history and role-based delete controls
+- Day 9 checklist model with assignment workflow, completion toggle, filters, and role-based task controls
 
 ## Stack
 
@@ -47,7 +48,10 @@ Copy `.env.example` values into your environment (or `.env` with your preferred 
 - `DJANGO_SECRET_KEY`
 - `DJANGO_DEBUG`
 - `DJANGO_ALLOWED_HOSTS`
+- `DJANGO_CSRF_TRUSTED_ORIGINS`
 - `DJANGO_TIME_ZONE`
+- `DATABASE_URL`
+- `DATABASE_SSL_REQUIRE`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -116,4 +120,4 @@ python manage.py createsuperuser
 
 ## Next Build Step
 
-Day 9: build checklist data model + assignment workflow, replacing static checklist rows with live task data.
+Day 10: continue polish with richer reports/tables, validation edge cases, and production-ready UX refinements.

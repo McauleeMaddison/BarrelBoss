@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Checklist Task | BarrelBoss{% endblock %}
+{% block page_title %}Checklists{% endblock %}
+
+{% block content %}
+<section class="panel stock-form-panel">
+    <h3>Delete checklist task "{{ task.title }}"?</h3>
+    <p>This permanently removes the task from your checklist history.</p>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <button type="submit" class="action-btn">Confirm Delete</button>
+        <a class="table-action" href="{% url 'checklists:list' %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}

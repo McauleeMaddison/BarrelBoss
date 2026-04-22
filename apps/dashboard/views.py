@@ -47,9 +47,9 @@ def _management_dashboard_payload():
             },
         ],
         "activity": [
-            {"text": "Opening checklist completed by Nina Walsh", "time": "09:12"},
-            {"text": "Barrel order #1012 marked as pending delivery", "time": "10:48"},
-            {"text": "2 pint glasses logged as damaged", "time": "11:35"},
+            {"text": "Opening checklist completed by Nina Walsh", "time": "09:12", "category": "checklists"},
+            {"text": "Barrel order #1012 marked as pending delivery", "time": "10:48", "category": "orders"},
+            {"text": "2 pint glasses logged as damaged", "time": "11:35", "category": "breakages"},
         ],
         "quick_actions": [
             {
@@ -74,13 +74,13 @@ def _management_dashboard_payload():
             {"task": "Assign closing checklist lead", "owner": "Landlord", "due": "18:00", "state": "Open"},
         ],
         "throughput": [
-            {"label": "Mon", "value": 62},
-            {"label": "Tue", "value": 74},
-            {"label": "Wed", "value": 68},
-            {"label": "Thu", "value": 82},
-            {"label": "Fri", "value": 95},
-            {"label": "Sat", "value": 100},
-            {"label": "Sun", "value": 71},
+            {"label": "Mon", "value": 62, "task_value": 34},
+            {"label": "Tue", "value": 74, "task_value": 42},
+            {"label": "Wed", "value": 68, "task_value": 55},
+            {"label": "Thu", "value": 82, "task_value": 67},
+            {"label": "Fri", "value": 95, "task_value": 79},
+            {"label": "Sat", "value": 100, "task_value": 88},
+            {"label": "Sun", "value": 71, "task_value": 48},
         ],
     }
 
@@ -118,9 +118,9 @@ def _staff_dashboard_payload():
             },
         ],
         "activity": [
-            {"text": "Your opening checklist is due by 10:00", "time": "09:00"},
-            {"text": "Delivery checklist assigned for ORD-1001", "time": "11:10"},
-            {"text": "Remember to log damaged glassware before handover", "time": "11:45"},
+            {"text": "Your opening checklist is due by 10:00", "time": "09:00", "category": "checklists"},
+            {"text": "Delivery checklist assigned for ORD-1001", "time": "11:10", "category": "orders"},
+            {"text": "Remember to log damaged glassware before handover", "time": "11:45", "category": "breakages"},
         ],
         "quick_actions": [
             {
@@ -145,12 +145,12 @@ def _staff_dashboard_payload():
             {"task": "Confirm afternoon delivery", "owner": "You", "due": "15:30", "state": "Scheduled"},
         ],
         "throughput": [
-            {"label": "10:00", "value": 28},
-            {"label": "12:00", "value": 41},
-            {"label": "14:00", "value": 36},
-            {"label": "16:00", "value": 58},
-            {"label": "18:00", "value": 73},
-            {"label": "20:00", "value": 81},
+            {"label": "10:00", "value": 28, "task_value": 20},
+            {"label": "12:00", "value": 41, "task_value": 32},
+            {"label": "14:00", "value": 36, "task_value": 27},
+            {"label": "16:00", "value": 58, "task_value": 39},
+            {"label": "18:00", "value": 73, "task_value": 52},
+            {"label": "20:00", "value": 81, "task_value": 61},
         ],
     }
 

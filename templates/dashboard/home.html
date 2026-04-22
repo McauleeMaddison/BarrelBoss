@@ -18,7 +18,7 @@
 
 <section class="metric-grid">
     {% for card in metrics %}
-    <article class="metric-card {{ card.tone }}">
+    <article class="metric-card {{ card.tone }} metric-interactive" tabindex="0" role="button" data-insight-title="{{ card.label }}" data-insight-delta="{{ card.delta }}" data-insight-note="{{ card.note }}">
         <h3>{{ card.label }}</h3>
         <p>{{ card.value }}</p>
         <span class="metric-delta">{{ card.delta }}</span>
@@ -26,6 +26,14 @@
     </article>
     {% endfor %}
 </section>
+
+{% with first_card=metrics.0 %}
+<section class="panel dashboard-insight" id="dashboardInsight">
+    <h3 id="insightTitle">{{ first_card.label }}</h3>
+    <p class="metric-delta" id="insightDelta">{{ first_card.delta }}</p>
+    <p id="insightNote">{{ first_card.note }}</p>
+</section>
+{% endwith %}
 
 <section class="dashboard-stack">
     <article class="panel">
@@ -61,27 +69,42 @@
 </section>
 
 <section class="panel">
-    <h3>Recent Operational Activity</h3>
-    <ul class="activity-list">
+    <div class="panel-header">
+        <h3>Recent Operational Activity</h3>
+        <div class="dashboard-controls" data-activity-controls>
+            <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
+            <button class="segment-btn" type="button" data-activity-filter="orders">Orders</button>
+            <button class="segment-btn" type="button" data-activity-filter="checklists">Checklists</button>
+            <button class="segment-btn" type="button" data-activity-filter="breakages">Breakages</button>
+        </div>
+    </div>
+    <ul class="activity-list" id="activityList">
         {% for item in activity %}
-        <li><strong>{{ item.time }}</strong> - {{ item.text }}</li>
+        <li data-activity-category="{{ item.category }}"><strong>{{ item.time }}</strong> - {{ item.text }} <span class="activity-chip">{{ item.category|title }}</span></li>
         {% endfor %}
     </ul>
 </section>
 
 <section class="panel">
-    {% if management_view %}
-    <h3>Weekly Service Throughput</h3>
-    {% else %}
-    <h3>Shift Throughput Projection</h3>
-    {% endif %}
-    <div class="throughput-grid">
+    <div class="panel-header">
+        {% if management_view %}
+        <h3>Weekly Service Throughput</h3>
+        {% else %}
+        <h3>Shift Throughput Projection</h3>
+        {% endif %}
+        <div class="dashboard-controls" data-throughput-controls>
+            <button class="segment-btn active" type="button" data-throughput-mode="service">Service Load</button>
+            <button class="segment-btn" type="button" data-throughput-mode="tasks">Task Progress</button>
+        </div>
+    </div>
+    <div class="throughput-grid" data-throughput-grid>
         {% for point in throughput %}
         <div class="throughput-item">
             <div class="throughput-bar-wrap">
-                <span class="throughput-bar" style="height: {{ point.value }}%"></span>
+                <span class="throughput-bar" data-service="{{ point.value }}" data-tasks="{{ point.task_value }}" style="height: {{ point.value }}%"></span>
             </div>
             <strong>{{ point.label }}</strong>
+            <small class="throughput-value" data-service="{{ point.value }}" data-tasks="{{ point.task_value }}">{{ point.value }}%</small>
         </div>
         {% endfor %}
     </div>

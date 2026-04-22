@@ -4,30 +4,110 @@
 {% block page_title %}Checklists{% endblock %}
 
 {% block content %}
+<section class="metric-grid">
+    <article class="metric-card neutral">
+        <h3>Visible Tasks</h3>
+        <p>{{ task_count }}</p>
+    </article>
+    <article class="metric-card warn">
+        <h3>Due Today</h3>
+        <p>{{ due_today_count }}</p>
+    </article>
+    <article class="metric-card alert">
+        <h3>Overdue</h3>
+        <p>{{ overdue_count }}</p>
+    </article>
+    <article class="metric-card ok">
+        <h3>Completion Rate</h3>
+        <p>{{ completion_rate }}%</p>
+        <span class="metric-note">{{ completed_week_count }} completed in last 7 days</span>
+    </article>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h3>Shift Checklists</h3>
-        <button class="action-btn">Assign Task</button>
+        {% if is_management %}
+        <a class="action-btn action-link" href="{% url 'checklists:add' %}">Assign Task</a>
+        {% endif %}
     </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="q">Search</label>
+        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Task title or assignee">
+
+        <label for="type">Type</label>
+        <select id="type" name="type">
+            <option value="">All Types</option>
+            {% for value, label in type_choices %}
+            <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="action-btn" type="submit">Apply</button>
+    </form>
+
+    {% if tasks %}
     <table>
         <thead>
             <tr>
                 <th>Task</th>
                 <th>Type</th>
                 <th>Assigned To</th>
+                <th>Due Date</th>
                 <th>Status</th>
+                <th>Toggle</th>
+                {% if is_management %}<th>Actions</th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for task in tasks %}
             <tr>
                 <td>{{ task.title }}</td>
-                <td>{{ task.type }}</td>
-                <td>{{ task.assignee }}</td>
-                <td><span class="badge">{{ task.status }}</span></td>
+                <td>{{ task.get_checklist_type_display }}</td>
+                <td>{{ task.assigned_to.username|default:'-' }}</td>
+                <td>{{ task.due_date }}</td>
+                <td>
+                    {% if task.completed %}
+                    <span class="badge stock-badge-ok">Completed</span>
+                    {% else %}
+                    <span class="badge stock-badge-low">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if is_management or task.assigned_to_id == request.user.id %}
+                    <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-toggle-form">
+                        {% csrf_token %}
+                        {% if task.completed %}
+                        <button class="table-action" type="submit">Mark Pending</button>
+                        {% else %}
+                        <button class="table-action" type="submit">Mark Complete</button>
+                        {% endif %}
+                    </form>
+                    {% else %}
+                    <span class="table-action">-</span>
+                    {% endif %}
+                </td>
+                {% if is_management %}
+                <td class="stock-actions-cell">
+                    <a class="table-action" href="{% url 'checklists:edit' task.pk %}">Edit</a>
+                    <a class="table-action table-action-danger" href="{% url 'checklists:delete' task.pk %}">Delete</a>
+                </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="empty-state">No checklist tasks found for this filter yet.</p>
+    {% endif %}
 </section>
 {% endblock %}
