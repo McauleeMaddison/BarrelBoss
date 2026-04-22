@@ -26,4 +26,10 @@ urlpatterns = [
     path("staff/", core_views.staff_page, name="staff"),
     path("reports/", core_views.reports_page, name="reports"),
     path("settings/", core_views.settings_page, name="settings"),
+    path("settings/push/subscribe/", core_views.push_subscribe, name="push_subscribe"),
+    path(
+        "settings/push/unsubscribe/",
+        core_views.push_unsubscribe,
+        name="push_unsubscribe",
+    ),
 ]

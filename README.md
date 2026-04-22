@@ -18,6 +18,8 @@ Day 1 and Day 2 foundations are in place:
 - Day 7 real orders model with line items, status workflow, and management-only CRUD
 - Day 8 breakage model with live logging/history and role-based delete controls
 - Day 9 checklist model with assignment workflow, completion toggle, filters, and role-based task controls
+- Day 10 shifts polish with weekly chart + staff/management portal split
+- Web push notifications for shift allocation/update events (staff opt-in per device)
 
 ## Stack
 
@@ -57,8 +59,23 @@ Copy `.env.example` values into your environment (or `.env` with your preferred 
 - `POSTGRES_PASSWORD`
 - `POSTGRES_HOST`
 - `POSTGRES_PORT`
+- `WEB_PUSH_PUBLIC_KEY`
+- `WEB_PUSH_PRIVATE_KEY`
+- `WEB_PUSH_SUBJECT`
 
 If PostgreSQL variables are not all set, the project defaults to SQLite.
+
+### Web Push Setup
+
+To enable real browser push notifications, set VAPID keys:
+
+```bash
+WEB_PUSH_PUBLIC_KEY=<your-public-vapid-key>
+WEB_PUSH_PRIVATE_KEY=<your-private-vapid-key>
+WEB_PUSH_SUBJECT=mailto:alerts@yourdomain.com
+```
+
+Staff then enable alerts from `Settings` on their own device/browser.
 
 ## Role Flow
 
@@ -68,7 +85,7 @@ If PostgreSQL variables are not all set, the project defaults to SQLite.
 
 - `Staff`:
 - redirected to checklists after login
-- access to dashboard, stock, breakages, checklists
+- access to dashboard, stock, breakages, checklists, shifts, settings (personal push opt-in)
 
 ## Tests
 

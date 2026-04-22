@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.permissions import is_management, management_required
+from apps.accounts.push import send_shift_push_notification
 
 from .forms import ShiftForm
 from .models import Shift
@@ -134,6 +135,7 @@ def add_shift(request):
             shift = form.save(commit=False)
             shift.created_by = request.user
             shift.save()
+            send_shift_push_notification(shift, actor=request.user, event_type="assigned")
             messages.success(request, "Shift scheduled successfully.")
             return redirect("shifts:list")
     else:
@@ -157,7 +159,12 @@ def edit_shift(request, pk):
     if request.method == "POST":
         form = ShiftForm(request.POST, instance=shift)
         if form.is_valid():
-            form.save()
+            updated_shift = form.save()
+            send_shift_push_notification(
+                updated_shift,
+                actor=request.user,
+                event_type="updated",
+            )
             messages.success(request, "Shift updated.")
             return redirect("shifts:list")
     else:

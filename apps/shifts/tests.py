@@ -1,4 +1,5 @@
 from datetime import time
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -103,6 +104,46 @@ class ShiftViewTests(TestCase):
 
         self.assertRedirects(response, reverse("shifts:list"), fetch_redirect_response=False)
         self.assertTrue(Shift.objects.filter(notes="Late service").exists())
+
+    @patch("apps.shifts.views.send_shift_push_notification")
+    def test_manager_create_shift_triggers_push_notification(self, mock_send_push):
+        self.client.login(username="shift_manager", password="strong-pass-123")
+        response = self.client.post(
+            reverse("shifts:add"),
+            {
+                "staff": self.staff_user.pk,
+                "shift_date": "2026-04-24",
+                "start_time": "18:00",
+                "end_time": "23:00",
+                "break_minutes": "20",
+                "notes": "Busy late shift",
+            },
+        )
+
+        self.assertRedirects(response, reverse("shifts:list"), fetch_redirect_response=False)
+        self.assertEqual(mock_send_push.call_count, 1)
+        self.assertEqual(mock_send_push.call_args.kwargs["actor"], self.manager_user)
+        self.assertEqual(mock_send_push.call_args.kwargs["event_type"], "assigned")
+
+    @patch("apps.shifts.views.send_shift_push_notification")
+    def test_manager_edit_shift_triggers_push_notification(self, mock_send_push):
+        self.client.login(username="shift_manager", password="strong-pass-123")
+        response = self.client.post(
+            reverse("shifts:edit", args=[self.staff_shift.pk]),
+            {
+                "staff": self.staff_user.pk,
+                "shift_date": self.staff_shift.shift_date.strftime("%Y-%m-%d"),
+                "start_time": "17:00",
+                "end_time": "23:30",
+                "break_minutes": "30",
+                "notes": "Main floor updated",
+            },
+        )
+
+        self.assertRedirects(response, reverse("shifts:list"), fetch_redirect_response=False)
+        self.assertEqual(mock_send_push.call_count, 1)
+        self.assertEqual(mock_send_push.call_args.kwargs["actor"], self.manager_user)
+        self.assertEqual(mock_send_push.call_args.kwargs["event_type"], "updated")
 
     def test_staff_cannot_create_shift(self):
         self.client.login(username="shift_staff", password="strong-pass-123")

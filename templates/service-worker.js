@@ -1,4 +1,4 @@
-const CACHE_NAME = "barrelboss-shell-v1";
+const CACHE_NAME = "barrelboss-shell-v3";
 const APP_SHELL = [
     "/",
     "/accounts/login/",
@@ -56,5 +56,54 @@ self.addEventListener("fetch", (event) => {
                 })
                 .catch(() => caches.match("/accounts/login/"));
         })
+    );
+});
+
+self.addEventListener("push", (event) => {
+    let payload = {};
+    if (event.data) {
+        try {
+            payload = event.data.json();
+        } catch (_error) {
+            payload = { body: event.data.text() };
+        }
+    }
+
+    const title = payload.title || "BarrelBoss";
+    const options = {
+        body: payload.body || "You have a new update.",
+        icon: payload.icon || "/static/images/pwa-192.png",
+        badge: payload.badge || "/static/images/pwa-192.png",
+        tag: payload.tag || "barrelboss-update",
+        renotify: Boolean(payload.renotify),
+        data: {
+            url: payload.url || "/dashboard/",
+            ...payload.data,
+        },
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+    const targetUrl = (event.notification.data && event.notification.data.url) || "/dashboard/";
+
+    event.waitUntil(
+        clients
+            .matchAll({ type: "window", includeUncontrolled: true })
+            .then((windowClients) => {
+                for (const client of windowClients) {
+                    if ("focus" in client && client.url.includes(targetUrl)) {
+                        return client.focus();
+                    }
+                }
+
+                if (clients.openWindow) {
+                    return clients.openWindow(targetUrl);
+                }
+
+                return null;
+            })
     );
 });

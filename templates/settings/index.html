@@ -4,8 +4,96 @@
 {% block page_title %}Settings{% endblock %}
 
 {% block content %}
-<section class="panel">
-    <h3>Environment</h3>
-    <p>Configure app details, notification rules, and role permissions in this section during the next build phase.</p>
+<section class="panel settings-hero">
+    <p class="kicker">Configuration</p>
+    <h3>Notification Centre</h3>
+    <p>Control shift-hour notifications and manage who receives staff scheduling alerts.</p>
+</section>
+
+<section class="settings-grid">
+    <article class="panel settings-card">
+        <div class="panel-header">
+            <h3>My Device Alerts</h3>
+            <span class="panel-header-meta">Push</span>
+        </div>
+        <p class="settings-copy">
+            Receive a push notification when your shift hours are allocated or updated.
+        </p>
+        <p class="settings-status" id="pushStatus">
+            {% if push_subscription_count %}
+            Alerts are active on this device.
+            {% else %}
+            Alerts are currently off on this device.
+            {% endif %}
+        </p>
+        <div
+            class="settings-actions"
+            data-push-settings
+            data-subscribe-url="{% url 'push_subscribe' %}"
+            data-unsubscribe-url="{% url 'push_unsubscribe' %}"
+            data-vapid-public-key="{{ web_push_public_key }}"
+            data-configured="{% if web_push_configured %}true{% else %}false{% endif %}"
+            data-initial-enabled="{% if push_subscription_count %}true{% else %}false{% endif %}"
+        >
+            <button
+                type="button"
+                class="action-btn"
+                data-push-enable
+                {% if push_subscription_count %}hidden{% endif %}
+            >
+                Enable Shift Alerts
+            </button>
+            <button
+                type="button"
+                class="table-action"
+                data-push-disable
+                {% if not push_subscription_count %}hidden{% endif %}
+            >
+                Disable Alerts
+            </button>
+        </div>
+        {% if not web_push_configured %}
+        <p class="settings-note">
+            Push is not configured yet on the server. Add web push VAPID keys in environment variables.
+        </p>
+        {% endif %}
+    </article>
+
+    {% if is_management %}
+    <article class="panel settings-card">
+        <div class="panel-header">
+            <h3>Team Shift Alert Rules</h3>
+            <span class="panel-header-meta">Manager</span>
+        </div>
+        <p class="settings-copy">
+            Choose which staff members should receive push notifications when shifts are allocated.
+        </p>
+        <form method="post" class="settings-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="team_shift_alerts">
+            <div class="settings-team-list">
+                {% for profile in team_profiles %}
+                <label class="settings-toggle-row" for="notify_staff_{{ profile.user_id }}">
+                    <span>
+                        <strong>{{ profile.user.get_full_name|default:profile.user.username }}</strong>
+                        <small>{{ profile.user.username }} · {{ profile.get_role_display }}</small>
+                    </span>
+                    <input
+                        type="checkbox"
+                        id="notify_staff_{{ profile.user_id }}"
+                        name="notify_staff_{{ profile.user_id }}"
+                        {% if profile.notify_on_shift_assignment %}checked{% endif %}
+                    >
+                </label>
+                {% empty %}
+                <p class="empty-state">No active staff profiles found yet.</p>
+                {% endfor %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="action-btn">Save Alert Preferences</button>
+            </div>
+        </form>
+    </article>
+    {% endif %}
 </section>
 {% endblock %}

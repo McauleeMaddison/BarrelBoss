@@ -4,16 +4,18 @@
 {% block page_title %}{{ portal_title }}{% endblock %}
 
 {% block content %}
-<section class="panel">
-    {% if management_view %}
-    <p class="kicker">{{ greeting }}, management team.</p>
-    <h3>{{ overview_heading }}</h3>
-    <p>{{ overview_copy }}</p>
-    {% else %}
-    <p class="kicker">{{ greeting }}, team member.</p>
-    <h3>{{ overview_heading }}</h3>
-    <p>{{ overview_copy }}</p>
-    {% endif %}
+<section class="panel portal-hero">
+    <div class="portal-hero-head">
+        {% if management_view %}
+        <p class="kicker">{{ greeting }}, management team.</p>
+        <span class="badge portal-badge">Management Mode</span>
+        {% else %}
+        <p class="kicker">{{ greeting }}, team member.</p>
+        <span class="badge portal-badge">Staff Mode</span>
+        {% endif %}
+    </div>
+    <h3 class="portal-hero-title">{{ overview_heading }}</h3>
+    <p class="portal-hero-copy">{{ overview_copy }}</p>
 </section>
 
 <section class="metric-grid">
@@ -36,9 +38,10 @@
 {% endwith %}
 
 <section class="dashboard-stack">
-    <article class="panel">
+    <article class="panel portal-panel">
         <div class="panel-header">
             <h3>Quick Actions</h3>
+            <span class="panel-header-meta">Fast access</span>
         </div>
         <div class="action-grid">
             {% for action in quick_actions %}
@@ -50,9 +53,10 @@
         </div>
     </article>
 
-    <article class="panel">
+    <article class="panel portal-panel">
         <div class="panel-header">
             <h3>Today's Focus</h3>
+            <span class="panel-header-meta">Shift priorities</span>
         </div>
         <ul class="focus-list">
             {% for item in focus_list %}
@@ -68,9 +72,12 @@
     </article>
 </section>
 
-<section class="panel">
+<section class="panel portal-panel">
     <div class="panel-header">
-        <h3>Recent Operational Activity</h3>
+        <div>
+            <h3>Recent Operational Activity</h3>
+            <p class="panel-subtitle">Filter by workflow</p>
+        </div>
         <div class="dashboard-controls" data-activity-controls>
             <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
             <button class="segment-btn" type="button" data-activity-filter="orders">Orders</button>
@@ -86,13 +93,16 @@
     </ul>
 </section>
 
-<section class="panel">
+<section class="panel portal-panel">
     <div class="panel-header">
-        {% if management_view %}
-        <h3>Weekly Service Throughput</h3>
-        {% else %}
-        <h3>Shift Throughput Projection</h3>
-        {% endif %}
+        <div>
+            {% if management_view %}
+            <h3>Weekly Service Throughput</h3>
+            {% else %}
+            <h3>Shift Throughput Projection</h3>
+            {% endif %}
+            <p class="panel-subtitle">Use mode toggles to compare pace</p>
+        </div>
         <div class="dashboard-controls" data-throughput-controls>
             <button class="segment-btn active" type="button" data-throughput-mode="service">Service Load</button>
             <button class="segment-btn" type="button" data-throughput-mode="tasks">Task Progress</button>
