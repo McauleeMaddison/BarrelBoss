@@ -71,6 +71,11 @@
                 >
                     Collapse Sidebar
                 </button>
+                <form action="{% url 'logout' %}" method="post" class="switch-account-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'login' %}">
+                    <button type="submit" class="topbar-switch-btn">Switch Account</button>
+                </form>
                 <div class="user-pill">{{ request.user.get_username|default:'Guest' }} ({{ user_role_label }})</div>
             </div>
         </header>

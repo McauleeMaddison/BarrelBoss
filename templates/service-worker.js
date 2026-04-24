@@ -1,7 +1,5 @@
-const CACHE_NAME = "barrelboss-shell-v3";
+const CACHE_NAME = "barrelboss-shell-v4";
 const APP_SHELL = [
-    "/",
-    "/accounts/login/",
     "/static/css/app.css",
     "/static/js/app.js",
     "/static/js/pwa.js",
@@ -38,6 +36,20 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
+    const acceptHeader = event.request.headers.get("accept") || "";
+    const isHtmlRequest =
+        event.request.mode === "navigate"
+        || acceptHeader.includes("text/html");
+
+    if (isHtmlRequest) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
+    if (!requestUrl.pathname.startsWith("/static/")) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
@@ -54,7 +66,7 @@ self.addEventListener("fetch", (event) => {
                     }
                     return networkResponse;
                 })
-                .catch(() => caches.match("/accounts/login/"));
+                .catch(() => Response.error());
         })
     );
 });
