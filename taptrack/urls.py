@@ -24,6 +24,13 @@ urlpatterns = [
     path("checklists/", include("apps.checklists.urls")),
     path("shifts/", include("apps.shifts.urls")),
     path("staff/", core_views.staff_page, name="staff"),
+    path("staff/add/", core_views.add_staff_page, name="staff_add"),
+    path("staff/<int:user_id>/edit/", core_views.edit_staff_page, name="staff_edit"),
+    path(
+        "staff/<int:user_id>/toggle-active/",
+        core_views.toggle_staff_active,
+        name="staff_toggle_active",
+    ),
     path("reports/", core_views.reports_page, name="reports"),
     path("settings/", core_views.settings_page, name="settings"),
     path("settings/push/subscribe/", core_views.push_subscribe, name="push_subscribe"),

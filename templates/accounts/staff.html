@@ -4,28 +4,112 @@
 {% block page_title %}Staff{% endblock %}
 
 {% block content %}
+<section class="metric-grid">
+    <article class="metric-card neutral">
+        <h3>Team Records</h3>
+        <p>{{ team_total }}</p>
+        <span class="metric-note">Profiles matching current filters</span>
+    </article>
+    <article class="metric-card ok">
+        <h3>Active Staff</h3>
+        <p>{{ team_active }}</p>
+        <span class="metric-note">Currently marked active</span>
+    </article>
+    <article class="metric-card warn">
+        <h3>Management Roles</h3>
+        <p>{{ team_management }}</p>
+        <span class="metric-note">Landlord + manager accounts</span>
+    </article>
+    <article class="metric-card alert">
+        <h3>Shift Alerts Enabled</h3>
+        <p>{{ team_shift_alerts_enabled }}</p>
+        <span class="metric-note">Staff receiving shift push alerts</span>
+    </article>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h3>Team Members</h3>
-        <button class="action-btn">Add Staff</button>
+        <a class="action-btn action-link" href="{% url 'staff_add' %}">Add Staff</a>
     </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="q">Search</label>
+        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Username, name, email, phone or title">
+
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="role">Role</label>
+        <select id="role" name="role">
+            <option value="">All Roles</option>
+            {% for value, label in role_choices %}
+            <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="action-btn" type="submit">Apply</button>
+    </form>
+
+    {% if team_profiles %}
     <table>
         <thead>
             <tr>
+                <th>Username</th>
                 <th>Name</th>
                 <th>Role</th>
+                <th>Job Title</th>
+                <th>Phone</th>
+                <th>Email</th>
                 <th>Status</th>
+                <th>Shift Alerts</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for person in team %}
+            {% for profile in team_profiles %}
             <tr>
-                <td>{{ person.name }}</td>
-                <td>{{ person.role }}</td>
-                <td><span class="badge">{{ person.status }}</span></td>
+                <td>{{ profile.user.username }}</td>
+                <td>{{ profile.user.get_full_name|default:"-" }}</td>
+                <td>{{ profile.get_role_display }}</td>
+                <td>{{ profile.job_title|default:"-" }}</td>
+                <td>{{ profile.phone|default:"-" }}</td>
+                <td>{{ profile.user.email|default:"-" }}</td>
+                <td>
+                    {% if profile.is_active %}
+                    <span class="badge stock-badge-ok">Active</span>
+                    {% else %}
+                    <span class="badge stock-badge-low">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if profile.notify_on_shift_assignment %}
+                    <span class="badge">Enabled</span>
+                    {% else %}
+                    <span class="badge">Disabled</span>
+                    {% endif %}
+                </td>
+                <td class="stock-actions-cell">
+                    <a class="table-action" href="{% url 'staff_edit' profile.user_id %}">Edit</a>
+                    {% if profile.user_id != request.user.id %}
+                    <form method="post" action="{% url 'staff_toggle_active' profile.user_id %}" class="inline-toggle-form">
+                        {% csrf_token %}
+                        <button class="table-action{% if profile.is_active %} table-action-danger{% endif %}" type="submit">
+                            {% if profile.is_active %}Deactivate{% else %}Activate{% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p class="empty-state">No staff profiles found for this filter.</p>
+    {% endif %}
 </section>
 {% endblock %}

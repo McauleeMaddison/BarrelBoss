@@ -4,12 +4,258 @@
 {% block page_title %}Reports{% endblock %}
 
 {% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h3>Operational Reports</h3>
+            <p class="panel-subtitle">{{ report_window_label }}</p>
+        </div>
+    </div>
+
+    <form method="get" class="stock-filter-form">
+        <label for="range">Report Window</label>
+        <select id="range" name="range">
+            {% for value, label in range_choices %}
+            <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="action-btn">Refresh</button>
+    </form>
+</section>
+
 <section class="metric-grid">
-    {% for tile in report_tiles %}
-    <article class="metric-card neutral">
-        <h3>{{ tile }}</h3>
-        <p>Ready for v1 table reports</p>
+    <article class="metric-card alert">
+        <h3>Low Stock Items</h3>
+        <p>{{ kpi_low_stock_count }}</p>
+        <span class="metric-note">Items at or below minimum threshold</span>
     </article>
-    {% endfor %}
+    <article class="metric-card ok">
+        <h3>Delivered Orders</h3>
+        <p>{{ kpi_delivered_orders }}</p>
+        <span class="metric-note">{{ kpi_delivered_units }} incoming units in this window</span>
+    </article>
+    <article class="metric-card warn">
+        <h3>Supplier Spend</h3>
+        <p>{{ kpi_supplier_spend|floatformat:2 }}</p>
+        <span class="metric-note">Estimated from delivered quantities × item cost</span>
+    </article>
+    <article class="metric-card neutral">
+        <h3>Breakages Logged</h3>
+        <p>{{ kpi_breakage_reports }}</p>
+        <span class="metric-note">{{ kpi_breakage_units }} units affected</span>
+    </article>
+    <article class="metric-card ok">
+        <h3>Checklist Completion</h3>
+        <p>{{ kpi_checklist_completion_rate }}%</p>
+        <span class="metric-note">Completed tasks against total due</span>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h3>Low Stock Summary</h3>
+    </div>
+    {% if low_stock_rows %}
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Minimum</th>
+                <th>Supplier</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in low_stock_rows %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.get_category_display }}</td>
+                <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
+                <td>{{ item.minimum_level }}</td>
+                <td>{{ item.supplier.name|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No low stock items in this period.</p>
+    {% endif %}
+</section>
+
+<section class="dashboard-stack">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Incoming Stock by Category</h3>
+        </div>
+        {% if category_volume_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Units</th>
+                    <th>Estimated Spend</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in category_volume_rows %}
+                <tr>
+                    <td>{{ row.category_label }}</td>
+                    <td>{{ row.total_units }}</td>
+                    <td>{{ row.total_spend|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No delivered order items in this period.</p>
+        {% endif %}
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Supplier Spend</h3>
+        </div>
+        {% if supplier_spend_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Units</th>
+                    <th>Order Lines</th>
+                    <th>Estimated Spend</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in supplier_spend_rows %}
+                <tr>
+                    <td>{{ row.order__supplier__name }}</td>
+                    <td>{{ row.total_units }}</td>
+                    <td>{{ row.total_lines }}</td>
+                    <td>{{ row.total_spend|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No supplier spend records for this period.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="dashboard-stack">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Breakage by Issue Type</h3>
+        </div>
+        {% if breakage_issue_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue Type</th>
+                    <th>Reports</th>
+                    <th>Units</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in breakage_issue_rows %}
+                <tr>
+                    <td>{{ row.issue_label }}</td>
+                    <td>{{ row.total_reports }}</td>
+                    <td>{{ row.total_units }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No breakages logged in this period.</p>
+        {% endif %}
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Top Breakage Items</h3>
+        </div>
+        {% if top_breakage_items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Reports</th>
+                    <th>Units</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in top_breakage_items %}
+                <tr>
+                    <td>{{ row.item_name }}</td>
+                    <td>{{ row.total_reports }}</td>
+                    <td>{{ row.total_units }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No repeated breakage items in this period.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="dashboard-stack">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Checklist Completion by Type</h3>
+        </div>
+        {% if checklist_type_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Checklist</th>
+                    <th>Completed</th>
+                    <th>Total</th>
+                    <th>Completion %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in checklist_type_rows %}
+                <tr>
+                    <td>{{ row.type_label }}</td>
+                    <td>{{ row.completed }}</td>
+                    <td>{{ row.total }}</td>
+                    <td>{{ row.completion_rate }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No checklist activity in this period.</p>
+        {% endif %}
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Order Status Mix</h3>
+        </div>
+        {% if order_status_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Orders</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in order_status_rows %}
+                <tr>
+                    <td>{{ row.status_label }}</td>
+                    <td>{{ row.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No orders created in this period.</p>
+        {% endif %}
+    </article>
 </section>
 {% endblock %}

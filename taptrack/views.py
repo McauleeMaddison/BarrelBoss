@@ -1,21 +1,39 @@
 import json
+from datetime import timedelta
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
+from django.utils import timezone
 
-from apps.accounts.permissions import management_required, role_home_name
+from apps.breakages.models import Breakage
+from apps.checklists.models import Checklist
+from apps.accounts.forms import StaffCreateForm, StaffUpdateForm
+from apps.accounts.permissions import MANAGEMENT_ROLES, management_required, role_home_name
 from apps.accounts.push import (
     push_notifications_configured,
     unsubscribe_push_subscription,
     upsert_push_subscription,
 )
+from apps.orders.models import Order, OrderItem
 from apps.accounts.models import StaffProfile
-from apps.accounts.permissions import is_management
+from apps.accounts.permissions import get_user_role, is_management
+from apps.stock.models import StockItem
+
+User = get_user_model()
+
+
+def _allowed_role_values_for_manager(editor_user):
+    editor_role = get_user_role(editor_user)
+    if editor_role == StaffProfile.Role.LANDLORD:
+        return [choice[0] for choice in StaffProfile.Role.choices]
+    return [StaffProfile.Role.MANAGER, StaffProfile.Role.STAFF]
 
 
 def home_redirect(request):
@@ -26,23 +44,299 @@ def home_redirect(request):
 
 @management_required
 def staff_page(request):
-    team = [
-        {"name": "Morgan Doyle", "role": "Manager", "status": "Active"},
-        {"name": "Nina Walsh", "role": "Bartender", "status": "Active"},
-        {"name": "Elliot Shaw", "role": "Barback", "status": "Inactive"},
-    ]
-    return render(request, "accounts/staff.html", {"team": team})
+    query = (request.GET.get("q") or "").strip()
+    selected_status = request.GET.get("status", "all")
+    selected_role = request.GET.get("role", "")
+
+    staff_qs = StaffProfile.objects.select_related("user").order_by("user__username")
+    if query:
+        staff_qs = staff_qs.filter(
+            Q(user__username__icontains=query)
+            | Q(user__first_name__icontains=query)
+            | Q(user__last_name__icontains=query)
+            | Q(user__email__icontains=query)
+            | Q(phone__icontains=query)
+            | Q(job_title__icontains=query)
+        )
+
+    if selected_status == "active":
+        staff_qs = staff_qs.filter(is_active=True)
+    elif selected_status == "inactive":
+        staff_qs = staff_qs.filter(is_active=False)
+
+    if selected_role in StaffProfile.Role.values:
+        staff_qs = staff_qs.filter(role=selected_role)
+
+    staff_rows = list(staff_qs)
+    context = {
+        "team_profiles": staff_rows,
+        "query": query,
+        "selected_status": selected_status,
+        "selected_role": selected_role,
+        "status_choices": [
+            ("all", "All"),
+            ("active", "Active"),
+            ("inactive", "Inactive"),
+        ],
+        "role_choices": StaffProfile.Role.choices,
+        "team_total": len(staff_rows),
+        "team_active": sum(1 for item in staff_rows if item.is_active),
+        "team_management": sum(1 for item in staff_rows if item.role in MANAGEMENT_ROLES),
+        "team_shift_alerts_enabled": sum(
+            1 for item in staff_rows if item.notify_on_shift_assignment
+        ),
+    }
+    return render(request, "accounts/staff.html", context)
+
+
+@management_required
+def add_staff_page(request):
+    allowed_role_values = _allowed_role_values_for_manager(request.user)
+    if request.method == "POST":
+        form = StaffCreateForm(
+            request.POST,
+            allowed_role_values=allowed_role_values,
+        )
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"Staff account '{user.username}' created.")
+            return redirect("staff")
+    else:
+        form = StaffCreateForm(allowed_role_values=allowed_role_values)
+
+    return render(
+        request,
+        "accounts/staff_form.html",
+        {
+            "form": form,
+            "page_title": "Add Staff Member",
+            "submit_label": "Create Staff Account",
+        },
+    )
+
+
+@management_required
+def edit_staff_page(request, user_id):
+    staff_user = get_object_or_404(User.objects.select_related("staff_profile"), pk=user_id)
+    profile = staff_user.staff_profile
+    allowed_role_values = _allowed_role_values_for_manager(request.user)
+
+    if (
+        profile.role == StaffProfile.Role.LANDLORD
+        and get_user_role(request.user) != StaffProfile.Role.LANDLORD
+    ):
+        messages.error(request, "Only landlord accounts can edit landlord profiles.")
+        return redirect("staff")
+
+    if request.method == "POST":
+        form = StaffUpdateForm(
+            request.POST,
+            instance=profile,
+            user_instance=staff_user,
+            allowed_role_values=allowed_role_values,
+        )
+        if form.is_valid():
+            if staff_user == request.user:
+                if form.cleaned_data["role"] not in MANAGEMENT_ROLES:
+                    form.add_error("role", "You cannot remove your own management access.")
+                if not form.cleaned_data["is_active"]:
+                    form.add_error("is_active", "You cannot deactivate your own account.")
+
+            if not form.errors:
+                form.save()
+                messages.success(request, f"Updated staff profile for '{staff_user.username}'.")
+                return redirect("staff")
+    else:
+        form = StaffUpdateForm(
+            instance=profile,
+            user_instance=staff_user,
+            allowed_role_values=allowed_role_values,
+        )
+
+    return render(
+        request,
+        "accounts/staff_form.html",
+        {
+            "form": form,
+            "page_title": f"Edit Staff Member: {staff_user.username}",
+            "submit_label": "Save Changes",
+            "staff_user": staff_user,
+        },
+    )
+
+
+@management_required
+@require_POST
+def toggle_staff_active(request, user_id):
+    staff_user = get_object_or_404(User.objects.select_related("staff_profile"), pk=user_id)
+    profile = staff_user.staff_profile
+
+    if staff_user == request.user:
+        messages.error(request, "You cannot deactivate your own account.")
+        return redirect("staff")
+
+    profile.is_active = not profile.is_active
+    profile.save(update_fields=["is_active", "updated_at"])
+    status_label = "active" if profile.is_active else "inactive"
+    messages.success(request, f"{staff_user.username} is now marked as {status_label}.")
+    return redirect("staff")
 
 
 @management_required
 def reports_page(request):
-    report_tiles = [
-        "Low Stock Summary",
-        "Weekly Usage",
-        "Supplier Spend",
-        "Breakage Trends",
-    ]
-    return render(request, "reports/index.html", {"report_tiles": report_tiles})
+    range_days = request.GET.get("range", "7")
+    if range_days not in {"7", "30", "90"}:
+        range_days = "7"
+
+    today = timezone.localdate()
+    start_date = today - timedelta(days=int(range_days) - 1)
+
+    cost_expression = ExpressionWrapper(
+        F("quantity") * F("stock_item__cost"),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+
+    low_stock_rows = list(
+        StockItem.objects.filter(
+            is_active=True,
+            quantity__lte=F("minimum_level"),
+        )
+        .select_related("supplier")
+        .order_by("quantity", "name")
+    )
+
+    orders_window_qs = Order.objects.filter(order_date__range=(start_date, today))
+    delivered_orders_qs = orders_window_qs.filter(status=Order.Status.DELIVERED)
+
+    delivered_items_qs = OrderItem.objects.filter(order__in=delivered_orders_qs)
+    delivered_summary = delivered_items_qs.aggregate(
+        total_units=Sum("quantity"),
+        total_spend=Sum(cost_expression),
+    )
+
+    category_labels = dict(StockItem.Category.choices)
+    category_volume_rows = []
+    for row in (
+        delivered_items_qs.values("stock_item__category")
+        .annotate(
+            total_units=Sum("quantity"),
+            total_spend=Sum(cost_expression),
+        )
+        .order_by("-total_units")
+    ):
+        category_code = row["stock_item__category"]
+        category_volume_rows.append(
+            {
+                "category_label": category_labels.get(category_code, category_code),
+                "total_units": row["total_units"] or 0,
+                "total_spend": row["total_spend"] or 0,
+            }
+        )
+
+    supplier_spend_rows = list(
+        delivered_items_qs.values("order__supplier__name")
+        .annotate(
+            total_units=Sum("quantity"),
+            total_spend=Sum(cost_expression),
+            total_lines=Count("id"),
+        )
+        .order_by("-total_spend", "-total_units")
+    )
+
+    breakages_window_qs = Breakage.objects.filter(created_at__date__range=(start_date, today))
+    breakage_totals = breakages_window_qs.aggregate(
+        total_reports=Count("id"),
+        total_units=Sum("quantity"),
+    )
+    issue_labels = dict(Breakage.IssueType.choices)
+    breakage_issue_rows = []
+    for row in (
+        breakages_window_qs.values("issue_type")
+        .annotate(total_reports=Count("id"), total_units=Sum("quantity"))
+        .order_by("-total_units")
+    ):
+        issue_code = row["issue_type"]
+        breakage_issue_rows.append(
+            {
+                "issue_label": issue_labels.get(issue_code, issue_code),
+                "total_reports": row["total_reports"] or 0,
+                "total_units": row["total_units"] or 0,
+            }
+        )
+
+    top_breakage_items = list(
+        breakages_window_qs.values("item_name")
+        .annotate(total_units=Sum("quantity"), total_reports=Count("id"))
+        .order_by("-total_units", "-total_reports", "item_name")[:8]
+    )
+
+    checklists_window_qs = Checklist.objects.filter(due_date__range=(start_date, today))
+    checklist_totals = checklists_window_qs.aggregate(
+        total=Count("id"),
+        completed=Count("id", filter=Q(completed=True)),
+    )
+    checklist_total = checklist_totals["total"] or 0
+    checklist_completed = checklist_totals["completed"] or 0
+    checklist_completion_rate = (
+        round((checklist_completed / checklist_total) * 100, 1) if checklist_total else 0
+    )
+
+    checklist_labels = dict(Checklist.ChecklistType.choices)
+    checklist_type_rows = []
+    for row in (
+        checklists_window_qs.values("checklist_type")
+        .annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(completed=True)),
+        )
+        .order_by("checklist_type")
+    ):
+        completed = row["completed"] or 0
+        total = row["total"] or 0
+        checklist_type_rows.append(
+            {
+                "type_label": checklist_labels.get(row["checklist_type"], row["checklist_type"]),
+                "completed": completed,
+                "total": total,
+                "completion_rate": round((completed / total) * 100, 1) if total else 0,
+            }
+        )
+
+    status_labels = dict(Order.Status.choices)
+    order_status_rows = []
+    for row in orders_window_qs.values("status").annotate(total=Count("id")).order_by("status"):
+        status_code = row["status"]
+        order_status_rows.append(
+            {
+                "status_label": status_labels.get(status_code, status_code),
+                "total": row["total"] or 0,
+            }
+        )
+
+    context = {
+        "selected_range": range_days,
+        "range_choices": [
+            ("7", "Last 7 days"),
+            ("30", "Last 30 days"),
+            ("90", "Last 90 days"),
+        ],
+        "report_window_label": f"{start_date:%d %b %Y} - {today:%d %b %Y}",
+        "low_stock_rows": low_stock_rows,
+        "category_volume_rows": category_volume_rows,
+        "supplier_spend_rows": supplier_spend_rows,
+        "breakage_issue_rows": breakage_issue_rows,
+        "top_breakage_items": top_breakage_items,
+        "checklist_type_rows": checklist_type_rows,
+        "order_status_rows": order_status_rows,
+        "kpi_low_stock_count": len(low_stock_rows),
+        "kpi_delivered_orders": delivered_orders_qs.count(),
+        "kpi_delivered_units": delivered_summary["total_units"] or 0,
+        "kpi_supplier_spend": delivered_summary["total_spend"] or 0,
+        "kpi_breakage_reports": breakage_totals["total_reports"] or 0,
+        "kpi_breakage_units": breakage_totals["total_units"] or 0,
+        "kpi_checklist_completion_rate": checklist_completion_rate,
+    }
+    return render(request, "reports/index.html", context)
 
 
 @login_required

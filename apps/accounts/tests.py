@@ -160,3 +160,134 @@ class SettingsAndPushTests(TestCase):
                 user=self.staff_user,
             ).exists()
         )
+
+
+class StaffManagementTests(TestCase):
+    def setUp(self):
+        self.manager_user = User.objects.create_user(
+            username="team_manager",
+            password="strong-pass-123",
+        )
+        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
+        self.manager_user.staff_profile.save(update_fields=["role"])
+
+        self.staff_user = User.objects.create_user(
+            username="team_staff",
+            password="strong-pass-123",
+            first_name="Taylor",
+            last_name="Mills",
+            email="team_staff@example.com",
+        )
+        self.staff_user.staff_profile.job_title = "Bartender"
+        self.staff_user.staff_profile.phone = "07123456789"
+        self.staff_user.staff_profile.save(update_fields=["job_title", "phone"])
+
+    def test_manager_can_view_staff_list(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.get(reverse("staff"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "team_staff")
+        self.assertContains(response, "Bartender")
+
+    def test_staff_cannot_access_staff_management(self):
+        self.client.login(username="team_staff", password="strong-pass-123")
+        response = self.client.get(reverse("staff"))
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
+
+    def test_manager_can_create_staff_account(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.post(
+            reverse("staff_add"),
+            {
+                "username": "new_team_member",
+                "first_name": "Casey",
+                "last_name": "Reid",
+                "email": "casey@example.com",
+                "password1": "NewStrongPass-123!",
+                "password2": "NewStrongPass-123!",
+                "role": StaffProfile.Role.STAFF,
+                "job_title": "Barback",
+                "phone": "07000000000",
+                "is_active": "on",
+                "notify_on_shift_assignment": "on",
+                "notes": "Weekend support",
+            },
+        )
+
+        self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
+        created_user = User.objects.get(username="new_team_member")
+        self.assertEqual(created_user.staff_profile.job_title, "Barback")
+        self.assertTrue(created_user.staff_profile.is_active)
+
+    def test_manager_cannot_create_landlord_role(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.post(
+            reverse("staff_add"),
+            {
+                "username": "bad_landlord_attempt",
+                "first_name": "No",
+                "last_name": "Access",
+                "email": "denied@example.com",
+                "password1": "AnotherStrongPass-123!",
+                "password2": "AnotherStrongPass-123!",
+                "role": StaffProfile.Role.LANDLORD,
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username="bad_landlord_attempt").exists())
+        self.assertContains(response, "Select a valid choice")
+
+    def test_manager_can_edit_staff_account(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.post(
+            reverse("staff_edit", args=[self.staff_user.id]),
+            {
+                "first_name": "Taylor",
+                "last_name": "Mills",
+                "email": "updated_staff@example.com",
+                "role": StaffProfile.Role.STAFF,
+                "job_title": "Senior Bartender",
+                "phone": "07999999999",
+                "is_active": "on",
+                "notify_on_shift_assignment": "on",
+                "notes": "Promoted this month",
+            },
+        )
+
+        self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
+        self.staff_user.refresh_from_db()
+        self.assertEqual(self.staff_user.email, "updated_staff@example.com")
+        self.assertEqual(self.staff_user.staff_profile.job_title, "Senior Bartender")
+
+    def test_manager_can_toggle_staff_active_status(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.post(reverse("staff_toggle_active", args=[self.staff_user.id]))
+
+        self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
+        self.staff_user.staff_profile.refresh_from_db()
+        self.assertFalse(self.staff_user.staff_profile.is_active)
+
+    def test_manager_cannot_deactivate_own_profile(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.post(reverse("staff_toggle_active", args=[self.manager_user.id]))
+
+        self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
+        self.manager_user.staff_profile.refresh_from_db()
+        self.assertTrue(self.manager_user.staff_profile.is_active)
+
+    def test_manager_cannot_edit_landlord_profile(self):
+        landlord = User.objects.create_superuser(
+            username="owner_account",
+            email="owner@barrelboss.test",
+            password="strong-pass-123",
+        )
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.get(reverse("staff_edit", args=[landlord.id]))
+
+        self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
