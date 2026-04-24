@@ -4,76 +4,146 @@
 {% block page_title %}Stock{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero inventory-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Inventory Command</p>
+        <span class="badge portal-badge">Live Stock Control</span>
+    </div>
+    <h3 class="portal-hero-title">Stock Health & Restock Risk</h3>
+    <p class="portal-hero-copy">
+        Monitor urgency bands, track quantity gaps, and keep supplier-driven inventory flow predictable.
+    </p>
+    <div class="report-toolbar">
+        {% if is_management %}
+        <div class="settings-actions">
+            <a class="action-btn action-link" href="{% url 'stock:add' %}">Add Item</a>
+            <a class="table-action" href="{% url 'orders:add' %}">Create Order</a>
+            <a class="table-action" href="?category={{ selected_category }}&urgency={{ selected_urgency }}&q={{ query|urlencode }}&export=csv">Download CSV</a>
+        </div>
+        {% else %}
+        <a class="table-action" href="?category={{ selected_category }}&urgency={{ selected_urgency }}&q={{ query|urlencode }}&export=csv">Download CSV</a>
+        {% endif %}
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">Items: {{ total_items }}</span>
+            <span class="panel-header-meta">Units: {{ total_units }}</span>
+            <span class="panel-header-meta">Restock Gap: {{ restock_gap_units }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card neutral">
         <h3>Total Active Items</h3>
         <p>{{ total_items }}</p>
+        <span class="metric-note">{{ display_item_count }} shown in current filter</span>
     </article>
     <article class="metric-card alert">
         <h3>Low Stock Items</h3>
         <p>{{ low_stock_count }}</p>
+        <span class="metric-note">Critical + low urgency lines</span>
+    </article>
+    <article class="metric-card alert">
+        <h3>Critical Risk</h3>
+        <p>{{ critical_stock_count }}</p>
+        <span class="metric-note">Out of stock or severely below minimum</span>
+    </article>
+    <article class="metric-card warn">
+        <h3>Watch List</h3>
+        <p>{{ watch_stock_count }}</p>
+        <span class="metric-note">Buffer dropping near minimum threshold</span>
+    </article>
+    <article class="metric-card ok">
+        <h3>Healthy Items</h3>
+        <p>{{ healthy_stock_count }}</p>
+        <span class="metric-note">Stock levels above warning bands</span>
+    </article>
+    <article class="metric-card neutral">
+        <h3>Estimated Stock Value</h3>
+        <p>£{{ stock_value_estimate|floatformat:2 }}</p>
+        <span class="metric-note">Quantity × cost (active filtered inventory)</span>
     </article>
 </section>
 
 <section class="panel">
     <div class="panel-header">
-        <h3>Current Inventory</h3>
-        {% if is_management %}
-        <a class="action-btn action-link" href="{% url 'stock:add' %}">Add Item</a>
-        {% endif %}
+        <div>
+            <h3>Current Inventory</h3>
+            <p class="panel-subtitle">Use urgency filters to focus on what needs action first.</p>
+        </div>
     </div>
 
     <form method="get" class="stock-filter-form">
-        <label for="category">Category</label>
-        <select id="category" name="category">
-            <option value="">All Categories</option>
-            {% for value, label in category_choices %}
-            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="q">Search</label>
+            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
+        </div>
+        <div class="filter-field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">All Categories</option>
+                {% for value, label in category_choices %}
+                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="urgency">Urgency</label>
+            <select id="urgency" name="urgency">
+                {% for value, label in urgency_choices %}
+                <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <button class="action-btn" type="submit">Apply Filter</button>
+        <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
     </form>
 
     {% if items %}
-    <table>
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Minimum</th>
-                <th>Supplier</th>
-                <th>Cost</th>
-                <th>Status</th>
-                {% if is_management %}<th>Actions</th>{% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.get_category_display }}</td>
-                <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
-                <td>{{ item.minimum_level }}</td>
-                <td>{{ item.supplier.name|default:'-' }}</td>
-                <td>{{ item.cost }}</td>
-                <td>
-                    {% if item.is_low_stock %}
-                    <span class="badge stock-badge-low">Low Stock</span>
-                    {% else %}
-                    <span class="badge stock-badge-ok">In Stock</span>
+    <div class="report-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Quantity</th>
+                    <th>Minimum</th>
+                    <th>Gap</th>
+                    <th>Supplier</th>
+                    <th>Unit Cost</th>
+                    <th>Est. Value</th>
+                    <th>Urgency</th>
+                    {% if is_management %}<th>Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <strong>{{ item.name }}</strong>
+                        <br>
+                        <small class="panel-subtitle">{{ item.stock_note }}</small>
+                    </td>
+                    <td>{{ item.get_category_display }}</td>
+                    <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
+                    <td>{{ item.minimum_display }}</td>
+                    <td>{{ item.stock_gap }}</td>
+                    <td>{{ item.supplier.name|default:'-' }}</td>
+                    <td>£{{ item.cost|floatformat:2 }}</td>
+                    <td>£{{ item.value_estimate|floatformat:2 }}</td>
+                    <td>
+                        <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
+                    </td>
+                    {% if is_management %}
+                    <td class="stock-actions-cell">
+                        <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit</a>
+                        <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete</a>
+                    </td>
                     {% endif %}
-                </td>
-                {% if is_management %}
-                <td class="stock-actions-cell">
-                    <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit</a>
-                    <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete</a>
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <p class="empty-state">No stock items found for this filter yet.</p>
     {% endif %}

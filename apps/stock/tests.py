@@ -77,6 +77,29 @@ class StockListViewTests(TestCase):
         self.assertNotContains(response, "Jameson")
         self.assertEqual(response.context["selected_category"], StockItem.Category.BEER_BARRELS)
 
+    def test_stock_list_filters_by_urgency(self):
+        self.client.login(username="stock_user", password="strong-pass-123")
+        response = self.client.get(
+            reverse("stock:list"),
+            {"urgency": "critical"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Carling 50L")
+        self.assertNotContains(response, "Jameson")
+        self.assertEqual(response.context["selected_urgency"], "critical")
+
+    def test_stock_list_can_export_csv(self):
+        self.client.login(username="stock_user", password="strong-pass-123")
+        response = self.client.get(
+            reverse("stock:list"),
+            {"export": "csv"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response["Content-Type"])
+        self.assertIn("BarrelBoss Stock Export", response.content.decode("utf-8"))
+
 
 class StockCrudViewTests(TestCase):
     def setUp(self):

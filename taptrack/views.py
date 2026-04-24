@@ -48,6 +48,7 @@ def staff_page(request):
     query = (request.GET.get("q") or "").strip()
     selected_status = request.GET.get("status", "all")
     selected_role = request.GET.get("role", "")
+    selected_alerts = request.GET.get("alerts", "all")
 
     staff_qs = StaffProfile.objects.select_related("user").order_by("user__username")
     if query:
@@ -68,24 +69,112 @@ def staff_page(request):
     if selected_role in StaffProfile.Role.values:
         staff_qs = staff_qs.filter(role=selected_role)
 
+    if selected_alerts == "enabled":
+        staff_qs = staff_qs.filter(notify_on_shift_assignment=True)
+    elif selected_alerts == "disabled":
+        staff_qs = staff_qs.filter(notify_on_shift_assignment=False)
+
     staff_rows = list(staff_qs)
+    role_badge_classes = {
+        StaffProfile.Role.LANDLORD: "badge-role-landlord",
+        StaffProfile.Role.MANAGER: "badge-role-manager",
+        StaffProfile.Role.STAFF: "badge-role-staff",
+    }
+    role_sort_order = {
+        StaffProfile.Role.LANDLORD: 0,
+        StaffProfile.Role.MANAGER: 1,
+        StaffProfile.Role.STAFF: 2,
+    }
+
+    for profile in staff_rows:
+        full_name = profile.user.get_full_name().strip()
+        display_name = full_name or profile.user.username
+        if full_name:
+            initials_source = full_name.split()
+            initials = "".join(part[:1] for part in initials_source[:2]).upper()
+        else:
+            initials = profile.user.username[:2].upper()
+
+        profile.display_name = display_name
+        profile.initials = initials
+        profile.role_badge_class = role_badge_classes.get(profile.role, "badge-role-staff")
+        profile.status_badge_class = "stock-badge-ok" if profile.is_active else "stock-badge-low"
+        profile.alert_badge_class = (
+            "badge-alert-enabled" if profile.notify_on_shift_assignment else "badge-alert-disabled"
+        )
+        profile.alert_label = "Alerts On" if profile.notify_on_shift_assignment else "Alerts Off"
+
+    staff_rows.sort(
+        key=lambda profile: (
+            not profile.is_active,
+            role_sort_order.get(profile.role, 9),
+            profile.user.username.lower(),
+        )
+    )
+
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="barrelboss-staff.csv"'
+        writer = csv.writer(response)
+        writer.writerow(["BarrelBoss Staff Export"])
+        writer.writerow(
+            [
+                "Username",
+                "Full Name",
+                "Role",
+                "Job Title",
+                "Phone",
+                "Email",
+                "Status",
+                "Shift Alerts",
+                "Notes",
+            ]
+        )
+        for profile in staff_rows:
+            writer.writerow(
+                [
+                    profile.user.username,
+                    profile.user.get_full_name(),
+                    profile.get_role_display(),
+                    profile.job_title,
+                    profile.phone,
+                    profile.user.email,
+                    "Active" if profile.is_active else "Inactive",
+                    "Enabled" if profile.notify_on_shift_assignment else "Disabled",
+                    profile.notes,
+                ]
+            )
+        return response
+
+    team_active = sum(1 for item in staff_rows if item.is_active)
+    team_shift_alerts_enabled = sum(
+        1 for item in staff_rows if item.notify_on_shift_assignment
+    )
+    team_management = sum(1 for item in staff_rows if item.role in MANAGEMENT_ROLES)
+
     context = {
         "team_profiles": staff_rows,
         "query": query,
         "selected_status": selected_status,
         "selected_role": selected_role,
+        "selected_alerts": selected_alerts,
         "status_choices": [
             ("all", "All"),
             ("active", "Active"),
             ("inactive", "Inactive"),
         ],
+        "alert_choices": [
+            ("all", "All"),
+            ("enabled", "Alerts Enabled"),
+            ("disabled", "Alerts Disabled"),
+        ],
         "role_choices": StaffProfile.Role.choices,
         "team_total": len(staff_rows),
-        "team_active": sum(1 for item in staff_rows if item.is_active),
-        "team_management": sum(1 for item in staff_rows if item.role in MANAGEMENT_ROLES),
-        "team_shift_alerts_enabled": sum(
-            1 for item in staff_rows if item.notify_on_shift_assignment
-        ),
+        "team_active": team_active,
+        "team_inactive": len(staff_rows) - team_active,
+        "team_management": team_management,
+        "team_shift_alerts_enabled": team_shift_alerts_enabled,
+        "team_shift_alerts_disabled": len(staff_rows) - team_shift_alerts_enabled,
     }
     return render(request, "accounts/staff.html", context)
 

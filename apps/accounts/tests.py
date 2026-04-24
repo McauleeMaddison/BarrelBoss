@@ -285,6 +285,14 @@ class StaffManagementTests(TestCase):
         self.manager_user.staff_profile.refresh_from_db()
         self.assertTrue(self.manager_user.staff_profile.is_active)
 
+    def test_manager_can_export_staff_csv(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.get(reverse("staff"), {"export": "csv"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response["Content-Type"])
+        self.assertIn("BarrelBoss Staff Export", response.content.decode("utf-8"))
+
     def test_manager_cannot_edit_landlord_profile(self):
         landlord = User.objects.create_superuser(
             username="owner_account",

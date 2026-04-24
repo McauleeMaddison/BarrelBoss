@@ -4,6 +4,28 @@
 {% block page_title %}Staff{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero staff-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Team Management</p>
+        <span class="badge portal-badge">People & Roles</span>
+    </div>
+    <h3 class="portal-hero-title">Staff Directory & Access Controls</h3>
+    <p class="portal-hero-copy">
+        Manage active users, role assignments, and notification readiness from one clean operations view.
+    </p>
+    <div class="report-toolbar">
+        <div class="settings-actions">
+            <a class="action-btn action-link" href="{% url 'staff_add' %}">Add Staff</a>
+            <a class="table-action" href="?q={{ query|urlencode }}&status={{ selected_status }}&role={{ selected_role }}&alerts={{ selected_alerts }}&export=csv">Download CSV</a>
+        </div>
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">Total: {{ team_total }}</span>
+            <span class="panel-header-meta">Active: {{ team_active }}</span>
+            <span class="panel-header-meta">Inactive: {{ team_inactive }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card neutral">
         <h3>Team Records</h3>
@@ -25,89 +47,111 @@
         <p>{{ team_shift_alerts_enabled }}</p>
         <span class="metric-note">Staff receiving shift push alerts</span>
     </article>
+    <article class="metric-card neutral">
+        <h3>Shift Alerts Disabled</h3>
+        <p>{{ team_shift_alerts_disabled }}</p>
+        <span class="metric-note">Profiles not receiving shift assignment pushes</span>
+    </article>
 </section>
 
 <section class="panel">
     <div class="panel-header">
-        <h3>Team Members</h3>
-        <a class="action-btn action-link" href="{% url 'staff_add' %}">Add Staff</a>
+        <div>
+            <h3>Team Members</h3>
+            <p class="panel-subtitle">Filter by role, status, and push-alert readiness.</p>
+        </div>
     </div>
 
     <form method="get" class="stock-filter-form">
-        <label for="q">Search</label>
-        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Username, name, email, phone or title">
+        <div class="filter-field">
+            <label for="q">Search</label>
+            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Username, name, email, phone or title">
+        </div>
 
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            {% for value, label in status_choices %}
-            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-        <label for="role">Role</label>
-        <select id="role" name="role">
-            <option value="">All Roles</option>
-            {% for value, label in role_choices %}
-            <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="role">Role</label>
+            <select id="role" name="role">
+                <option value="">All Roles</option>
+                {% for value, label in role_choices %}
+                <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-field">
+            <label for="alerts">Shift Alerts</label>
+            <select id="alerts" name="alerts">
+                {% for value, label in alert_choices %}
+                <option value="{{ value }}" {% if selected_alerts == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
         <button class="action-btn" type="submit">Apply</button>
+        <a class="table-action" href="{% url 'staff' %}">Reset</a>
     </form>
 
     {% if team_profiles %}
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Job Title</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Shift Alerts</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for profile in team_profiles %}
-            <tr>
-                <td>{{ profile.user.username }}</td>
-                <td>{{ profile.user.get_full_name|default:"-" }}</td>
-                <td>{{ profile.get_role_display }}</td>
-                <td>{{ profile.job_title|default:"-" }}</td>
-                <td>{{ profile.phone|default:"-" }}</td>
-                <td>{{ profile.user.email|default:"-" }}</td>
-                <td>
-                    {% if profile.is_active %}
-                    <span class="badge stock-badge-ok">Active</span>
-                    {% else %}
-                    <span class="badge stock-badge-low">Inactive</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if profile.notify_on_shift_assignment %}
-                    <span class="badge">Enabled</span>
-                    {% else %}
-                    <span class="badge">Disabled</span>
-                    {% endif %}
-                </td>
-                <td class="stock-actions-cell">
-                    <a class="table-action" href="{% url 'staff_edit' profile.user_id %}">Edit</a>
-                    {% if profile.user_id != request.user.id %}
-                    <form method="post" action="{% url 'staff_toggle_active' profile.user_id %}" class="inline-toggle-form">
-                        {% csrf_token %}
-                        <button class="table-action{% if profile.is_active %} table-action-danger{% endif %}" type="submit">
-                            {% if profile.is_active %}Deactivate{% else %}Activate{% endif %}
-                        </button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="staff-card-grid">
+        {% for profile in team_profiles %}
+        <article class="staff-card{% if not profile.is_active %} staff-card-inactive{% endif %}">
+            <div class="staff-card-head">
+                <div class="staff-avatar">{{ profile.initials }}</div>
+                <div class="staff-head-copy">
+                    <h4>{{ profile.user.username }}</h4>
+                    <p>{{ profile.display_name }}</p>
+                </div>
+            </div>
+            <div class="staff-chip-row">
+                <span class="badge {{ profile.role_badge_class }}">{{ profile.get_role_display }}</span>
+                <span class="badge {{ profile.status_badge_class }}">
+                    {% if profile.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+                <span class="badge {{ profile.alert_badge_class }}">{{ profile.alert_label }}</span>
+            </div>
+
+            <dl class="staff-meta-grid">
+                <div>
+                    <dt>Title</dt>
+                    <dd>{{ profile.job_title|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt>Phone</dt>
+                    <dd>{{ profile.phone|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt>Email</dt>
+                    <dd>{{ profile.user.email|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt>Notes</dt>
+                    <dd>{{ profile.notes|default:"-"|truncatechars:80 }}</dd>
+                </div>
+            </dl>
+
+            <div class="staff-card-actions">
+                <a class="table-action" href="{% url 'staff_edit' profile.user_id %}">Edit</a>
+                {% if profile.user_id != request.user.id %}
+                <form method="post" action="{% url 'staff_toggle_active' profile.user_id %}" class="inline-toggle-form">
+                    {% csrf_token %}
+                    <button class="table-action{% if profile.is_active %} table-action-danger{% endif %}" type="submit">
+                        {% if profile.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
     {% else %}
     <p class="empty-state">No staff profiles found for this filter.</p>
     {% endif %}
