@@ -1,0 +1,11 @@
+{% extends 'errors/error_base.html' %}
+
+{% block title %}403 Forbidden | BarrelBoss{% endblock %}
+{% block heading %}Access Denied{% endblock %}
+{% block message %}You do not have permission to complete that action with this account.{% endblock %}
+
+{% block detail %}
+    {% if reason %}
+    <p class="panel-subtitle"><strong>Details:</strong> {{ reason }}</p>
+    {% endif %}
+{% endblock %}

@@ -100,6 +100,30 @@ class StockListViewTests(TestCase):
         self.assertIn("text/csv", response["Content-Type"])
         self.assertIn("BarrelBoss Stock Export", response.content.decode("utf-8"))
 
+    def test_stock_list_paginates_filtered_results(self):
+        for index in range(15):
+            StockItem.objects.create(
+                name=f"Filter Lager {index}",
+                category=StockItem.Category.BEER_BARRELS,
+                quantity=2,
+                minimum_level=1,
+                unit=StockItem.Unit.BARRELS,
+                cost=Decimal("90.00"),
+                supplier=self.supplier,
+            )
+
+        self.client.login(username="stock_user", password="strong-pass-123")
+        response = self.client.get(
+            reverse("stock:list"),
+            {"category": StockItem.Category.BEER_BARRELS, "page": 2},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["is_paginated"])
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(response.context["selected_category"], StockItem.Category.BEER_BARRELS)
+        self.assertEqual(response.context["pagination_query"], "category=BEER_BARRELS")
+
 
 class StockCrudViewTests(TestCase):
     def setUp(self):

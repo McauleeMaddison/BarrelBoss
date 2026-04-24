@@ -7,6 +7,9 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.permissions import management_required
+from apps.audit.models import AuditEvent
+from apps.audit.services import record_audit_event
+from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import StockItemForm
 from .models import StockItem
@@ -126,8 +129,14 @@ def list_items(request):
             )
         return response
 
+    page_obj = paginate_collection(request, items, per_page=12)
+
     context = {
-        "items": items,
+        "items": list(page_obj.object_list),
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
+        "pagination_query": build_query_string(request),
+        "filter_query": build_query_string(request, exclude_keys={"export"}),
         "total_items": len(inventory_items),
         "display_item_count": len(items),
         "low_stock_count": urgency_counts["critical"] + urgency_counts["low"],
@@ -151,7 +160,18 @@ def add_item(request):
     if request.method == "POST":
         form = StockItemForm(request.POST)
         if form.is_valid():
-            form.save()
+            item = form.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.CREATE,
+                target=item,
+                summary=f"Created stock item {item.name}",
+                details={
+                    "category": item.category,
+                    "quantity": item.quantity,
+                    "minimum_level": item.minimum_level,
+                },
+            )
             messages.success(request, "Stock item created.")
             return redirect("stock:list")
     else:
@@ -175,7 +195,18 @@ def edit_item(request, pk):
     if request.method == "POST":
         form = StockItemForm(request.POST, instance=item)
         if form.is_valid():
-            form.save()
+            updated_item = form.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.UPDATE,
+                target=updated_item,
+                summary=f"Updated stock item {updated_item.name}",
+                details={
+                    "quantity": updated_item.quantity,
+                    "minimum_level": updated_item.minimum_level,
+                    "is_active": updated_item.is_active,
+                },
+            )
             messages.success(request, "Stock item updated.")
             return redirect("stock:list")
     else:
@@ -200,6 +231,12 @@ def delete_item(request, pk):
     if request.method == "POST":
         item.is_active = False
         item.save(update_fields=["is_active", "updated_at"])
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.DELETE,
+            target=item,
+            summary=f"Removed stock item {item.name} from active inventory",
+        )
         messages.success(request, "Stock item removed from active inventory.")
         return redirect("stock:list")
 

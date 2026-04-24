@@ -1,0 +1,11 @@
+{% extends 'errors/error_base.html' %}
+
+{% block title %}404 Not Found | BarrelBoss{% endblock %}
+{% block heading %}Page Not Found{% endblock %}
+{% block message %}The page you requested does not exist or has moved.{% endblock %}
+
+{% block detail %}
+    {% if path %}
+    <p class="panel-subtitle"><strong>Path:</strong> {{ path }}</p>
+    {% endif %}
+{% endblock %}

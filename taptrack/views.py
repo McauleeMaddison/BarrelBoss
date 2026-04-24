@@ -17,6 +17,8 @@ from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.accounts.forms import StaffCreateForm, StaffUpdateForm
 from apps.accounts.permissions import MANAGEMENT_ROLES, management_required, role_home_name
+from apps.audit.models import AuditEvent
+from apps.audit.services import record_audit_event
 from apps.accounts.push import (
     push_notifications_configured,
     unsubscribe_push_subscription,
@@ -26,6 +28,7 @@ from apps.orders.models import Order, OrderItem
 from apps.accounts.models import StaffProfile
 from apps.accounts.permissions import get_user_role, is_management
 from apps.stock.models import StockItem
+from taptrack.pagination import build_query_string, paginate_collection
 
 User = get_user_model()
 
@@ -146,6 +149,9 @@ def staff_page(request):
             )
         return response
 
+    page_obj = paginate_collection(request, staff_rows, per_page=12)
+    display_rows = list(page_obj.object_list)
+
     team_active = sum(1 for item in staff_rows if item.is_active)
     team_shift_alerts_enabled = sum(
         1 for item in staff_rows if item.notify_on_shift_assignment
@@ -153,7 +159,11 @@ def staff_page(request):
     team_management = sum(1 for item in staff_rows if item.role in MANAGEMENT_ROLES)
 
     context = {
-        "team_profiles": staff_rows,
+        "team_profiles": display_rows,
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
+        "pagination_query": build_query_string(request),
+        "filter_query": build_query_string(request, exclude_keys={"export"}),
         "query": query,
         "selected_status": selected_status,
         "selected_role": selected_role,
@@ -189,6 +199,13 @@ def add_staff_page(request):
         )
         if form.is_valid():
             user = form.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.CREATE,
+                target=user.staff_profile,
+                summary=f"Created staff account {user.username}",
+                details={"role": user.staff_profile.role},
+            )
             messages.success(request, f"Staff account '{user.username}' created.")
             return redirect("staff")
     else:
@@ -234,6 +251,16 @@ def edit_staff_page(request, user_id):
 
             if not form.errors:
                 form.save()
+                record_audit_event(
+                    request,
+                    action=AuditEvent.Action.UPDATE,
+                    target=profile,
+                    summary=f"Updated staff profile for {staff_user.username}",
+                    details={
+                        "role": form.cleaned_data.get("role"),
+                        "is_active": form.cleaned_data.get("is_active"),
+                    },
+                )
                 messages.success(request, f"Updated staff profile for '{staff_user.username}'.")
                 return redirect("staff")
     else:
@@ -267,6 +294,13 @@ def toggle_staff_active(request, user_id):
 
     profile.is_active = not profile.is_active
     profile.save(update_fields=["is_active", "updated_at"])
+    record_audit_event(
+        request,
+        action=AuditEvent.Action.TOGGLE,
+        target=profile,
+        summary=f"Toggled active status for {staff_user.username}",
+        details={"is_active": profile.is_active},
+    )
     status_label = "active" if profile.is_active else "inactive"
     messages.success(request, f"{staff_user.username} is now marked as {status_label}.")
     return redirect("staff")
@@ -728,6 +762,12 @@ def settings_page(request):
                     updated_count += 1
 
             if updated_count:
+                record_audit_event(
+                    request,
+                    action=AuditEvent.Action.SETTINGS,
+                    summary="Updated team shift alert preferences",
+                    details={"updated_count": updated_count},
+                )
                 messages.success(
                     request,
                     f"Saved shift alert preferences for {updated_count} staff member(s).",
@@ -775,6 +815,12 @@ def push_subscribe(request):
             subscription,
             user_agent=request.META.get("HTTP_USER_AGENT", ""),
         )
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.SETTINGS,
+            summary="Enabled push notifications for current device",
+            details={"endpoint": subscription.get("endpoint", "")[:120]},
+        )
     except ValueError as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
 
@@ -791,6 +837,13 @@ def push_unsubscribe(request):
 
     endpoint = payload.get("endpoint")
     deleted_count = unsubscribe_push_subscription(request.user, endpoint=endpoint)
+    if deleted_count:
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.SETTINGS,
+            summary="Disabled push notifications for current device",
+            details={"deleted_count": deleted_count},
+        )
     return JsonResponse({"ok": True, "deleted": deleted_count})
 
 
@@ -803,3 +856,22 @@ def service_worker(request):
     response["Service-Worker-Allowed"] = "/"
     response["Cache-Control"] = "no-cache"
     return response
+
+
+def csrf_failure(request, reason=""):
+    context = {"reason": reason}
+    return render(request, "errors/403.html", context, status=403)
+
+
+def error_403(request, exception=None):
+    context = {"reason": str(exception) if exception else ""}
+    return render(request, "errors/403.html", context, status=403)
+
+
+def error_404(request, exception):
+    context = {"path": request.path}
+    return render(request, "errors/404.html", context, status=404)
+
+
+def error_500(request):
+    return render(request, "errors/500.html", status=500)

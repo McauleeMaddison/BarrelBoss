@@ -16,7 +16,7 @@
     <div class="report-toolbar">
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'staff_add' %}">Add Staff</a>
-            <a class="table-action" href="?q={{ query|urlencode }}&status={{ selected_status }}&role={{ selected_role }}&alerts={{ selected_alerts }}&export=csv">Download CSV</a>
+            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Download CSV</a>
         </div>
         <div class="dashboard-controls">
             <span class="panel-header-meta">Total: {{ team_total }}</span>
@@ -152,6 +152,7 @@
         </article>
         {% endfor %}
     </div>
+    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
     <p class="empty-state">No staff profiles found for this filter.</p>
     {% endif %}

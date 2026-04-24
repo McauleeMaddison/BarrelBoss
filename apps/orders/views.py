@@ -7,7 +7,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.permissions import is_management, management_required
+from apps.audit.models import AuditEvent
+from apps.audit.services import record_audit_event
 from apps.suppliers.models import Supplier
+from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import OrderForm, OrderItemFormSet
 from .models import Order
@@ -15,6 +18,7 @@ from .models import Order
 
 def _order_context_base(
     display_qs,
+    page_obj,
     *,
     metrics_qs,
     request_user_id,
@@ -22,7 +26,7 @@ def _order_context_base(
     selected_supplier,
     management_view,
 ):
-    orders = list(display_qs)
+    orders = list(page_obj.object_list)
     week_start = timezone.localdate() - timedelta(days=7)
     today = timezone.localdate()
 
@@ -63,11 +67,15 @@ def _order_context_base(
         status=Order.Status.DRAFT,
         created_at__date__lte=today - timedelta(days=2),
     ).count()
-    total_units_in_view = sum(order.total_units_display for order in orders)
+    total_units_in_view = (
+        display_qs.aggregate(total=Sum("items__quantity")).get("total") or 0
+    )
 
     return {
         "orders": orders,
-        "order_count": len(orders),
+        "order_count": display_qs.count(),
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
         "awaiting_approval_count": draft_count,
         "pending_count": pending_count,
         "ordered_count": ordered_count,
@@ -113,15 +121,18 @@ def list_orders(request):
         display_qs = display_qs.filter(supplier_id=int(selected_supplier))
 
     display_qs = display_qs.order_by("-created_at")
+    page_obj = paginate_collection(request, display_qs, per_page=12)
 
     context = _order_context_base(
         display_qs,
+        page_obj,
         metrics_qs=metrics_qs,
         request_user_id=request.user.id,
         selected_status=selected_status,
         selected_supplier=selected_supplier,
         management_view=management_view,
     )
+    context["pagination_query"] = build_query_string(request)
     return render(request, "orders/list.html", context)
 
 
@@ -142,6 +153,17 @@ def add_order(request):
 
             formset.instance = order
             formset.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.CREATE,
+                target=order,
+                summary=f"Created order {order.reference}",
+                details={
+                    "supplier_id": order.supplier_id,
+                    "status": order.status,
+                    "item_count": order.items.count(),
+                },
+            )
 
             success_message = (
                 f"Order request {order.reference} submitted for manager approval."
@@ -190,6 +212,17 @@ def edit_order(request, pk):
                 updated_order.status = order.status
             updated_order.save()
             formset.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.UPDATE,
+                target=updated_order,
+                summary=f"Updated order {updated_order.reference}",
+                details={
+                    "status": updated_order.status,
+                    "supplier_id": updated_order.supplier_id,
+                    "item_count": updated_order.items.count(),
+                },
+            )
             messages.success(request, f"Order {order.reference} updated.")
             return redirect("orders:list")
     else:
@@ -219,6 +252,13 @@ def update_order_status(request, pk):
         if new_status in Order.Status.values:
             order.status = new_status
             order.save(update_fields=["status", "updated_at"])
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.STATUS,
+                target=order,
+                summary=f"Updated order {order.reference} status",
+                details={"status": new_status},
+            )
             messages.success(request, f"{order.reference} status updated.")
         else:
             messages.error(request, "Invalid order status.")

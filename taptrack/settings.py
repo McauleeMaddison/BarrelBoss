@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "apps.accounts.apps.AccountsConfig",
+    "apps.audit.apps.AuditConfig",
     "apps.dashboard.apps.DashboardConfig",
     "apps.stock.apps.StockConfig",
     "apps.orders.apps.OrdersConfig",
@@ -160,6 +161,7 @@ else:
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
+CSRF_FAILURE_VIEW = "taptrack.views.csrf_failure"
 
 WEB_PUSH_PUBLIC_KEY = os.getenv("WEB_PUSH_PUBLIC_KEY", "").strip()
 WEB_PUSH_PRIVATE_KEY = os.getenv("WEB_PUSH_PRIVATE_KEY", "").strip()

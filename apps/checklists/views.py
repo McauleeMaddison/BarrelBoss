@@ -7,6 +7,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.permissions import is_management, management_required
+from apps.audit.models import AuditEvent
+from apps.audit.services import record_audit_event
+from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import ChecklistForm
 from .models import Checklist
@@ -45,7 +48,9 @@ def list_checklists(request):
             | Q(assigned_to__username__icontains=query)
         )
 
-    tasks = list(tasks_qs)
+    tasks_qs = tasks_qs.order_by("completed", "due_date", "created_at")
+    page_obj = paginate_collection(request, tasks_qs, per_page=12)
+    tasks = list(page_obj.object_list)
     today = timezone.localdate()
     week_ago = today - timedelta(days=7)
 
@@ -59,7 +64,10 @@ def list_checklists(request):
 
     context = {
         "tasks": tasks,
-        "task_count": len(tasks),
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
+        "pagination_query": build_query_string(request),
+        "task_count": tasks_qs.count(),
         "due_today_count": visible_qs.filter(due_date=today, completed=False).count(),
         "overdue_count": visible_qs.filter(due_date__lt=today, completed=False).count(),
         "completed_week_count": visible_qs.filter(
@@ -88,6 +96,13 @@ def add_checklist(request):
             task.created_by = request.user
             _sync_completed_timestamp(task)
             task.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.CREATE,
+                target=task,
+                summary=f"Assigned checklist task: {task.title}",
+                details={"assigned_to": task.assigned_to_id, "due_date": str(task.due_date)},
+            )
             messages.success(request, "Checklist task assigned.")
             return redirect("checklists:list")
     else:
@@ -114,6 +129,13 @@ def edit_checklist(request, pk):
             task = form.save(commit=False)
             _sync_completed_timestamp(task)
             task.save()
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.UPDATE,
+                target=task,
+                summary=f"Updated checklist task: {task.title}",
+                details={"completed": task.completed, "due_date": str(task.due_date)},
+            )
             messages.success(request, "Checklist task updated.")
             return redirect("checklists:list")
     else:
@@ -143,6 +165,13 @@ def toggle_complete(request, pk):
         task.completed = not task.completed
         _sync_completed_timestamp(task)
         task.save(update_fields=["completed", "completed_at", "updated_at"])
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.TOGGLE,
+            target=task,
+            summary=f"Toggled checklist status: {task.title}",
+            details={"completed": task.completed},
+        )
         messages.success(request, "Checklist status updated.")
 
     return redirect("checklists:list")
@@ -153,6 +182,12 @@ def delete_checklist(request, pk):
     task = get_object_or_404(Checklist, pk=pk)
 
     if request.method == "POST":
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.DELETE,
+            target=task,
+            summary=f"Deleted checklist task: {task.title}",
+        )
         task.delete()
         messages.success(request, "Checklist task deleted.")
         return redirect("checklists:list")

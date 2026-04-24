@@ -295,6 +295,23 @@ class StaffManagementTests(TestCase):
         self.assertIn("text/csv", response["Content-Type"])
         self.assertIn("BarrelBoss Staff Export", response.content.decode("utf-8"))
 
+    def test_staff_management_list_is_paginated(self):
+        for index in range(20):
+            extra_user = User.objects.create_user(
+                username=f"team_member_{index}",
+                password="strong-pass-123",
+            )
+            extra_user.staff_profile.job_title = "Bar Staff"
+            extra_user.staff_profile.save(update_fields=["job_title"])
+
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.get(reverse("staff"), {"page": 2, "status": "all"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["is_paginated"])
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(response.context["pagination_query"], "status=all")
+
     def test_manager_cannot_edit_landlord_profile(self):
         landlord = User.objects.create_superuser(
             username="owner_account",

@@ -1259,6 +1259,60 @@ h1, h2, h3 {
     background: rgba(212, 72, 85, 0.22);
 }
 
+.pagination-bar {
+    margin-top: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(212, 161, 70, 0.18);
+    padding-top: 0.78rem;
+}
+
+.pagination-summary {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+    flex-wrap: wrap;
+}
+
+.pagination-link {
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid rgba(212, 161, 70, 0.3);
+    border-radius: 0.56rem;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 0.76rem;
+    line-height: 1;
+    padding: 0.42rem 0.58rem;
+    transition: border-color 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
+}
+
+.pagination-link:hover {
+    border-color: rgba(212, 161, 70, 0.55);
+    background: rgba(212, 161, 70, 0.12);
+    transform: translateY(-1px);
+}
+
+.pagination-current {
+    color: var(--muted);
+    font-size: 0.78rem;
+    padding: 0.35rem 0.45rem;
+}
+
+.pagination-disabled {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+}
+
 .stock-form-panel {
     max-width: 980px;
 }
@@ -1575,6 +1629,16 @@ tbody tr:hover {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 1rem;
+}
+
+.error-shell {
+    width: min(720px, calc(100% - 2rem));
+}
+
+.error-card {
+    display: grid;
+    gap: 0.72rem;
+    text-align: left;
 }
 
 .login-hero,

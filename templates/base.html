@@ -38,6 +38,7 @@
             <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}">Suppliers</a>
             <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}">Staff</a>
             <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}">Reports</a>
+            <a class="nav-link{% if current == 'audit:list' %} active{% endif %}" href="{% url 'audit:list' %}">Audit Log</a>
             {% endif %}
             <a class="nav-link{% if current == 'settings' %} active{% endif %}" href="{% url 'settings' %}">Settings</a>
         </nav>

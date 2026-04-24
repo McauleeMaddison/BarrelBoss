@@ -34,6 +34,13 @@ def role_home_name(user):
 
 
 def role_required(allowed_roles):
+    allowed_role_labels = {
+        StaffProfile.Role(role).label
+        for role in allowed_roles
+        if role in StaffProfile.Role.values
+    }
+    allowed_roles_text = ", ".join(sorted(allowed_role_labels)) if allowed_role_labels else "authorized"
+
     def decorator(view_func):
         @wraps(view_func)
         @login_required
@@ -41,7 +48,10 @@ def role_required(allowed_roles):
             if get_user_role(request.user) in allowed_roles:
                 return view_func(request, *args, **kwargs)
 
-            messages.error(request, "You do not have access to that page.")
+            messages.error(
+                request,
+                f"Access denied. This page requires one of: {allowed_roles_text}.",
+            )
             return redirect(role_home_name(request.user))
 
         return _wrapped

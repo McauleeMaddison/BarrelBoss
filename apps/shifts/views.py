@@ -9,6 +9,9 @@ from django.utils import timezone
 
 from apps.accounts.permissions import is_management, management_required
 from apps.accounts.push import send_shift_push_notification
+from apps.audit.models import AuditEvent
+from apps.audit.services import record_audit_event
+from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import ShiftForm
 from .models import Shift
@@ -61,7 +64,9 @@ def list_shifts(request):
     elif selected_range == "past":
         shifts_qs = shifts_qs.filter(shift_date__lt=today)
 
-    shifts = list(shifts_qs.order_by("shift_date", "start_time", "staff__username"))
+    ordered_shifts_qs = shifts_qs.order_by("shift_date", "start_time", "staff__username")
+    page_obj = paginate_collection(request, ordered_shifts_qs, per_page=12)
+    shifts = list(page_obj.object_list)
     week_shifts = list(
         visible_qs.filter(shift_date__range=(week_start, week_end)).order_by(
             "shift_date",
@@ -101,6 +106,9 @@ def list_shifts(request):
 
     context = {
         "shifts": shifts,
+        "page_obj": page_obj,
+        "is_paginated": page_obj.has_other_pages(),
+        "pagination_query": build_query_string(request),
         "selected_staff": selected_staff,
         "selected_range": selected_range,
         "range_choices": [
@@ -136,6 +144,17 @@ def add_shift(request):
             shift.created_by = request.user
             shift.save()
             send_shift_push_notification(shift, actor=request.user, event_type="assigned")
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.CREATE,
+                target=shift,
+                summary=f"Scheduled shift for {shift.staff.username}",
+                details={
+                    "shift_date": str(shift.shift_date),
+                    "start_time": shift.start_time.strftime("%H:%M"),
+                    "end_time": shift.end_time.strftime("%H:%M"),
+                },
+            )
             messages.success(request, "Shift scheduled successfully.")
             return redirect("shifts:list")
     else:
@@ -165,6 +184,17 @@ def edit_shift(request, pk):
                 actor=request.user,
                 event_type="updated",
             )
+            record_audit_event(
+                request,
+                action=AuditEvent.Action.UPDATE,
+                target=updated_shift,
+                summary=f"Updated shift for {updated_shift.staff.username}",
+                details={
+                    "shift_date": str(updated_shift.shift_date),
+                    "start_time": updated_shift.start_time.strftime("%H:%M"),
+                    "end_time": updated_shift.end_time.strftime("%H:%M"),
+                },
+            )
             messages.success(request, "Shift updated.")
             return redirect("shifts:list")
     else:
@@ -187,6 +217,13 @@ def delete_shift(request, pk):
     shift = get_object_or_404(Shift, pk=pk)
 
     if request.method == "POST":
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.DELETE,
+            target=shift,
+            summary=f"Deleted shift for {shift.staff.username}",
+            details={"shift_date": str(shift.shift_date)},
+        )
         shift.delete()
         messages.success(request, "Shift deleted.")
         return redirect("shifts:list")

@@ -23,6 +23,7 @@ urlpatterns = [
     path("breakages/", include("apps.breakages.urls")),
     path("checklists/", include("apps.checklists.urls")),
     path("shifts/", include("apps.shifts.urls")),
+    path("audit/", include("apps.audit.urls")),
     path("staff/", core_views.staff_page, name="staff"),
     path("staff/add/", core_views.add_staff_page, name="staff_add"),
     path("staff/<int:user_id>/edit/", core_views.edit_staff_page, name="staff_edit"),
@@ -40,3 +41,7 @@ urlpatterns = [
         name="push_unsubscribe",
     ),
 ]
+
+handler403 = "taptrack.views.error_403"
+handler404 = "taptrack.views.error_404"
+handler500 = "taptrack.views.error_500"

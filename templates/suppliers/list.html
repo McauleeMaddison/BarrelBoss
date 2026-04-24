@@ -30,6 +30,7 @@
         </select>
 
         <button class="action-btn" type="submit">Apply</button>
+        <a class="table-action" href="{% url 'suppliers:list' %}">Reset</a>
     </form>
 
     {% if suppliers %}
@@ -60,6 +61,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
     <p class="empty-state">No suppliers found for this filter yet.</p>
     {% endif %}

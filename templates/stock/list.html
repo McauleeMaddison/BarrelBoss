@@ -18,10 +18,10 @@
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'stock:add' %}">Add Item</a>
             <a class="table-action" href="{% url 'orders:add' %}">Create Order</a>
-            <a class="table-action" href="?category={{ selected_category }}&urgency={{ selected_urgency }}&q={{ query|urlencode }}&export=csv">Download CSV</a>
+            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Download CSV</a>
         </div>
         {% else %}
-        <a class="table-action" href="?category={{ selected_category }}&urgency={{ selected_urgency }}&q={{ query|urlencode }}&export=csv">Download CSV</a>
+        <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Download CSV</a>
         {% endif %}
         <div class="dashboard-controls">
             <span class="panel-header-meta">Items: {{ total_items }}</span>
@@ -144,6 +144,7 @@
             </tbody>
         </table>
     </div>
+    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
     <p class="empty-state">No stock items found for this filter yet.</p>
     {% endif %}

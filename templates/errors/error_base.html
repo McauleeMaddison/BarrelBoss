@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BarrelBoss{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="login-page">
+    <div class="shell-bg"></div>
+    <section class="login-shell error-shell">
+        <div class="error-card panel">
+            <img class="login-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
+            <p class="kicker">BarrelBoss</p>
+            <h1>{% block heading %}Something went wrong{% endblock %}</h1>
+            <p>{% block message %}Please try again or return to the login page.{% endblock %}</p>
+            <div class="settings-actions">
+                <a class="action-btn action-link" href="{% url 'login' %}">Go To Login</a>
+                <a class="table-action" href="javascript:history.back()">Go Back</a>
+            </div>
+            {% block detail %}{% endblock %}
+        </div>
+    </section>
+</body>
+</html>

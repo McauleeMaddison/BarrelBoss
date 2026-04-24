@@ -53,6 +53,7 @@
         </select>
 
         <button class="action-btn" type="submit">Apply</button>
+        <a class="table-action" href="{% url 'checklists:list' %}">Reset</a>
     </form>
 
     {% if tasks %}
@@ -106,6 +107,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
     <p class="empty-state">No checklist tasks found for this filter yet.</p>
     {% endif %}
