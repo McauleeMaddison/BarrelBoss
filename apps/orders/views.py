@@ -14,10 +14,25 @@ from .models import Order
 
 
 def _order_context_base(
-    orders_qs, *, request_user_id, selected_status, selected_supplier, management_view
+    display_qs,
+    *,
+    metrics_qs,
+    request_user_id,
+    selected_status,
+    selected_supplier,
+    management_view,
 ):
-    orders = list(orders_qs)
+    orders = list(display_qs)
     week_start = timezone.localdate() - timedelta(days=7)
+    today = timezone.localdate()
+
+    status_badge_classes = {
+        Order.Status.DRAFT: "badge-status-draft",
+        Order.Status.ORDERED: "badge-status-ordered",
+        Order.Status.PENDING_DELIVERY: "badge-status-pending",
+        Order.Status.DELIVERED: "badge-status-delivered",
+        Order.Status.CANCELLED: "badge-status-cancelled",
+    }
 
     for order in orders:
         order.can_staff_edit = (
@@ -26,13 +41,43 @@ def _order_context_base(
             and order.created_by_id == request_user_id
             and order.status == Order.Status.DRAFT
         )
+        order.status_badge_class = status_badge_classes.get(order.status, "")
+        order.total_units_display = order.total_units or 0
+        order.created_by_display = (
+            "You"
+            if order.created_by_id and order.created_by_id == request_user_id
+            else (order.created_by.username if order.created_by else "-")
+        )
+
+    draft_count = metrics_qs.filter(status=Order.Status.DRAFT).count()
+    ordered_count = metrics_qs.filter(status=Order.Status.ORDERED).count()
+    pending_count = metrics_qs.filter(status=Order.Status.PENDING_DELIVERY).count()
+    delivered_count = metrics_qs.filter(status=Order.Status.DELIVERED).count()
+    cancelled_count = metrics_qs.filter(status=Order.Status.CANCELLED).count()
+    open_order_count = draft_count + ordered_count + pending_count
+    overdue_delivery_count = metrics_qs.filter(
+        delivery_date__lt=today,
+        status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
+    ).count()
+    stale_draft_count = metrics_qs.filter(
+        status=Order.Status.DRAFT,
+        created_at__date__lte=today - timedelta(days=2),
+    ).count()
+    total_units_in_view = sum(order.total_units_display for order in orders)
 
     return {
         "orders": orders,
         "order_count": len(orders),
-        "awaiting_approval_count": orders_qs.filter(status=Order.Status.DRAFT).count(),
-        "pending_count": orders_qs.filter(status=Order.Status.PENDING_DELIVERY).count(),
-        "delivered_recent_count": orders_qs.filter(
+        "awaiting_approval_count": draft_count,
+        "pending_count": pending_count,
+        "ordered_count": ordered_count,
+        "delivered_count": delivered_count,
+        "cancelled_count": cancelled_count,
+        "open_order_count": open_order_count,
+        "overdue_delivery_count": overdue_delivery_count,
+        "stale_draft_count": stale_draft_count,
+        "total_units_in_view": total_units_in_view,
+        "delivered_recent_count": metrics_qs.filter(
             status=Order.Status.DELIVERED,
             updated_at__date__gte=week_start,
         ).count(),
@@ -50,25 +95,28 @@ def list_orders(request):
     selected_supplier = request.GET.get("supplier", "")
     management_view = is_management(request.user)
 
-    orders_qs = (
+    visible_qs = (
         Order.objects.select_related("supplier", "created_by")
-        .annotate(total_lines=Count("items"), total_units=Sum("items__quantity"))
         .all()
     )
 
     if not management_view:
-        orders_qs = orders_qs.filter(created_by=request.user)
+        visible_qs = visible_qs.filter(created_by=request.user)
+
+    metrics_qs = visible_qs
+    display_qs = visible_qs.annotate(total_lines=Count("items"), total_units=Sum("items__quantity"))
 
     if selected_status and selected_status in Order.Status.values:
-        orders_qs = orders_qs.filter(status=selected_status)
+        display_qs = display_qs.filter(status=selected_status)
 
     if selected_supplier.isdigit():
-        orders_qs = orders_qs.filter(supplier_id=int(selected_supplier))
+        display_qs = display_qs.filter(supplier_id=int(selected_supplier))
 
-    orders_qs = orders_qs.order_by("-created_at")
+    display_qs = display_qs.order_by("-created_at")
 
     context = _order_context_base(
-        orders_qs,
+        display_qs,
+        metrics_qs=metrics_qs,
         request_user_id=request.user.id,
         selected_status=selected_status,
         selected_supplier=selected_supplier,

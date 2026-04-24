@@ -4,6 +4,31 @@
 {% block page_title %}Shifts{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero shifts-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">{% if is_management %}Workforce Planning{% else %}My Shift Schedule{% endif %}</p>
+        <span class="badge portal-badge">{% if is_management %}Team Planner{% else %}Staff Portal{% endif %}</span>
+    </div>
+    <h3 class="portal-hero-title">{% if is_management %}Shift Coverage & Hours Performance{% else %}Shift Hours & Upcoming Timeline{% endif %}</h3>
+    <p class="portal-hero-copy">
+        {% if is_management %}
+        Allocate shifts, monitor weekly capacity, and keep payroll-hour visibility clear across the team.
+        {% else %}
+        Track your upcoming shifts, worked-hour totals, and this week’s schedule at a glance.
+        {% endif %}
+    </p>
+    <div class="report-toolbar">
+        {% if is_management %}
+        <a class="action-btn action-link" href="{% url 'shifts:add' %}">Schedule Shift</a>
+        {% endif %}
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">Week: {{ week_window_label }}</span>
+            <span class="panel-header-meta">Upcoming: {{ upcoming_shift_count }}</span>
+            <span class="panel-header-meta">Visible: {{ total_shifts }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card ok shift-metric-card">
         <h3>Hours This Week</h3>
@@ -75,12 +100,14 @@
 
 <section class="panel">
     <div class="panel-header">
-        {% if is_management %}
-        <h3>Team Shift Planner</h3>
-        <a class="action-btn action-link" href="{% url 'shifts:add' %}">Schedule Shift</a>
-        {% else %}
-        <h3>My Shift Hours</h3>
-        {% endif %}
+        <div>
+            {% if is_management %}
+            <h3>Team Shift Planner</h3>
+            {% else %}
+            <h3>My Shift Hours</h3>
+            {% endif %}
+            <p class="panel-subtitle">Filter by staff and range to inspect daily workload.</p>
+        </div>
     </div>
 
     <form method="get" class="stock-filter-form">
@@ -102,52 +129,55 @@
         </select>
 
         <button class="action-btn" type="submit">Apply</button>
+        <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>
     </form>
 
     {% if shifts %}
-    <table class="shifts-table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Timeline</th>
-                {% if is_management %}<th>Staff</th>{% endif %}
-                <th>Start</th>
-                <th>End</th>
-                <th>Break</th>
-                <th>Hours</th>
-                <th>Notes</th>
-                {% if is_management %}<th>Actions</th>{% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for shift in shifts %}
-            <tr class="shift-row{% if shift.shift_date == today %} shift-row-today{% elif shift.shift_date < today %} shift-row-past{% endif %}">
-                <td>{{ shift.shift_date|date:"D, j M Y" }}</td>
-                <td>
-                    {% if shift.shift_date == today %}
-                    <span class="shift-timeline-pill shift-timeline-today">Today</span>
-                    {% elif shift.shift_date < today %}
-                    <span class="shift-timeline-pill shift-timeline-past">Past</span>
-                    {% else %}
-                    <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
+    <div class="report-table-wrap">
+        <table class="shifts-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Timeline</th>
+                    {% if is_management %}<th>Staff</th>{% endif %}
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Break</th>
+                    <th>Hours</th>
+                    <th>Notes</th>
+                    {% if is_management %}<th>Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for shift in shifts %}
+                <tr class="shift-row{% if shift.shift_date == today %} shift-row-today{% elif shift.shift_date < today %} shift-row-past{% endif %}">
+                    <td>{{ shift.shift_date|date:"D, j M Y" }}</td>
+                    <td>
+                        {% if shift.shift_date == today %}
+                        <span class="shift-timeline-pill shift-timeline-today">Today</span>
+                        {% elif shift.shift_date < today %}
+                        <span class="shift-timeline-pill shift-timeline-past">Past</span>
+                        {% else %}
+                        <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
+                        {% endif %}
+                    </td>
+                    {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
+                    <td>{{ shift.start_time|time:"H:i" }}</td>
+                    <td>{{ shift.end_time|time:"H:i" }}</td>
+                    <td>{{ shift.break_minutes }} mins</td>
+                    <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
+                    <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
+                    {% if is_management %}
+                    <td class="stock-actions-cell">
+                        <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit</a>
+                        <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete</a>
+                    </td>
                     {% endif %}
-                </td>
-                {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
-                <td>{{ shift.start_time|time:"H:i" }}</td>
-                <td>{{ shift.end_time|time:"H:i" }}</td>
-                <td>{{ shift.break_minutes }} mins</td>
-                <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
-                <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
-                {% if is_management %}
-                <td class="stock-actions-cell">
-                    <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit</a>
-                    <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete</a>
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <p class="empty-state">No shifts found for this view yet.</p>
     {% endif %}

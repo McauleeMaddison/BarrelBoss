@@ -1278,6 +1278,40 @@ tbody tr {
     border: 1px solid rgba(212, 161, 70, 0.3);
 }
 
+.badge-status-draft {
+    color: #f6d58d;
+    border-color: rgba(212, 161, 70, 0.48);
+    background: rgba(212, 161, 70, 0.16);
+}
+
+.badge-status-ordered {
+    color: #9bc0ff;
+    border-color: rgba(88, 129, 255, 0.45);
+    background: rgba(88, 129, 255, 0.14);
+}
+
+.badge-status-pending {
+    color: #f2c278;
+    border-color: rgba(210, 132, 52, 0.45);
+    background: rgba(210, 132, 52, 0.16);
+}
+
+.badge-status-delivered {
+    color: #7ad7ae;
+    border-color: rgba(49, 157, 120, 0.48);
+    background: rgba(49, 157, 120, 0.16);
+}
+
+.badge-status-cancelled {
+    color: #ff9ba6;
+    border-color: rgba(212, 72, 85, 0.5);
+    background: rgba(212, 72, 85, 0.16);
+}
+
+.orders-hero .dashboard-controls {
+    gap: 0.5rem;
+}
+
 .login-page {
     min-height: 100vh;
     display: grid;

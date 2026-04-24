@@ -4,29 +4,63 @@
 {% block page_title %}Orders{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero orders-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">{% if management_view %}Procurement Control{% else %}Stock Requests{% endif %}</p>
+        <span class="badge portal-badge">{% if management_view %}Management Queue{% else %}Staff Queue{% endif %}</span>
+    </div>
+    <h3 class="portal-hero-title">{% if management_view %}Order Approval & Delivery Pipeline{% else %}My Order Requests & Delivery Tracking{% endif %}</h3>
+    <p class="portal-hero-copy">
+        {% if management_view %}
+        Keep supplier orders moving from draft through delivery with clear approval and status ownership.
+        {% else %}
+        Submit stock requests quickly, monitor status changes, and track what is due on site.
+        {% endif %}
+    </p>
+    <div class="report-toolbar">
+        <a class="action-btn action-link" href="{% url 'orders:add' %}">{% if management_view %}Create Order{% else %}Create Request{% endif %}</a>
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">Open: {{ open_order_count }}</span>
+            <span class="panel-header-meta">Overdue: {{ overdue_delivery_count }}</span>
+            <span class="panel-header-meta">Delivered 7d: {{ delivered_recent_count }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card warn">
         <h3>{% if management_view %}Awaiting Approval{% else %}My Draft Requests{% endif %}</h3>
         <p>{{ awaiting_approval_count }}</p>
-    </article>
-    <article class="metric-card neutral">
-        <h3>Total Orders</h3>
-        <p>{{ order_count }}</p>
+        <span class="metric-note">{{ stale_draft_count }} stale draft(s) over 48h</span>
     </article>
     <article class="metric-card ok">
+        <h3>Open Orders</h3>
+        <p>{{ open_order_count }}</p>
+        <span class="metric-note">Draft + ordered + pending delivery</span>
+    </article>
+    <article class="metric-card neutral">
         <h3>Pending Delivery</h3>
         <p>{{ pending_count }}</p>
+        <span class="metric-note">Orders currently in transit</span>
     </article>
     <article class="metric-card alert">
-        <h3>Delivered (7 Days)</h3>
-        <p>{{ delivered_recent_count }}</p>
+        <h3>Overdue Deliveries</h3>
+        <p>{{ overdue_delivery_count }}</p>
+        <span class="metric-note">Expected date passed without delivery</span>
+    </article>
+    <article class="metric-card ok">
+        <h3>Units In View</h3>
+        <p>{{ total_units_in_view }}</p>
+        <span class="metric-note">{{ order_count }} order(s) in current filter</span>
     </article>
 </section>
 
 <section class="panel">
     <div class="panel-header">
-        <h3>{% if management_view %}Management Order Queue{% else %}My Stock Order Requests{% endif %}</h3>
-        <a class="action-btn action-link" href="{% url 'orders:add' %}">{% if management_view %}Create Order{% else %}Create Request{% endif %}</a>
+        <div>
+            <h3>{% if management_view %}Management Order Queue{% else %}My Stock Order Requests{% endif %}</h3>
+            <p class="panel-subtitle">Filter by status and supplier to focus on active operations.</p>
+        </div>
     </div>
 
     <form method="get" class="stock-filter-form">
@@ -47,56 +81,59 @@
         </select>
 
         <button class="action-btn" type="submit">Apply</button>
+        <a class="table-action" href="{% url 'orders:list' %}">Reset</a>
     </form>
 
     {% if orders %}
-    <table>
-        <thead>
-            <tr>
-                <th>Reference</th>
-                <th>Supplier</th>
-                <th>Order Date</th>
-                <th>Delivery Date</th>
-                <th>Items</th>
-                <th>Status</th>
-                <th>Created By</th>
-                <th>{% if management_view %}Actions / Approval{% else %}Actions{% endif %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for order in orders %}
-            <tr>
-                <td>{{ order.reference }}</td>
-                <td>{{ order.supplier.name }}</td>
-                <td>{{ order.order_date }}</td>
-                <td>{{ order.delivery_date|default:'-' }}</td>
-                <td>{{ order.total_units|default:0 }} units</td>
-                <td>
-                    <span class="badge">{{ order.get_status_display }}</span>
-                </td>
-                <td>{{ order.created_by.username|default:'-' }}</td>
-                <td class="stock-actions-cell">
-                    {% if management_view %}
-                    <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit</a>
-                    <form method="post" action="{% url 'orders:status' order.pk %}" class="inline-status-form">
-                        {% csrf_token %}
-                        <select name="status">
-                            {% for value, label in status_choices %}
-                            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                        <button class="table-action" type="submit">Update</button>
-                    </form>
-                    {% elif order.can_staff_edit %}
-                    <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit Draft</a>
-                    {% else %}
-                    <span class="table-action">-</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="report-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Supplier</th>
+                    <th>Order Date</th>
+                    <th>Delivery Date</th>
+                    <th>Items</th>
+                    <th>Status</th>
+                    <th>Created By</th>
+                    <th>{% if management_view %}Actions / Approval{% else %}Actions{% endif %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.reference }}</td>
+                    <td>{{ order.supplier.name }}</td>
+                    <td>{{ order.order_date }}</td>
+                    <td>{{ order.delivery_date|default:'-' }}</td>
+                    <td>{{ order.total_units_display }} units</td>
+                    <td>
+                        <span class="badge {{ order.status_badge_class }}">{{ order.get_status_display }}</span>
+                    </td>
+                    <td>{{ order.created_by_display }}</td>
+                    <td class="stock-actions-cell">
+                        {% if management_view %}
+                        <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit</a>
+                        <form method="post" action="{% url 'orders:status' order.pk %}" class="inline-status-form">
+                            {% csrf_token %}
+                            <select name="status">
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="table-action" type="submit">Update</button>
+                        </form>
+                        {% elif order.can_staff_edit %}
+                        <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit Draft</a>
+                        {% else %}
+                        <span class="table-action">View Only</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <p class="empty-state">No orders match this filter yet.</p>
     {% endif %}
