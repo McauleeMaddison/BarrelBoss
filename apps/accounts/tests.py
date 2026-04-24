@@ -4,8 +4,12 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import PushSubscription, StaffProfile
+from apps.orders.models import Order, OrderItem
+from apps.stock.models import StockItem
+from apps.suppliers.models import Supplier
 
 
 class StaffProfileSignalTests(TestCase):
@@ -291,3 +295,63 @@ class StaffManagementTests(TestCase):
         response = self.client.get(reverse("staff_edit", args=[landlord.id]))
 
         self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
+
+
+class ReportsPageTests(TestCase):
+    def setUp(self):
+        self.staff_user = User.objects.create_user(
+            username="reports_staff",
+            password="strong-pass-123",
+        )
+        self.manager_user = User.objects.create_user(
+            username="reports_manager",
+            password="strong-pass-123",
+        )
+        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
+        self.manager_user.staff_profile.save(update_fields=["role"])
+
+        supplier = Supplier.objects.create(name="Brewline")
+        stock_item = StockItem.objects.create(
+            name="Carling Keg",
+            category=StockItem.Category.BEER_BARRELS,
+            quantity=3,
+            minimum_level=6,
+            unit=StockItem.Unit.BARRELS,
+            cost="110.00",
+            supplier=supplier,
+        )
+        order = Order.objects.create(
+            supplier=supplier,
+            created_by=self.manager_user,
+            order_date=timezone.localdate(),
+            status=Order.Status.DELIVERED,
+        )
+        OrderItem.objects.create(order=order, stock_item=stock_item, quantity=2)
+
+    def test_manager_can_view_reports_page_with_enhanced_context(self):
+        self.client.login(username="reports_manager", password="strong-pass-123")
+        response = self.client.get(reverse("reports"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Operational Performance Cockpit")
+        self.assertEqual(len(response.context["report_kpi_cards"]), 5)
+        self.assertGreaterEqual(len(response.context["executive_highlights"]), 4)
+
+    def test_manager_can_export_reports_csv(self):
+        self.client.login(username="reports_manager", password="strong-pass-123")
+        response = self.client.get(reverse("reports"), {"range": "7", "export": "csv"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response["Content-Type"])
+        self.assertIn("attachment; filename=", response["Content-Disposition"])
+        self.assertIn("BarrelBoss Operational Report", response.content.decode("utf-8"))
+
+    def test_staff_is_redirected_from_reports_page(self):
+        self.client.login(username="reports_staff", password="strong-pass-123")
+        response = self.client.get(reverse("reports"))
+
+        self.assertRedirects(
+            response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )

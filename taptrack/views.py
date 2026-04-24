@@ -1,3 +1,4 @@
+import csv
 import json
 from datetime import timedelta
 
@@ -188,8 +189,50 @@ def reports_page(request):
     if range_days not in {"7", "30", "90"}:
         range_days = "7"
 
+    window_days = int(range_days)
     today = timezone.localdate()
-    start_date = today - timedelta(days=int(range_days) - 1)
+    start_date = today - timedelta(days=window_days - 1)
+    previous_end_date = start_date - timedelta(days=1)
+    previous_start_date = previous_end_date - timedelta(days=window_days - 1)
+
+    def _format_currency(value):
+        return f"£{float(value or 0):,.2f}"
+
+    def _build_delta(
+        current_value,
+        previous_value,
+        *,
+        positive_good=True,
+        kind="count",
+        precision=0,
+    ):
+        current_num = float(current_value or 0)
+        previous_num = float(previous_value or 0)
+        diff = current_num - previous_num
+        if abs(diff) < 0.000001:
+            return {
+                "text": "No change vs previous period",
+                "tone": "neutral",
+            }
+
+        improved = diff > 0 if positive_good else diff < 0
+        tone = "up" if improved else "down"
+        sign = "+" if diff > 0 else "-"
+        magnitude = abs(diff)
+
+        if kind == "currency":
+            formatted = f"£{magnitude:,.2f}"
+        elif kind == "percent":
+            formatted = f"{magnitude:.1f}%"
+        elif precision:
+            formatted = f"{magnitude:.{precision}f}"
+        else:
+            formatted = f"{magnitude:,.0f}"
+
+        return {
+            "text": f"{sign}{formatted} vs previous period",
+            "tone": tone,
+        }
 
     cost_expression = ExpressionWrapper(
         F("quantity") * F("stock_item__cost"),
@@ -207,9 +250,18 @@ def reports_page(request):
 
     orders_window_qs = Order.objects.filter(order_date__range=(start_date, today))
     delivered_orders_qs = orders_window_qs.filter(status=Order.Status.DELIVERED)
+    previous_orders_qs = Order.objects.filter(
+        order_date__range=(previous_start_date, previous_end_date)
+    )
+    previous_delivered_orders_qs = previous_orders_qs.filter(status=Order.Status.DELIVERED)
 
     delivered_items_qs = OrderItem.objects.filter(order__in=delivered_orders_qs)
+    previous_delivered_items_qs = OrderItem.objects.filter(order__in=previous_delivered_orders_qs)
     delivered_summary = delivered_items_qs.aggregate(
+        total_units=Sum("quantity"),
+        total_spend=Sum(cost_expression),
+    )
+    previous_delivered_summary = previous_delivered_items_qs.aggregate(
         total_units=Sum("quantity"),
         total_spend=Sum(cost_expression),
     )
@@ -244,7 +296,14 @@ def reports_page(request):
     )
 
     breakages_window_qs = Breakage.objects.filter(created_at__date__range=(start_date, today))
+    previous_breakages_qs = Breakage.objects.filter(
+        created_at__date__range=(previous_start_date, previous_end_date)
+    )
     breakage_totals = breakages_window_qs.aggregate(
+        total_reports=Count("id"),
+        total_units=Sum("quantity"),
+    )
+    previous_breakage_totals = previous_breakages_qs.aggregate(
         total_reports=Count("id"),
         total_units=Sum("quantity"),
     )
@@ -271,7 +330,14 @@ def reports_page(request):
     )
 
     checklists_window_qs = Checklist.objects.filter(due_date__range=(start_date, today))
+    previous_checklists_qs = Checklist.objects.filter(
+        due_date__range=(previous_start_date, previous_end_date)
+    )
     checklist_totals = checklists_window_qs.aggregate(
+        total=Count("id"),
+        completed=Count("id", filter=Q(completed=True)),
+    )
+    previous_checklist_totals = previous_checklists_qs.aggregate(
         total=Count("id"),
         completed=Count("id", filter=Q(completed=True)),
     )
@@ -279,6 +345,13 @@ def reports_page(request):
     checklist_completed = checklist_totals["completed"] or 0
     checklist_completion_rate = (
         round((checklist_completed / checklist_total) * 100, 1) if checklist_total else 0
+    )
+    previous_checklist_total = previous_checklist_totals["total"] or 0
+    previous_checklist_completed = previous_checklist_totals["completed"] or 0
+    previous_checklist_completion_rate = (
+        round((previous_checklist_completed / previous_checklist_total) * 100, 1)
+        if previous_checklist_total
+        else 0
     )
 
     checklist_labels = dict(Checklist.ChecklistType.choices)
@@ -304,14 +377,213 @@ def reports_page(request):
 
     status_labels = dict(Order.Status.choices)
     order_status_rows = []
+    orders_window_total = orders_window_qs.count()
     for row in orders_window_qs.values("status").annotate(total=Count("id")).order_by("status"):
         status_code = row["status"]
+        status_total = row["total"] or 0
         order_status_rows.append(
             {
                 "status_label": status_labels.get(status_code, status_code),
-                "total": row["total"] or 0,
+                "total": status_total,
+                "percentage": round((status_total / orders_window_total) * 100, 1)
+                if orders_window_total
+                else 0,
             }
         )
+
+    kpi_low_stock_count = len(low_stock_rows)
+    kpi_delivered_orders = delivered_orders_qs.count()
+    kpi_delivered_units = delivered_summary["total_units"] or 0
+    kpi_supplier_spend = delivered_summary["total_spend"] or 0
+    kpi_breakage_reports = breakage_totals["total_reports"] or 0
+    kpi_breakage_units = breakage_totals["total_units"] or 0
+
+    previous_delivered_orders = previous_delivered_orders_qs.count()
+    previous_supplier_spend = previous_delivered_summary["total_spend"] or 0
+    previous_breakage_reports = previous_breakage_totals["total_reports"] or 0
+    delivered_orders_delta = _build_delta(
+        kpi_delivered_orders,
+        previous_delivered_orders,
+        positive_good=True,
+    )
+    supplier_spend_delta = _build_delta(
+        kpi_supplier_spend,
+        previous_supplier_spend,
+        positive_good=False,
+        kind="currency",
+    )
+    breakage_reports_delta = _build_delta(
+        kpi_breakage_reports,
+        previous_breakage_reports,
+        positive_good=False,
+    )
+    checklist_completion_delta = _build_delta(
+        checklist_completion_rate,
+        previous_checklist_completion_rate,
+        positive_good=True,
+        kind="percent",
+    )
+
+    critical_low_stock_count = sum(
+        1
+        for item in low_stock_rows
+        if item.quantity == 0
+        or (item.minimum_level > 0 and item.quantity <= (item.minimum_level / 2))
+    )
+
+    report_kpi_cards = [
+        {
+            "label": "Low Stock Items",
+            "value": kpi_low_stock_count,
+            "tone": "alert" if kpi_low_stock_count else "ok",
+            "delta_text": (
+                f"{critical_low_stock_count} critical item(s) need immediate restock"
+                if kpi_low_stock_count
+                else "Inventory currently above minimum thresholds"
+            ),
+            "delta_tone": "down" if kpi_low_stock_count else "up",
+        },
+        {
+            "label": "Delivered Orders",
+            "value": kpi_delivered_orders,
+            "tone": "ok",
+            "delta_text": delivered_orders_delta["text"],
+            "delta_tone": delivered_orders_delta["tone"],
+        },
+        {
+            "label": "Supplier Spend",
+            "value": _format_currency(kpi_supplier_spend),
+            "tone": "warn",
+            "delta_text": supplier_spend_delta["text"],
+            "delta_tone": supplier_spend_delta["tone"],
+        },
+        {
+            "label": "Breakage Reports",
+            "value": kpi_breakage_reports,
+            "tone": "neutral",
+            "delta_text": breakage_reports_delta["text"],
+            "delta_tone": breakage_reports_delta["tone"],
+        },
+        {
+            "label": "Checklist Completion",
+            "value": f"{checklist_completion_rate}%",
+            "tone": "ok" if checklist_completion_rate >= 80 else "warn",
+            "delta_text": checklist_completion_delta["text"],
+            "delta_tone": checklist_completion_delta["tone"],
+        },
+    ]
+
+    backlog_order_count = Order.objects.filter(
+        status__in=[
+            Order.Status.DRAFT,
+            Order.Status.ORDERED,
+            Order.Status.PENDING_DELIVERY,
+        ]
+    ).count()
+
+    top_supplier_row = supplier_spend_rows[0] if supplier_spend_rows else None
+    top_category_row = category_volume_rows[0] if category_volume_rows else None
+    weakest_checklist_row = (
+        min(checklist_type_rows, key=lambda row: row["completion_rate"])
+        if checklist_type_rows
+        else None
+    )
+    dominant_breakage_issue = breakage_issue_rows[0] if breakage_issue_rows else None
+
+    executive_highlights = [
+        {
+            "title": "Order Backlog",
+            "value": backlog_order_count,
+            "meta": "Draft, ordered, and pending delivery orders awaiting completion.",
+            "tone": "warn" if backlog_order_count else "ok",
+        },
+        {
+            "title": "Top Supplier by Spend",
+            "value": top_supplier_row["order__supplier__name"] if top_supplier_row else "No data",
+            "meta": (
+                f"{_format_currency(top_supplier_row['total_spend'])} across "
+                f"{top_supplier_row['total_units'] or 0} units"
+                if top_supplier_row
+                else "No delivered supplier spend in this window."
+            ),
+            "tone": "neutral",
+        },
+        {
+            "title": "Highest Incoming Category",
+            "value": top_category_row["category_label"] if top_category_row else "No data",
+            "meta": (
+                f"{top_category_row['total_units'] or 0} units delivered"
+                if top_category_row
+                else "No delivered stock volume in this window."
+            ),
+            "tone": "ok",
+        },
+        {
+            "title": "Checklist Risk Area",
+            "value": weakest_checklist_row["type_label"] if weakest_checklist_row else "No data",
+            "meta": (
+                f"{weakest_checklist_row['completion_rate']}% completion"
+                if weakest_checklist_row
+                else "No checklist activity in this window."
+            ),
+            "tone": "alert" if weakest_checklist_row and weakest_checklist_row["completion_rate"] < 70 else "neutral",
+        },
+        {
+            "title": "Top Breakage Issue",
+            "value": dominant_breakage_issue["issue_label"] if dominant_breakage_issue else "No data",
+            "meta": (
+                f"{dominant_breakage_issue['total_units']} units across "
+                f"{dominant_breakage_issue['total_reports']} report(s)"
+                if dominant_breakage_issue
+                else "No breakages logged in this window."
+            ),
+            "tone": "warn" if dominant_breakage_issue else "ok",
+        },
+    ]
+
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="barrelboss-report-{today:%Y%m%d}-{window_days}d.csv"'
+        )
+        writer = csv.writer(response)
+        writer.writerow(["BarrelBoss Operational Report"])
+        writer.writerow(["Window", f"{start_date:%d %b %Y} - {today:%d %b %Y}"])
+        writer.writerow([])
+        writer.writerow(["KPI", "Value"])
+        writer.writerow(["Low Stock Items", kpi_low_stock_count])
+        writer.writerow(["Delivered Orders", kpi_delivered_orders])
+        writer.writerow(["Delivered Units", kpi_delivered_units])
+        writer.writerow(["Supplier Spend", _format_currency(kpi_supplier_spend)])
+        writer.writerow(["Breakage Reports", kpi_breakage_reports])
+        writer.writerow(["Breakage Units", kpi_breakage_units])
+        writer.writerow(["Checklist Completion", f"{checklist_completion_rate}%"])
+        writer.writerow([])
+        writer.writerow(["Low Stock Summary"])
+        writer.writerow(["Item", "Category", "Quantity", "Minimum", "Supplier"])
+        for item in low_stock_rows:
+            writer.writerow(
+                [
+                    item.name,
+                    item.get_category_display(),
+                    f"{item.quantity} {item.get_unit_display()}",
+                    item.minimum_level,
+                    item.supplier.name if item.supplier else "-",
+                ]
+            )
+        writer.writerow([])
+        writer.writerow(["Supplier Spend"])
+        writer.writerow(["Supplier", "Units", "Order Lines", "Estimated Spend"])
+        for row in supplier_spend_rows:
+            writer.writerow(
+                [
+                    row["order__supplier__name"],
+                    row["total_units"] or 0,
+                    row["total_lines"] or 0,
+                    _format_currency(row["total_spend"] or 0),
+                ]
+            )
+        return response
 
     context = {
         "selected_range": range_days,
@@ -321,6 +593,7 @@ def reports_page(request):
             ("90", "Last 90 days"),
         ],
         "report_window_label": f"{start_date:%d %b %Y} - {today:%d %b %Y}",
+        "previous_window_label": f"{previous_start_date:%d %b %Y} - {previous_end_date:%d %b %Y}",
         "low_stock_rows": low_stock_rows,
         "category_volume_rows": category_volume_rows,
         "supplier_spend_rows": supplier_spend_rows,
@@ -328,13 +601,16 @@ def reports_page(request):
         "top_breakage_items": top_breakage_items,
         "checklist_type_rows": checklist_type_rows,
         "order_status_rows": order_status_rows,
-        "kpi_low_stock_count": len(low_stock_rows),
-        "kpi_delivered_orders": delivered_orders_qs.count(),
-        "kpi_delivered_units": delivered_summary["total_units"] or 0,
-        "kpi_supplier_spend": delivered_summary["total_spend"] or 0,
-        "kpi_breakage_reports": breakage_totals["total_reports"] or 0,
-        "kpi_breakage_units": breakage_totals["total_units"] or 0,
+        "kpi_low_stock_count": kpi_low_stock_count,
+        "kpi_delivered_orders": kpi_delivered_orders,
+        "kpi_delivered_units": kpi_delivered_units,
+        "kpi_supplier_spend": kpi_supplier_spend,
+        "kpi_breakage_reports": kpi_breakage_reports,
+        "kpi_breakage_units": kpi_breakage_units,
         "kpi_checklist_completion_rate": checklist_completion_rate,
+        "report_kpi_cards": report_kpi_cards,
+        "executive_highlights": executive_highlights,
+        "backlog_order_count": backlog_order_count,
     }
     return render(request, "reports/index.html", context)
 
