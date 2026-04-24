@@ -44,6 +44,25 @@ python manage.py runserver
 
 Open: `http://127.0.0.1:8000/accounts/login/`
 
+## Demo Login Accounts (Local Testing)
+
+Run this once to create/reset role-based demo users:
+
+```bash
+python manage.py bootstrap_demo_accounts
+```
+
+Default demo credentials:
+- `landlord` / `strong-pass-123` (Landlord portal + Django admin access)
+- `manager` / `strong-pass-123` (Management portal)
+- `staff` / `strong-pass-123` (Staff portal)
+
+Optional custom password for all demo users:
+
+```bash
+python manage.py bootstrap_demo_accounts --password "YourStrongPassword-123!"
+```
+
 ## Environment Variables
 
 Copy `.env.example` values into your environment (or `.env` with your preferred loader):
@@ -134,6 +153,11 @@ python manage.py createsuperuser
 - `DATABASE_URL` is preferred and fully supported.
 - If `DATABASE_URL` is missing, project can still use `POSTGRES_*` fallback or local SQLite.
 - Static files are served via WhiteNoise in production.
+
+## 14-Day Launch Plan
+
+Use this rollout checklist to get to business-ready in 2 weeks:
+- [Launch Readiness Plan](docs/launch-readiness-14-days.md)
 
 ## Next Build Step
 

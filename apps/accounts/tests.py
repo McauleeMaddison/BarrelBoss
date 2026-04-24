@@ -1,7 +1,9 @@
 import json
+from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -363,3 +365,26 @@ class ReportsPageTests(TestCase):
             reverse("dashboard:staff_portal"),
             fetch_redirect_response=False,
         )
+
+
+class DemoAccountBootstrapCommandTests(TestCase):
+    def test_bootstrap_demo_accounts_creates_expected_users(self):
+        output = StringIO()
+        call_command(
+            "bootstrap_demo_accounts",
+            password="DemoStrongPass-123!",
+            stdout=output,
+        )
+
+        landlord = User.objects.get(username="landlord")
+        manager = User.objects.get(username="manager")
+        staff = User.objects.get(username="staff")
+
+        self.assertTrue(landlord.is_superuser)
+        self.assertEqual(landlord.staff_profile.role, StaffProfile.Role.LANDLORD)
+        self.assertEqual(manager.staff_profile.role, StaffProfile.Role.MANAGER)
+        self.assertEqual(staff.staff_profile.role, StaffProfile.Role.STAFF)
+        self.assertTrue(landlord.check_password("DemoStrongPass-123!"))
+        self.assertTrue(manager.check_password("DemoStrongPass-123!"))
+        self.assertTrue(staff.check_password("DemoStrongPass-123!"))
+        self.assertIn("Demo accounts ready", output.getvalue())
