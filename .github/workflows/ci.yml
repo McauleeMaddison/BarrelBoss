@@ -24,19 +24,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Validate migrations
-        run: python manage.py makemigrations --check --dry-run
-
-      - name: Run unit and integration tests
-        run: python manage.py test
-
-      - name: Run deploy security checks
+      - name: Run release preflight quality gates
         env:
           DJANGO_DEBUG: "false"
-          DJANGO_SECRET_KEY: "ci-replace-with-strong-random-secret-key-1234567890"
+          DJANGO_SECRET_KEY: "ci-very-long-random-placeholder-secret-key-1234567890-abcdef"
           DJANGO_ALLOWED_HOSTS: "example.com"
           DJANGO_CSRF_TRUSTED_ORIGINS: "https://example.com"
-        run: python manage.py check --deploy
+          ALLOW_DEMO_ACCOUNT_BOOTSTRAP: "false"
+        run: ./scripts/release_preflight.sh
 
   e2e-smoke:
     name: Browser E2E Smoke

@@ -72,9 +72,7 @@ Alert priorities:
 - Re-run smoke checks and monitor for 30 minutes.
 
 ## 8. Release Checklist
-- `python manage.py test`
-- `python manage.py makemigrations --check --dry-run`
-- `python manage.py check --deploy` with production-like env
-- E2E smoke suite completed
+- `./scripts/release_preflight.sh` (includes migration drift, unapplied migration, tests, deploy checks)
+- `./scripts/release_preflight.sh --with-e2e` (run when browser stack is available)
 - UAT sign-off complete
 - Backup status confirmed

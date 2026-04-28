@@ -3,6 +3,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.checks import run_checks
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
@@ -412,3 +413,62 @@ class ReportsPageTests(TestCase):
             reverse("dashboard:staff_portal"),
             fetch_redirect_response=False,
         )
+
+
+class DeploymentHardeningChecksTests(TestCase):
+    def _deployment_check_ids(self):
+        return {
+            issue.id
+            for issue in run_checks(include_deployment_checks=True)
+            if issue.id and issue.id.startswith("accounts.E2")
+        }
+
+    @override_settings(
+        DEBUG=False,
+        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
+        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
+        ALLOWED_HOSTS=["barrelboss.example.com"],
+        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
+    )
+    def test_hardened_settings_pass_custom_deploy_checks(self):
+        self.assertEqual(self._deployment_check_ids(), set())
+
+    @override_settings(
+        DEBUG=False,
+        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True,
+        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
+        ALLOWED_HOSTS=["barrelboss.example.com"],
+        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
+    )
+    def test_demo_bootstrap_enabled_fails_deploy_check(self):
+        self.assertIn("accounts.E201", self._deployment_check_ids())
+
+    @override_settings(
+        DEBUG=False,
+        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
+        SECRET_KEY="django-insecure-unsafe-default",
+        ALLOWED_HOSTS=["barrelboss.example.com"],
+        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
+    )
+    def test_insecure_secret_key_fails_deploy_check(self):
+        self.assertIn("accounts.E202", self._deployment_check_ids())
+
+    @override_settings(
+        DEBUG=False,
+        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
+        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
+        ALLOWED_HOSTS=["localhost", "127.0.0.1"],
+        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
+    )
+    def test_local_only_allowed_hosts_fail_deploy_check(self):
+        self.assertIn("accounts.E203", self._deployment_check_ids())
+
+    @override_settings(
+        DEBUG=False,
+        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
+        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
+        ALLOWED_HOSTS=["barrelboss.example.com"],
+        CSRF_TRUSTED_ORIGINS=["http://barrelboss.example.com"],
+    )
+    def test_non_https_csrf_origins_fail_deploy_check(self):
+        self.assertIn("accounts.E204", self._deployment_check_ids())

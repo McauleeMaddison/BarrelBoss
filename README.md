@@ -133,12 +133,25 @@ Browser E2E smoke tests:
 python manage.py test e2e.smoke_tests
 ```
 
+Release preflight (local or CI quality gates):
+
+```bash
+./scripts/release_preflight.sh
+```
+
+With browser smoke tests included:
+
+```bash
+./scripts/release_preflight.sh --with-e2e
+```
+
 ## CI
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
 - migration drift check
+- unapplied migration check
 - Django test suite
-- deploy hardening check
+- deploy hardening checks (`check --deploy` + custom production checks)
 - Playwright browser smoke tests
 
 ## Deployment (Render + Railway)
@@ -190,8 +203,9 @@ Use this rollout checklist to get to business-ready in 2 weeks:
 - [Launch Readiness Plan](docs/launch-readiness-14-days.md)
 - [Staged UAT Script](docs/uat-staging-script.md)
 - [UAT Results Template](docs/uat-results-template.md)
+- [UAT Runs Archive](docs/uat-runs/README.md)
 - [Production Ops Runbook](docs/production-ops-runbook.md)
 
 ## Next Build Step
 
-Day 10: continue polish with richer reports/tables, validation edge cases, and production-ready UX refinements.
+Day 11-12: run staged UAT on mobile + desktop, log findings, and complete backup/monitoring setup using the production ops runbook.

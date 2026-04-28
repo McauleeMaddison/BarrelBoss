@@ -1,7 +1,8 @@
 import os
 import re
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta
+from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -108,6 +109,16 @@ class BrowserSmokeTests(StaticLiveServerTestCase):
             defaults={"category_supplied": Supplier.CategorySupplied.BEER_BARRELS},
         )
 
+    def _stock_defaults(self):
+        return {
+            "quantity": 10,
+            "unit": StockItem.Unit.BOTTLES,
+            "minimum_level": 3,
+            "cost": "12.50",
+            "supplier": self.supplier,
+            "is_active": True,
+        }
+
     def _login(self, username, password):
         self.page.goto(f"{self.live_server_url}/accounts/login/")
         self.page.get_by_label("Username").fill(username)
@@ -184,3 +195,103 @@ class BrowserSmokeTests(StaticLiveServerTestCase):
         self.page.goto(f"{self.live_server_url}/suppliers/")
         expect(self.page).to_have_url(re.compile(r".*/dashboard/staff/$"))
         expect(self.page.get_by_text("Access denied", exact=False)).to_be_visible()
+
+    def test_manager_can_soft_delete_stock_item_from_ui(self):
+        stock_item = StockItem.objects.create(
+            name="E2E Delete Stock Item",
+            category=StockItem.Category.SPIRITS,
+            **self._stock_defaults(),
+        )
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/stock/")
+        row = self.page.locator("tr", has_text=stock_item.name).first
+        row.get_by_role("link", name="Delete").click()
+        expect(self.page).to_have_url(re.compile(r".*/stock/\d+/delete/$"))
+        self.page.get_by_role("button", name="Confirm Remove").click()
+        expect(self.page).to_have_url(re.compile(r".*/stock/$"))
+
+        stock_item.refresh_from_db()
+        self.assertFalse(stock_item.is_active)
+
+    def test_stock_filter_pagination_keeps_query_parameters(self):
+        for index in range(13):
+            StockItem.objects.create(
+                name=f"E2E Spirits {index:02d}",
+                category=StockItem.Category.SPIRITS,
+                **self._stock_defaults(),
+            )
+        StockItem.objects.create(
+            name="E2E Beer Single",
+            category=StockItem.Category.BEER_BARRELS,
+            **self._stock_defaults(),
+        )
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/stock/")
+        self.page.locator("#q").fill("E2E Spirits")
+        self.page.locator("#category").select_option(value=StockItem.Category.SPIRITS)
+        self.page.get_by_role("button", name="Apply Filter").click()
+
+        expect(self.page.get_by_text("Page 1 of 2")).to_be_visible()
+        self.page.get_by_role("link", name="Next").click()
+        expect(self.page.get_by_text("Page 2 of 2")).to_be_visible()
+
+        parsed_url = urlparse(self.page.url)
+        query_params = parse_qs(parsed_url.query)
+        self.assertEqual(query_params.get("category"), [StockItem.Category.SPIRITS])
+        self.assertEqual(query_params.get("q"), ["E2E Spirits"])
+        self.assertEqual(query_params.get("page"), ["2"])
+
+    def test_manager_can_delete_checklist_and_shift_records(self):
+        today = timezone.localdate()
+        checklist = Checklist.objects.create(
+            title="E2E Checklist Delete",
+            checklist_type=Checklist.ChecklistType.OPENING,
+            assigned_to=self.staff_user,
+            created_by=self.manager_user,
+            due_date=today,
+            completed=False,
+        )
+        shift = Shift.objects.create(
+            staff=self.staff_user,
+            created_by=self.manager_user,
+            shift_date=today,
+            start_time=datetime.strptime("10:00", "%H:%M").time(),
+            end_time=datetime.strptime("18:00", "%H:%M").time(),
+            break_minutes=30,
+            notes="E2E Shift Delete",
+        )
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/checklists/")
+        checklist_row = self.page.locator("tr", has_text=checklist.title).first
+        checklist_row.get_by_role("link", name="Delete").click()
+        expect(self.page).to_have_url(re.compile(r".*/checklists/\d+/delete/$"))
+        self.page.get_by_role("button", name="Confirm Delete").click()
+        expect(self.page).to_have_url(re.compile(r".*/checklists/$"))
+        self.assertFalse(Checklist.objects.filter(pk=checklist.pk).exists())
+
+        self.page.goto(f"{self.live_server_url}/shifts/")
+        shift_row = self.page.locator("tr", has_text="E2E Shift Delete").first
+        shift_row.get_by_role("link", name="Delete").click()
+        expect(self.page).to_have_url(re.compile(r".*/shifts/\d+/delete/$"))
+        self.page.get_by_role("button", name="Confirm Delete").click()
+        expect(self.page).to_have_url(re.compile(r".*/shifts/$"))
+        self.assertFalse(Shift.objects.filter(pk=shift.pk).exists())
+
+    def test_manager_can_update_team_shift_alert_preferences_from_settings(self):
+        self.staff_user.staff_profile.notify_on_shift_assignment = False
+        self.staff_user.staff_profile.save(update_fields=["notify_on_shift_assignment"])
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/settings/")
+        toggle = self.page.locator(f"#notify_staff_{self.staff_user.id}")
+        expect(toggle).not_to_be_checked()
+        toggle.set_checked(True)
+        self.page.get_by_role("button", name="Save Alert Preferences").click()
+        expect(self.page).to_have_url(re.compile(r".*/settings/$"))
+        expect(self.page.get_by_text("Saved shift alert preferences", exact=False)).to_be_visible()
+
+        self.staff_user.staff_profile.refresh_from_db()
+        self.assertTrue(self.staff_user.staff_profile.notify_on_shift_assignment)
