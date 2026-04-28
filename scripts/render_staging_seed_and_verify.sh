@@ -65,6 +65,19 @@ log_step() {
   printf "\n==> %s\n" "$1"
 }
 
+db_url_trimmed="$(printf '%s' "${DATABASE_URL:-}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+if [[ -n "$db_url_trimmed" && "$db_url_trimmed" != *"://"* ]]; then
+  echo "Invalid DATABASE_URL detected (missing URL scheme)." >&2
+  echo "Set DATABASE_URL to a valid value like postgresql://USER:PASSWORD@HOST:5432/DBNAME" >&2
+  exit 1
+fi
+
+if [[ "${RENDER:-}" == "true" && -z "$db_url_trimmed" ]]; then
+  echo "DATABASE_URL is empty in Render runtime." >&2
+  echo "Open Render Dashboard -> Service -> Environment and set DATABASE_URL to your Postgres connection URL." >&2
+  exit 1
+fi
+
 log_step "Applying database migrations"
 "$PYTHON_BIN" manage.py migrate --noinput
 

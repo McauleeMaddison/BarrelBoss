@@ -228,6 +228,10 @@ export DJANGO_SUPERUSER_PASSWORD='Strong-Admin-Pass-123!'
 ./scripts/render_staging_seed_and_verify.sh
 ```
 
+Troubleshooting:
+- If you see `Invalid DATABASE_URL` / `No support for ''`, your `DATABASE_URL` env var is empty or malformed.
+- Set it to a full connection URL (for example `postgresql://USER:PASSWORD@HOST:5432/DBNAME`) in Render Environment, then re-run the script.
+
 ### 4. Notes
 
 - `DATABASE_URL` is preferred and fully supported.

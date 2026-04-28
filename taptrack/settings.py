@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -98,17 +99,25 @@ POSTGRES_CONFIG_PRESENT = all(
     )
 )
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip()
 DATABASE_SSL_REQUIRE = env_flag("DATABASE_SSL_REQUIRE", True)
 
 if DATABASE_URL:
-    DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=DATABASE_SSL_REQUIRE,
-        )
-    }
+    try:
+        DATABASES = {
+            "default": dj_database_url.parse(
+                DATABASE_URL,
+                conn_max_age=600,
+                ssl_require=DATABASE_SSL_REQUIRE,
+            )
+        }
+    except ValueError as exc:
+        scheme = DATABASE_URL.split("://", 1)[0] if "://" in DATABASE_URL else "<none>"
+        raise ImproperlyConfigured(
+            "Invalid DATABASE_URL environment variable. "
+            f"Detected scheme: {scheme}. "
+            "Expected a valid URL such as postgresql://USER:PASSWORD@HOST:5432/DBNAME."
+        ) from exc
 elif POSTGRES_CONFIG_PRESENT:
     DATABASES = {
         "default": {
