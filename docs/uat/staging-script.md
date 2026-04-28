@@ -67,6 +67,6 @@ Use this script to execute a role-based UAT round against a staging deployment b
 - Form fields, date/time inputs, and submit buttons are reachable without layout breakage.
 
 ## Completion Artifacts
-- Fill [UAT Results Template](./uat-results-template.md)
+- Fill [UAT Results Template](./results-template.md)
 - Capture screenshots for all failed scenarios.
 - Log defects by severity (Critical/High/Medium/Low) with reproduction steps.

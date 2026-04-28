@@ -200,11 +200,12 @@ python manage.py createsuperuser
 ## 14-Day Launch Plan
 
 Use this rollout checklist to get to business-ready in 2 weeks:
-- [Launch Readiness Plan](docs/launch-readiness-14-days.md)
-- [Staged UAT Script](docs/uat-staging-script.md)
-- [UAT Results Template](docs/uat-results-template.md)
-- [UAT Runs Archive](docs/uat-runs/README.md)
-- [Production Ops Runbook](docs/production-ops-runbook.md)
+- [Docs Index](docs/README.md)
+- [Launch Readiness Plan](docs/planning/launch-readiness-14-days.md)
+- [Staged UAT Script](docs/uat/staging-script.md)
+- [UAT Results Template](docs/uat/results-template.md)
+- [UAT Runs Archive](docs/uat/runs/README.md)
+- [Production Ops Runbook](docs/operations/production-ops-runbook.md)
 
 ## Next Build Step
 

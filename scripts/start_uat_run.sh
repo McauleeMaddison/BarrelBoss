@@ -5,13 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 ROUND_LABEL="${1:-round-1}"
-SANITIZED_ROUND="$(echo "$ROUND_LABEL" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9._-' '-')"
-RUN_DATE="$(date -u +"%Y-%m-%d")"
+SANITIZED_ROUND="$(printf '%s' "$ROUND_LABEL" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9._-' '-' | sed -E 's/^-+//; s/-+$//')"
+if [[ -z "$SANITIZED_ROUND" ]]; then
+  SANITIZED_ROUND="round"
+fi
 RUN_TIMESTAMP="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 RUN_SLUG_DATE="$(date -u +"%Y%m%d")"
 
-RESULTS_DIR="$ROOT_DIR/docs/uat-runs"
-TEMPLATE_PATH="$ROOT_DIR/docs/uat-results-template.md"
+RESULTS_DIR="$ROOT_DIR/docs/uat/runs"
+TEMPLATE_PATH="$ROOT_DIR/docs/uat/results-template.md"
 mkdir -p "$RESULTS_DIR"
 
 if [[ ! -f "$TEMPLATE_PATH" ]]; then
