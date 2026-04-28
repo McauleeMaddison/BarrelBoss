@@ -4,7 +4,8 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.test import TestCase
+from django.core.management.base import CommandError
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -12,6 +13,35 @@ from .models import PushSubscription, StaffProfile
 from apps.orders.models import Order, OrderItem
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
+
+
+class DemoAccountBootstrapCommandTests(TestCase):
+    @override_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False)
+    def test_bootstrap_demo_accounts_disabled_by_default_in_hardened_env(self):
+        with self.assertRaises(CommandError):
+            call_command("bootstrap_demo_accounts")
+
+        self.assertFalse(User.objects.filter(username="landlord").exists())
+        self.assertFalse(User.objects.filter(username="manager").exists())
+        self.assertFalse(User.objects.filter(username="staff").exists())
+
+    @override_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True)
+    def test_bootstrap_demo_accounts_creates_expected_users(self):
+        stdout = StringIO()
+        call_command("bootstrap_demo_accounts", password="DemoStrongPass-123!", stdout=stdout)
+
+        landlord = User.objects.get(username="landlord")
+        manager = User.objects.get(username="manager")
+        staff = User.objects.get(username="staff")
+
+        self.assertTrue(landlord.is_superuser)
+        self.assertEqual(landlord.staff_profile.role, StaffProfile.Role.LANDLORD)
+        self.assertEqual(manager.staff_profile.role, StaffProfile.Role.MANAGER)
+        self.assertEqual(staff.staff_profile.role, StaffProfile.Role.STAFF)
+        self.assertTrue(landlord.check_password("DemoStrongPass-123!"))
+        self.assertTrue(manager.check_password("DemoStrongPass-123!"))
+        self.assertTrue(staff.check_password("DemoStrongPass-123!"))
+        self.assertIn("Demo accounts ready", stdout.getvalue())
 
 
 class StaffProfileSignalTests(TestCase):
@@ -382,26 +412,3 @@ class ReportsPageTests(TestCase):
             reverse("dashboard:staff_portal"),
             fetch_redirect_response=False,
         )
-
-
-class DemoAccountBootstrapCommandTests(TestCase):
-    def test_bootstrap_demo_accounts_creates_expected_users(self):
-        output = StringIO()
-        call_command(
-            "bootstrap_demo_accounts",
-            password="DemoStrongPass-123!",
-            stdout=output,
-        )
-
-        landlord = User.objects.get(username="landlord")
-        manager = User.objects.get(username="manager")
-        staff = User.objects.get(username="staff")
-
-        self.assertTrue(landlord.is_superuser)
-        self.assertEqual(landlord.staff_profile.role, StaffProfile.Role.LANDLORD)
-        self.assertEqual(manager.staff_profile.role, StaffProfile.Role.MANAGER)
-        self.assertEqual(staff.staff_profile.role, StaffProfile.Role.STAFF)
-        self.assertTrue(landlord.check_password("DemoStrongPass-123!"))
-        self.assertTrue(manager.check_password("DemoStrongPass-123!"))
-        self.assertTrue(staff.check_password("DemoStrongPass-123!"))
-        self.assertIn("Demo accounts ready", output.getvalue())

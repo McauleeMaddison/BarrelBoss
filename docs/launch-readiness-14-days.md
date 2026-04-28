@@ -2,6 +2,11 @@
 
 Goal: ship a business-ready release in 2 weeks with clear quality gates.
 
+## Supporting Assets
+- [Staged UAT Script](./uat-staging-script.md)
+- [UAT Results Template](./uat-results-template.md)
+- [Production Ops Runbook](./production-ops-runbook.md)
+
 ## Week 1: Product and Operational Hardening
 
 ### Day 1: Access and Accounts

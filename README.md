@@ -20,6 +20,9 @@ Day 1 and Day 2 foundations are in place:
 - Day 9 checklist model with assignment workflow, completion toggle, filters, and role-based task controls
 - Day 10 shifts polish with weekly chart + staff/management portal split
 - Web push notifications for shift allocation/update events (staff opt-in per device)
+- CI pipeline for migration integrity, test suite, deploy security checks, and browser smoke tests
+- Playwright browser E2E smoke suite for login/role routing and core CRUD workflows
+- Production-safe demo account bootstrap guard (`ALLOW_DEMO_ACCOUNT_BOOTSTRAP`)
 
 ## Stack
 
@@ -44,6 +47,13 @@ python manage.py runserver
 
 Open: `http://127.0.0.1:8000/accounts/login/`
 
+### Optional Dev Dependencies (Browser E2E)
+
+```bash
+pip install -r requirements-dev.txt
+python -m playwright install chromium
+```
+
 ## Demo Login Accounts (Local Testing)
 
 Run this once to create/reset role-based demo users:
@@ -51,6 +61,8 @@ Run this once to create/reset role-based demo users:
 ```bash
 python manage.py bootstrap_demo_accounts
 ```
+
+Note: this command is blocked when `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false` (recommended in production).
 
 Default demo credentials:
 - `landlord` / `strong-pass-123` (Landlord portal + Django admin access)
@@ -81,6 +93,9 @@ Copy `.env.example` values into your environment (or `.env` with your preferred 
 - `WEB_PUSH_PUBLIC_KEY`
 - `WEB_PUSH_PRIVATE_KEY`
 - `WEB_PUSH_SUBJECT`
+- `ALLOW_DEMO_ACCOUNT_BOOTSTRAP`
+- `E2E_REQUIRE_BROWSER`
+- `E2E_HEADLESS`
 
 If PostgreSQL variables are not all set, the project defaults to SQLite.
 
@@ -112,6 +127,20 @@ Staff then enable alerts from `Settings` on their own device/browser.
 python manage.py test
 ```
 
+Browser E2E smoke tests:
+
+```bash
+python manage.py test e2e.smoke_tests
+```
+
+## CI
+
+GitHub Actions workflow: `.github/workflows/ci.yml`
+- migration drift check
+- Django test suite
+- deploy hardening check
+- Playwright browser smoke tests
+
 ## Deployment (Render + Railway)
 
 ### 1. Railway database
@@ -133,6 +162,7 @@ python manage.py test
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-render-domain>`
 - `DATABASE_URL=<railway-postgres-url>`
 - `DATABASE_SSL_REQUIRE=true`
+- `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`
 
 ### 3. First production release
 
@@ -158,6 +188,9 @@ python manage.py createsuperuser
 
 Use this rollout checklist to get to business-ready in 2 weeks:
 - [Launch Readiness Plan](docs/launch-readiness-14-days.md)
+- [Staged UAT Script](docs/uat-staging-script.md)
+- [UAT Results Template](docs/uat-results-template.md)
+- [Production Ops Runbook](docs/production-ops-runbook.md)
 
 ## Next Build Step
 

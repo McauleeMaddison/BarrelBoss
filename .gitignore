@@ -23,3 +23,7 @@ staticfiles/
 .idea/
 .DS_Store
 .pytest_cache/
+
+# Browser test artifacts
+playwright-report/
+test-results/

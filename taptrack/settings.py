@@ -166,6 +166,7 @@ CSRF_FAILURE_VIEW = "taptrack.views.csrf_failure"
 WEB_PUSH_PUBLIC_KEY = os.getenv("WEB_PUSH_PUBLIC_KEY", "").strip()
 WEB_PUSH_PRIVATE_KEY = os.getenv("WEB_PUSH_PRIVATE_KEY", "").strip()
 WEB_PUSH_SUBJECT = os.getenv("WEB_PUSH_SUBJECT", "").strip()
+ALLOW_DEMO_ACCOUNT_BOOTSTRAP = env_flag("ALLOW_DEMO_ACCOUNT_BOOTSTRAP", DEBUG)
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

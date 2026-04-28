@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 
 from apps.accounts.models import StaffProfile
 
@@ -49,6 +50,11 @@ class Command(BaseCommand):
         return user
 
     def handle(self, *args, **options):
+        if not getattr(settings, "ALLOW_DEMO_ACCOUNT_BOOTSTRAP", False):
+            raise CommandError(
+                "Demo account bootstrap is disabled. Set ALLOW_DEMO_ACCOUNT_BOOTSTRAP=true to enable."
+            )
+
         password = options["password"]
 
         users = [
