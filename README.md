@@ -206,6 +206,28 @@ Then create an admin user:
 python manage.py createsuperuser
 ```
 
+### Render Staging One-Click Seed + Verify
+
+In Render Shell (staging), run:
+
+```bash
+./scripts/render_staging_seed_and_verify.sh
+```
+
+This command:
+- runs migrations
+- seeds demo preview data with a temporary `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=true` for that command only
+- runs critical smoke test classes for role routing + stock/order/checklist/shift flows
+
+Optional non-interactive superuser creation in Render shell:
+
+```bash
+export DJANGO_SUPERUSER_USERNAME=admin
+export DJANGO_SUPERUSER_EMAIL=admin@example.com
+export DJANGO_SUPERUSER_PASSWORD='Strong-Admin-Pass-123!'
+./scripts/render_staging_seed_and_verify.sh
+```
+
 ### 4. Notes
 
 - `DATABASE_URL` is preferred and fully supported.
