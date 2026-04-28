@@ -75,6 +75,21 @@ Optional custom password for all demo users:
 python manage.py bootstrap_demo_accounts --password "YourStrongPassword-123!"
 ```
 
+### Demo Business Data (Client Preview)
+
+Populate the app with realistic suppliers, stock, orders, checklists, shifts, and breakages:
+
+```bash
+python manage.py bootstrap_demo_data
+```
+
+Re-run to refresh deterministic preview data (old preview-tagged records are replaced).
+Append mode is also available:
+
+```bash
+python manage.py bootstrap_demo_data --append
+```
+
 ## Environment Variables
 
 Copy `.env.example` values into your environment (or `.env` with your preferred loader):

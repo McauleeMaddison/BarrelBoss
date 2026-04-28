@@ -11,7 +11,10 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import PushSubscription, StaffProfile
+from apps.breakages.models import Breakage
+from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
+from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
 
@@ -43,6 +46,48 @@ class DemoAccountBootstrapCommandTests(TestCase):
         self.assertTrue(manager.check_password("DemoStrongPass-123!"))
         self.assertTrue(staff.check_password("DemoStrongPass-123!"))
         self.assertIn("Demo accounts ready", stdout.getvalue())
+
+
+class DemoDataBootstrapCommandTests(TestCase):
+    @override_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False)
+    def test_bootstrap_demo_data_disabled_in_hardened_env(self):
+        with self.assertRaises(CommandError):
+            call_command("bootstrap_demo_data")
+
+    @override_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True)
+    def test_bootstrap_demo_data_creates_realistic_records(self):
+        stdout = StringIO()
+        call_command("bootstrap_demo_data", stdout=stdout)
+
+        self.assertTrue(Supplier.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertTrue(StockItem.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertTrue(Order.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertTrue(Checklist.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertTrue(Shift.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertTrue(Breakage.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertIn("Demo preview dataset ready", stdout.getvalue())
+
+    @override_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True)
+    def test_bootstrap_demo_data_replaces_previous_preview_records(self):
+        call_command("bootstrap_demo_data")
+        supplier_count = Supplier.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
+        stock_count = StockItem.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
+        order_count = Order.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
+
+        call_command("bootstrap_demo_data")
+
+        self.assertEqual(
+            Supplier.objects.filter(notes__contains="[DEMO_PREVIEW]").count(),
+            supplier_count,
+        )
+        self.assertEqual(
+            StockItem.objects.filter(notes__contains="[DEMO_PREVIEW]").count(),
+            stock_count,
+        )
+        self.assertEqual(
+            Order.objects.filter(notes__contains="[DEMO_PREVIEW]").count(),
+            order_count,
+        )
 
 
 class StaffProfileSignalTests(TestCase):
