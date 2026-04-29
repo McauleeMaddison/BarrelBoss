@@ -4,9 +4,13 @@
 {% block page_title %}Stock{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <div class="panel-header">
-        <h3>{{ page_title }}</h3>
+<section class="panel stock-form-panel detail-panel">
+    <div class="panel-header detail-panel-head">
+        <div>
+            <p class="detail-kicker">Inventory</p>
+            <h3 class="detail-title">{{ page_title }}</h3>
+            <p class="panel-subtitle">Update item levels, pricing, and supplier linkage for accurate stock planning.</p>
+        </div>
         <a class="table-action" href="{% url 'stock:list' %}">Back to Stock</a>
     </div>
 

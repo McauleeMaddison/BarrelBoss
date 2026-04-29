@@ -4,9 +4,13 @@
 {% block page_title %}Shifts{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <div class="panel-header">
-        <h3>{{ page_title }}</h3>
+<section class="panel stock-form-panel detail-panel">
+    <div class="panel-header detail-panel-head">
+        <div>
+            <p class="detail-kicker">Scheduling</p>
+            <h3 class="detail-title">{{ page_title }}</h3>
+            <p class="panel-subtitle">Capture staff coverage, hours, and notes with payroll-safe timing details.</p>
+        </div>
         <a class="table-action" href="{% url 'shifts:list' %}">Back to Shifts</a>
     </div>
 

@@ -90,26 +90,63 @@
             </div>
             <div class="topbar-quick-actions">
                 {% block topbar_quick_actions %}
-                <a class="quick-action-link" href="{% url role_home_url_name %}">Dashboard</a>
-                <a class="quick-action-link" href="{% url 'stock:list' %}">Stock</a>
-                <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
-                <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
-                {% if is_management %}
-                <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">+ Add Stock</a>
-                {% endif %}
+                {% with current_path=request.path %}
+                    {% if '/stock/' in current_path %}
+                    <a class="quick-action-link" href="{% url 'stock:list' %}">Stock List</a>
+                    {% if is_management %}
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">+ Add Item</a>
+                    <a class="quick-action-link" href="{% url 'orders:add' %}">Create Order</a>
+                    <a class="quick-action-link" href="{% url 'suppliers:list' %}">Suppliers</a>
+                    {% else %}
+                    <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
+                    <a class="quick-action-link" href="{% url 'breakages:list' %}">Breakages</a>
+                    {% endif %}
+                    {% elif '/orders/' in current_path %}
+                    <a class="quick-action-link" href="{% url 'orders:list' %}">Order Queue</a>
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'orders:add' %}">+ New Order</a>
+                    <a class="quick-action-link" href="{% url 'stock:list' %}">Stock</a>
+                    {% if is_management %}
+                    <a class="quick-action-link" href="{% url 'suppliers:list' %}">Suppliers</a>
+                    {% endif %}
+                    {% elif '/checklists/' in current_path %}
+                    <a class="quick-action-link" href="{% url 'checklists:list' %}">Checklist Board</a>
+                    {% if is_management %}
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'checklists:add' %}">+ Assign Task</a>
+                    {% endif %}
+                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
+                    <a class="quick-action-link" href="{% url 'dashboard:home' %}">Dashboard</a>
+                    {% elif '/shifts/' in current_path %}
+                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shift Planner</a>
+                    {% if is_management %}
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'shifts:add' %}">+ Schedule Shift</a>
+                    {% endif %}
+                    <a class="quick-action-link" href="{% url 'checklists:list' %}">Checklists</a>
+                    <a class="quick-action-link" href="{% url 'dashboard:home' %}">Dashboard</a>
+                    {% else %}
+                    <a class="quick-action-link" href="{% url role_home_url_name %}">Dashboard</a>
+                    <a class="quick-action-link" href="{% url 'stock:list' %}">Stock</a>
+                    <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
+                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
+                    {% if is_management %}
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">+ Add Stock</a>
+                    {% endif %}
+                    {% endif %}
+                {% endwith %}
                 {% endblock %}
             </div>
         </div>
 
-        {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <div class="message message-{{ message.tags|default:'info'|slugify }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        <div class="page-shell">
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="message message-{{ message.tags|default:'info'|slugify }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
-        {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </main>
 </div>
 <script src="{% static 'js/pwa.js' %}" defer></script>

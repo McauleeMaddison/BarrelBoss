@@ -4,6 +4,31 @@
 {% block page_title %}Checklists{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero checklists-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">{% if is_management %}Task Dispatch{% else %}My Task Board{% endif %}</p>
+        <span class="badge portal-badge">{% if is_management %}Operations Checklist{% else %}Personal Checklist{% endif %}</span>
+    </div>
+    <h3 class="portal-hero-title">{% if is_management %}Daily Checklist Assignment & Completion Control{% else %}Assigned Shift Tasks & Completion Tracking{% endif %}</h3>
+    <p class="portal-hero-copy">
+        {% if is_management %}
+        Assign opening and closing tasks with clear ownership, due dates, and completion accountability.
+        {% else %}
+        Track assigned tasks, close them out fast, and keep handover quality high during every shift.
+        {% endif %}
+    </p>
+    <div class="report-toolbar">
+        {% if is_management %}
+        <a class="action-btn action-link" href="{% url 'checklists:add' %}">Assign Task</a>
+        {% endif %}
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">Visible: {{ task_count }}</span>
+            <span class="panel-header-meta">Due Today: {{ due_today_count }}</span>
+            <span class="panel-header-meta">Overdue: {{ overdue_count }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card neutral">
         <h3>Visible Tasks</h3>
@@ -57,6 +82,7 @@
     </form>
 
     {% if tasks %}
+    <div class="report-table-wrap">
     <table class="js-sortable data-table">
         <thead>
             <tr>
@@ -107,6 +133,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
     <p class="empty-state">No checklist tasks found for this filter yet.</p>

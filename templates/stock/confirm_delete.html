@@ -4,9 +4,10 @@
 {% block page_title %}Stock{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <h3>Remove "{{ item.name }}"?</h3>
-    <p>This will remove the item from active inventory and hide it from the stock list.</p>
+<section class="panel stock-form-panel detail-panel">
+    <p class="detail-kicker">Inventory</p>
+    <h3 class="detail-title">Remove "{{ item.name }}"?</h3>
+    <p class="panel-subtitle">This will remove the item from active inventory and hide it from the stock list.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}

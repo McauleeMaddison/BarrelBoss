@@ -191,6 +191,15 @@ h1, h2, h3 {
     margin: 0 auto;
 }
 
+.page-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.page-shell > section {
+    margin: 0;
+}
+
 .topbar {
     display: flex;
     align-items: center;
@@ -525,6 +534,15 @@ h1, h2, h3 {
     padding: 1.05rem 1.08rem;
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-soft);
+}
+
+.panel h3 {
+    line-height: 1.2;
+    letter-spacing: 0.015em;
+}
+
+.panel p {
+    line-height: 1.5;
 }
 
 .panel + .panel {
@@ -1417,11 +1435,11 @@ h1, h2, h3 {
 }
 
 .stock-form-panel {
-    max-width: 980px;
+    max-width: 1060px;
 }
 
 .stock-edit-form {
-    margin-top: 0.8rem;
+    margin-top: 0.72rem;
 }
 
 .form-grid {
@@ -1441,7 +1459,9 @@ h1, h2, h3 {
 
 .form-field label {
     color: var(--muted);
-    font-size: 0.87rem;
+    font-size: 0.84rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .form-field input,
@@ -1484,6 +1504,35 @@ h1, h2, h3 {
     display: flex;
     align-items: center;
     gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.detail-panel {
+    position: relative;
+    overflow: hidden;
+    border-color: rgba(212, 161, 70, 0.26);
+    background:
+        radial-gradient(circle at 92% -8%, rgba(212, 161, 70, 0.12), transparent 34%),
+        radial-gradient(circle at 0% 100%, rgba(183, 40, 73, 0.12), transparent 35%),
+        var(--panel);
+}
+
+.detail-panel-head {
+    margin-bottom: 0.75rem;
+}
+
+.detail-kicker {
+    margin: 0 0 0.28rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.69rem;
+    color: var(--gold);
+}
+
+.detail-title {
+    margin: 0;
+    font-size: clamp(1.34rem, 2vw, 1.66rem);
+    line-height: 1.14;
 }
 
 .inline-toggle-form {
@@ -1645,7 +1694,8 @@ tbody tr:hover {
 }
 
 .inventory-hero .dashboard-controls,
-.staff-hero .dashboard-controls {
+.staff-hero .dashboard-controls,
+.checklists-hero .dashboard-controls {
     gap: 0.5rem;
 }
 
@@ -2232,6 +2282,14 @@ tbody tr:hover {
 
     .settings-actions .action-btn,
     .settings-actions .table-action {
+        width: 100%;
+        text-align: center;
+    }
+
+    .form-actions .action-btn,
+    .form-actions .table-action,
+    .delete-form .action-btn,
+    .delete-form .table-action {
         width: 100%;
         text-align: center;
     }

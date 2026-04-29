@@ -4,9 +4,10 @@
 {% block page_title %}Shifts{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <h3>Delete shift for {{ shift.staff.username }} on {{ shift.shift_date }}?</h3>
-    <p>This permanently removes the shift and recorded hours from BarrelBoss.</p>
+<section class="panel stock-form-panel detail-panel">
+    <p class="detail-kicker">Scheduling</p>
+    <h3 class="detail-title">Delete shift for {{ shift.staff.username }} on {{ shift.shift_date }}?</h3>
+    <p class="panel-subtitle">This permanently removes the shift and recorded hours from BarrelBoss.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}

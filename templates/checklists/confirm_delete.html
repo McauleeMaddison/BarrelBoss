@@ -4,9 +4,10 @@
 {% block page_title %}Checklists{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <h3>Delete checklist task "{{ task.title }}"?</h3>
-    <p>This permanently removes the task from your checklist history.</p>
+<section class="panel stock-form-panel detail-panel">
+    <p class="detail-kicker">Task Planning</p>
+    <h3 class="detail-title">Delete checklist task "{{ task.title }}"?</h3>
+    <p class="panel-subtitle">This permanently removes the task from your checklist history.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}

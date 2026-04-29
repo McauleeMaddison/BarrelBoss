@@ -4,9 +4,13 @@
 {% block page_title %}Orders{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <div class="panel-header">
-        <h3>{{ page_title }}</h3>
+<section class="panel stock-form-panel detail-panel">
+    <div class="panel-header detail-panel-head">
+        <div>
+            <p class="detail-kicker">Procurement</p>
+            <h3 class="detail-title">{{ page_title }}</h3>
+            <p class="panel-subtitle">Define supplier, delivery timing, and line-item quantities for clean handoff.</p>
+        </div>
         <a class="table-action" href="{% url 'orders:list' %}">Back to Orders</a>
     </div>
 

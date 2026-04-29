@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
 from apps.checklists.models import Checklist
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderItem
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -295,3 +295,101 @@ class BrowserSmokeTests(StaticLiveServerTestCase):
 
         self.staff_user.staff_profile.refresh_from_db()
         self.assertTrue(self.staff_user.staff_profile.notify_on_shift_assignment)
+
+    def test_manager_can_update_stock_order_checklist_and_shift_records(self):
+        today = timezone.localdate()
+        stock_item = StockItem.objects.create(
+            name="E2E Update Stock Item",
+            category=StockItem.Category.SPIRITS,
+            quantity=10,
+            unit=StockItem.Unit.BOTTLES,
+            minimum_level=4,
+            cost="18.00",
+            supplier=self.supplier,
+            notes="Initial stock notes",
+            last_restocked=today,
+            is_active=True,
+        )
+        order = Order.objects.create(
+            supplier=self.supplier,
+            created_by=self.manager_user,
+            order_date=today,
+            delivery_date=today + timedelta(days=1),
+            status=Order.Status.DRAFT,
+            notes="Initial order notes",
+        )
+        order_item = OrderItem.objects.create(order=order, stock_item=stock_item, quantity=2)
+        checklist = Checklist.objects.create(
+            title="E2E Update Checklist",
+            checklist_type=Checklist.ChecklistType.OPENING,
+            assigned_to=self.staff_user,
+            created_by=self.manager_user,
+            due_date=today,
+            completed=False,
+            notes="Initial checklist notes",
+        )
+        shift = Shift.objects.create(
+            staff=self.staff_user,
+            created_by=self.manager_user,
+            shift_date=today,
+            start_time=datetime.strptime("09:00", "%H:%M").time(),
+            end_time=datetime.strptime("17:00", "%H:%M").time(),
+            break_minutes=30,
+            notes="Initial shift notes",
+        )
+
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/stock/{stock_item.pk}/edit/")
+        self.page.locator("#id_quantity").fill("14")
+        self.page.locator("#id_notes").fill("Updated via E2E smoke")
+        self.page.get_by_role("button", name="Save Changes").click()
+        expect(self.page).to_have_url(re.compile(r".*/stock/$"))
+        stock_item.refresh_from_db()
+        self.assertEqual(stock_item.quantity, 14)
+        self.assertEqual(stock_item.notes, "Updated via E2E smoke")
+
+        self.page.goto(f"{self.live_server_url}/orders/{order.pk}/edit/")
+        self.page.locator("#id_notes").fill("Updated order notes from smoke")
+        self.page.locator("#id_items-0-quantity").fill("6")
+        self.page.get_by_role("button", name="Save Changes").click()
+        expect(self.page).to_have_url(re.compile(r".*/orders/$"))
+        order.refresh_from_db()
+        order_item.refresh_from_db()
+        self.assertEqual(order.notes, "Updated order notes from smoke")
+        self.assertEqual(order_item.quantity, 6)
+
+        self.page.goto(f"{self.live_server_url}/orders/")
+        order_row = self.page.locator("tr", has_text=order.reference).first
+        order_row.locator("select[name='status']").select_option(Order.Status.ORDERED)
+        order_row.get_by_role("button", name="Update").click()
+        expect(self.page).to_have_url(re.compile(r".*/orders/$"))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.ORDERED)
+
+        updated_task_title = "E2E Checklist Updated Title"
+        self.page.goto(f"{self.live_server_url}/checklists/{checklist.pk}/edit/")
+        self.page.locator("#id_title").fill(updated_task_title)
+        self.page.locator("#id_notes").fill("Checklist updated via smoke")
+        self.page.get_by_role("button", name="Save Changes").click()
+        expect(self.page).to_have_url(re.compile(r".*/checklists/$"))
+        checklist.refresh_from_db()
+        self.assertEqual(checklist.title, updated_task_title)
+        self.assertEqual(checklist.notes, "Checklist updated via smoke")
+
+        checklist_row = self.page.locator("tr", has_text=updated_task_title).first
+        checklist_row.get_by_role("button", name="Mark Complete").click()
+        expect(self.page).to_have_url(re.compile(r".*/checklists/$"))
+        checklist.refresh_from_db()
+        self.assertTrue(checklist.completed)
+
+        self.page.goto(f"{self.live_server_url}/shifts/{shift.pk}/edit/")
+        self.page.locator("#id_start_time").fill("10:00")
+        self.page.locator("#id_end_time").fill("19:00")
+        self.page.locator("#id_break_minutes").fill("45")
+        self.page.locator("#id_notes").fill("Shift updated via smoke")
+        self.page.get_by_role("button", name="Save Changes").click()
+        expect(self.page).to_have_url(re.compile(r".*/shifts/$"))
+        shift.refresh_from_db()
+        self.assertEqual(shift.break_minutes, 45)
+        self.assertEqual(shift.notes, "Shift updated via smoke")
