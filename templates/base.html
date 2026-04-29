@@ -56,9 +56,11 @@
         <header class="topbar">
             <div class="topbar-start">
                 <button type="button" class="menu-btn" aria-label="Open navigation" aria-controls="main-navigation" aria-expanded="false">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    <img
+                        class="menu-btn-logo"
+                        src="{% static 'images/barrelboss-logo.png' %}"
+                        alt="Open navigation"
+                    >
                 </button>
                 <div>
                     <h2>{% block page_title %}Dashboard{% endblock %}</h2>
@@ -66,14 +68,6 @@
                 </div>
             </div>
             <div class="topbar-end">
-                <button
-                    type="button"
-                    class="desktop-nav-toggle"
-                    data-desktop-nav-toggle
-                    aria-pressed="false"
-                >
-                    Collapse Sidebar
-                </button>
                 <form action="{% url 'logout' %}" method="post" class="switch-account-form">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{% url 'login' %}">

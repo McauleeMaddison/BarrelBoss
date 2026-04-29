@@ -73,29 +73,45 @@ h1, h2, h3 {
 .layout {
     position: relative;
     display: grid;
-    grid-template-columns: 270px 1fr;
+    grid-template-columns: 1fr;
     min-height: 100vh;
 }
 
 .nav-overlay {
-    display: none;
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 8, 0.58);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 14;
     border: 0;
     padding: 0;
 }
 
 .sidebar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    z-index: 18;
+    width: min(320px, 88vw);
     height: 100vh;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding: 1.75rem 1.25rem;
+    padding:
+        calc(1rem + env(safe-area-inset-top, 0px))
+        1rem
+        calc(1rem + env(safe-area-inset-bottom, 0px));
     border-right: 1px solid rgba(212, 161, 70, 0.2);
     background: linear-gradient(180deg, rgba(22, 15, 22, 0.95), rgba(12, 11, 15, 0.95));
     display: flex;
     flex-direction: column;
     gap: 1.4rem;
+    transform: translateX(calc(-100% - 18px));
+    transition: transform 0.24s ease;
     box-shadow: inset -1px 0 0 rgba(212, 161, 70, 0.16);
 }
 
@@ -104,6 +120,17 @@ h1, h2, h3 {
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.8rem;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-bottom: 0.72rem;
+    margin-bottom: 0.35rem;
+    background: linear-gradient(
+        180deg,
+        rgba(22, 15, 22, 0.98) 0%,
+        rgba(22, 15, 22, 0.94) 76%,
+        rgba(22, 15, 22, 0) 100%
+    );
 }
 
 .brand {
@@ -130,16 +157,31 @@ h1, h2, h3 {
 }
 
 .sidebar-close {
-    display: none;
+    display: inline-flex;
     border: 1px solid rgba(212, 161, 70, 0.35);
     background: rgba(16, 12, 16, 0.8);
     border-radius: 0.5rem;
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     align-items: center;
     justify-content: center;
     color: var(--muted);
+    font-size: 1rem;
     cursor: pointer;
+}
+
+body.nav-open {
+    overflow: hidden;
+}
+
+body.nav-open .nav-overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+body.nav-open .sidebar {
+    transform: translateX(0);
 }
 
 .nav-links {
@@ -304,30 +346,6 @@ h1, h2, h3 {
     background: linear-gradient(145deg, rgba(123, 31, 51, 0.7), rgba(82, 25, 39, 0.82));
 }
 
-.desktop-nav-toggle {
-    display: none;
-    border: 1px solid rgba(212, 161, 70, 0.35);
-    border-radius: 0.75rem;
-    background: rgba(20, 14, 20, 0.75);
-    color: var(--muted);
-    padding: 0.48rem 0.76rem;
-    font-size: 0.8rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
-}
-
-.desktop-nav-toggle:hover {
-    border-color: rgba(212, 161, 70, 0.55);
-    color: var(--text);
-}
-
-.desktop-nav-toggle[aria-pressed="true"] {
-    border-color: rgba(212, 161, 70, 0.55);
-    background: rgba(123, 31, 51, 0.36);
-    color: var(--text);
-}
-
 .switch-account-form {
     margin: 0;
 }
@@ -351,7 +369,7 @@ h1, h2, h3 {
 }
 
 .menu-btn {
-    display: none;
+    display: inline-flex;
     width: 44px;
     height: 44px;
     border: 1px solid rgba(212, 161, 70, 0.35);
@@ -363,13 +381,16 @@ h1, h2, h3 {
     padding: 0.5rem;
 }
 
-.menu-btn span {
-    display: block;
-    width: 20px;
-    height: 2px;
-    background: var(--text);
-    margin: 2.5px 0;
-    border-radius: 999px;
+.menu-btn:hover {
+    border-color: rgba(212, 161, 70, 0.55);
+    background: rgba(42, 23, 35, 0.9);
+}
+
+.menu-btn-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 0.5rem;
 }
 
 .topbar p {
@@ -1941,6 +1962,10 @@ tbody tr:hover {
     position: absolute;
     right: 0.45rem;
     top: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
     transform: translateY(-50%);
     border: 1px solid rgba(212, 161, 70, 0.35);
     border-radius: 0.55rem;
@@ -1952,6 +1977,7 @@ tbody tr:hover {
     line-height: 1;
     padding: 0.3rem 0.5rem;
     width: auto;
+    max-width: 64px;
     margin-top: 0;
     box-shadow: none;
     cursor: pointer;
@@ -2012,89 +2038,16 @@ tbody tr:hover {
     }
 }
 
-@media (min-width: 1181px) and (hover: hover) and (pointer: fine) {
-    .desktop-nav-toggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 40px;
-    }
-
-    body.desktop-nav-collapsed .layout {
-        grid-template-columns: 1fr;
-    }
-
-    body.desktop-nav-collapsed .sidebar {
-        display: none;
-    }
-}
-
 @media (max-width: 1180px), (hover: none) and (pointer: coarse) and (max-width: 1366px) {
-    body.nav-open {
-        overflow: hidden;
-    }
-
-    .layout {
-        grid-template-columns: 1fr;
-    }
-
     .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 10;
         width: min(360px, 92vw);
-        padding:
-            calc(0.95rem + env(safe-area-inset-top, 0px))
-            1rem
-            calc(1rem + env(safe-area-inset-bottom, 0px));
-        transform: translateX(-105%);
-        transition: transform 0.22s ease;
         border-right: 1px solid rgba(212, 161, 70, 0.24);
         border-bottom: none;
         box-shadow: 18px 0 42px rgba(0, 0, 0, 0.46);
     }
 
-    .brand-wrap {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        padding-bottom: 0.72rem;
-        margin-bottom: 0.35rem;
-        background: linear-gradient(
-            180deg,
-            rgba(22, 15, 22, 0.98) 0%,
-            rgba(22, 15, 22, 0.94) 76%,
-            rgba(22, 15, 22, 0) 100%
-        );
-    }
-
     .brand-logo {
         width: min(168px, 100%);
-    }
-
-    .nav-overlay {
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgba(5, 5, 8, 0.58);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease;
-        z-index: 8;
-    }
-
-    body.nav-open .nav-overlay {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    body.nav-open .sidebar {
-        transform: translateX(0);
-    }
-
-    .menu-btn {
-        display: inline-flex;
     }
 
     .sidebar-close {

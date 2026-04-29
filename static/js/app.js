@@ -4,13 +4,6 @@
     const closeButton = document.querySelector(".sidebar-close");
     const overlay = document.querySelector(".nav-overlay");
     const navLinks = document.querySelectorAll(".nav-links .nav-link");
-    const desktopNavToggle = document.querySelector("[data-desktop-nav-toggle]");
-    const navCollapseQuery =
-        "(max-width: 1180px), (hover: none) and (pointer: coarse) and (max-width: 1366px)";
-    const desktopCollapseQuery = "(min-width: 1181px) and (hover: hover) and (pointer: fine)";
-    const desktopNavStorageKey = "barrelbossDesktopNavCollapsed";
-    const isMobileViewport = () => window.matchMedia(navCollapseQuery).matches;
-    const isDesktopCollapseViewport = () => window.matchMedia(desktopCollapseQuery).matches;
     const setNavState = (isOpen) => {
         body.classList.toggle("nav-open", isOpen);
         if (menuButton) {
@@ -19,58 +12,8 @@
     };
     const openNav = () => setNavState(true);
     const closeNav = () => setNavState(false);
-    const isDesktopNavCollapsed = () => body.classList.contains("desktop-nav-collapsed");
-    const updateDesktopToggleUi = () => {
-        if (!desktopNavToggle) {
-            return;
-        }
-
-        const collapsed = isDesktopNavCollapsed();
-        desktopNavToggle.setAttribute("aria-pressed", String(collapsed));
-        desktopNavToggle.textContent = collapsed ? "Expand Sidebar" : "Collapse Sidebar";
-    };
-    const setDesktopNavCollapsed = (collapsed, persist = true) => {
-        body.classList.toggle("desktop-nav-collapsed", collapsed);
-        updateDesktopToggleUi();
-
-        if (!persist) {
-            return;
-        }
-
-        try {
-            window.localStorage.setItem(desktopNavStorageKey, collapsed ? "1" : "0");
-        } catch (_error) {
-            // Keep UI working even when storage is unavailable.
-        }
-    };
-    const getStoredDesktopCollapseState = () => {
-        try {
-            return window.localStorage.getItem(desktopNavStorageKey) === "1";
-        } catch (_error) {
-            return false;
-        }
-    };
-
-    if (desktopNavToggle) {
-        if (getStoredDesktopCollapseState() && isDesktopCollapseViewport()) {
-            setDesktopNavCollapsed(true, false);
-        } else {
-            updateDesktopToggleUi();
-        }
-
-        desktopNavToggle.addEventListener("click", () => {
-            if (!isDesktopCollapseViewport()) {
-                return;
-            }
-            setDesktopNavCollapsed(!isDesktopNavCollapsed());
-        });
-    }
-
-    if (menuButton && closeButton && overlay) {
+    if (menuButton) {
         menuButton.addEventListener("click", () => {
-            if (!isMobileViewport()) {
-                return;
-            }
             if (body.classList.contains("nav-open")) {
                 closeNav();
                 return;
@@ -78,42 +21,29 @@
 
             openNav();
         });
+    }
 
+    if (closeButton) {
         closeButton.addEventListener("click", closeNav);
+    }
+
+    if (overlay) {
         overlay.addEventListener("click", closeNav);
+    }
 
+    if (navLinks.length) {
         navLinks.forEach((link) => {
-            link.addEventListener("click", () => {
-                if (isMobileViewport()) {
-                    closeNav();
-                }
-            });
-        });
-
-        window.addEventListener("resize", () => {
-            if (!isMobileViewport()) {
-                closeNav();
-            }
-
-            if (desktopNavToggle) {
-                if (
-                    isDesktopCollapseViewport()
-                    && getStoredDesktopCollapseState()
-                    && !isDesktopNavCollapsed()
-                ) {
-                    setDesktopNavCollapsed(true, false);
-                    return;
-                }
-                updateDesktopToggleUi();
-            }
-        });
-
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape") {
-                closeNav();
-            }
+            link.addEventListener("click", closeNav);
         });
     }
+
+    window.addEventListener("resize", closeNav);
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeNav();
+        }
+    });
 
     const passwordToggleButtons = document.querySelectorAll("[data-password-toggle]");
     if (passwordToggleButtons.length) {
