@@ -762,6 +762,14 @@ h1, h2, h3 {
     gap: 0.45rem;
 }
 
+.dashboard-panel-controls .segment-btn {
+    min-height: 34px;
+}
+
+.dashboard-panel-group[hidden] {
+    display: none !important;
+}
+
 .segment-btn {
     border: 1px solid rgba(212, 161, 70, 0.32);
     background: rgba(16, 12, 16, 0.75);
@@ -1929,7 +1937,7 @@ tbody tr:hover {
     padding-right: 4.5rem;
 }
 
-.password-toggle-btn {
+.login-card .password-toggle-btn {
     position: absolute;
     right: 0.45rem;
     top: 50%;
@@ -1938,20 +1946,26 @@ tbody tr:hover {
     border-radius: 0.55rem;
     background: rgba(20, 14, 20, 0.88);
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.03em;
     line-height: 1;
-    padding: 0.34rem 0.58rem;
+    padding: 0.3rem 0.5rem;
+    width: auto;
+    margin-top: 0;
+    box-shadow: none;
     cursor: pointer;
+    z-index: 2;
 }
 
-.password-toggle-btn:hover {
+.login-card .password-toggle-btn:hover {
     color: var(--text);
     border-color: rgba(212, 161, 70, 0.58);
+    transform: translateY(-50%);
+    box-shadow: none;
 }
 
-.login-card button {
+.login-card .login-submit-btn {
     width: 100%;
     margin-top: 1rem;
     border: none;
@@ -1964,12 +1978,12 @@ tbody tr:hover {
     box-shadow: var(--shadow-soft);
 }
 
-.login-card button:hover {
+.login-card .login-submit-btn:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-strong);
 }
 
-.login-card button:active {
+.login-card .login-submit-btn:active {
     transform: translateY(0);
 }
 

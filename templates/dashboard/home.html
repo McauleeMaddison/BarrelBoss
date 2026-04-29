@@ -18,89 +18,110 @@
     <p class="portal-hero-copy">{{ overview_copy }}</p>
 </section>
 
-<section class="metric-grid">
-    {% for card in metrics %}
-    <article class="metric-card {{ card.tone }} metric-interactive" tabindex="0" role="button" data-insight-title="{{ card.label }}" data-insight-delta="{{ card.delta }}" data-insight-note="{{ card.note }}">
-        <h3>{{ card.label }}</h3>
-        <p>{{ card.value }}</p>
-        <span class="metric-delta">{{ card.delta }}</span>
-        <span class="metric-note">{{ card.note }}</span>
-    </article>
-    {% endfor %}
-</section>
-
-{% with first_card=metrics.0 %}
-<section class="panel dashboard-insight" id="dashboardInsight">
-    <h3 id="insightTitle">{{ first_card.label }}</h3>
-    <p class="metric-delta" id="insightDelta">{{ first_card.delta }}</p>
-    <p id="insightNote">{{ first_card.note }}</p>
-</section>
-{% endwith %}
-
 <section class="panel portal-panel">
     <div class="panel-header">
-        <h3>Today's Focus</h3>
-        <span class="panel-header-meta">Shift priorities</span>
+        <h3>Quick View</h3>
+        <span class="panel-header-meta">Minimal mode</span>
     </div>
-    <ul class="focus-list">
-        {% for item in focus_list %}
-        <li>
+    <div class="dashboard-controls dashboard-panel-controls" data-dashboard-panel-controls>
+        <button class="segment-btn active" type="button" data-dashboard-panel-target="overview">Overview Cards</button>
+        <button class="segment-btn" type="button" data-dashboard-panel-target="focus">Focus Cards</button>
+        <button class="segment-btn" type="button" data-dashboard-panel-target="activity">Activity Cards</button>
+        <button class="segment-btn" type="button" data-dashboard-panel-target="throughput">Throughput Cards</button>
+    </div>
+</section>
+
+<section class="dashboard-panel-group" data-dashboard-panel-group="overview">
+    <section class="metric-grid">
+        {% for card in metrics %}
+        <article class="metric-card {{ card.tone }} metric-interactive" tabindex="0" role="button" data-insight-title="{{ card.label }}" data-insight-delta="{{ card.delta }}" data-insight-note="{{ card.note }}">
+            <h3>{{ card.label }}</h3>
+            <p>{{ card.value }}</p>
+            <span class="metric-delta">{{ card.delta }}</span>
+            <span class="metric-note">{{ card.note }}</span>
+        </article>
+        {% endfor %}
+    </section>
+
+    {% with first_card=metrics.0 %}
+    <section class="panel dashboard-insight" id="dashboardInsight">
+        <h3 id="insightTitle">{{ first_card.label }}</h3>
+        <p class="metric-delta" id="insightDelta">{{ first_card.delta }}</p>
+        <p id="insightNote">{{ first_card.note }}</p>
+    </section>
+    {% endwith %}
+</section>
+
+<section class="dashboard-panel-group" data-dashboard-panel-group="focus" hidden>
+    <section class="panel portal-panel">
+        <div class="panel-header">
+            <h3>Today's Focus</h3>
+            <span class="panel-header-meta">Shift priorities</span>
+        </div>
+        <ul class="focus-list">
+            {% for item in focus_list %}
+            <li>
+                <div>
+                    <strong>{{ item.task }}</strong>
+                    <small>{{ item.owner }} - Due {{ item.due }}</small>
+                </div>
+                <span class="badge">{{ item.state }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+</section>
+
+<section class="dashboard-panel-group" data-dashboard-panel-group="activity" hidden>
+    <section class="panel portal-panel">
+        <div class="panel-header">
             <div>
-                <strong>{{ item.task }}</strong>
-                <small>{{ item.owner }} - Due {{ item.due }}</small>
+                <h3>Recent Operational Activity</h3>
+                <p class="panel-subtitle">Filter by workflow</p>
             </div>
-            <span class="badge">{{ item.state }}</span>
-        </li>
-        {% endfor %}
-    </ul>
+            <div class="dashboard-controls" data-activity-controls>
+                <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
+                <button class="segment-btn" type="button" data-activity-filter="orders">Orders</button>
+                <button class="segment-btn" type="button" data-activity-filter="shifts">Shifts</button>
+                <button class="segment-btn" type="button" data-activity-filter="checklists">Checklists</button>
+                <button class="segment-btn" type="button" data-activity-filter="breakages">Breakages</button>
+            </div>
+        </div>
+        <ul class="activity-list" id="activityList">
+            {% for item in activity %}
+            <li data-activity-category="{{ item.category }}"><strong>{{ item.time }}</strong> - {{ item.text }} <span class="activity-chip">{{ item.category|title }}</span></li>
+            {% endfor %}
+        </ul>
+    </section>
 </section>
 
-<section class="panel portal-panel">
-    <div class="panel-header">
-        <div>
-            <h3>Recent Operational Activity</h3>
-            <p class="panel-subtitle">Filter by workflow</p>
-        </div>
-        <div class="dashboard-controls" data-activity-controls>
-            <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
-            <button class="segment-btn" type="button" data-activity-filter="orders">Orders</button>
-            <button class="segment-btn" type="button" data-activity-filter="shifts">Shifts</button>
-            <button class="segment-btn" type="button" data-activity-filter="checklists">Checklists</button>
-            <button class="segment-btn" type="button" data-activity-filter="breakages">Breakages</button>
-        </div>
-    </div>
-    <ul class="activity-list" id="activityList">
-        {% for item in activity %}
-        <li data-activity-category="{{ item.category }}"><strong>{{ item.time }}</strong> - {{ item.text }} <span class="activity-chip">{{ item.category|title }}</span></li>
-        {% endfor %}
-    </ul>
-</section>
-
-<section class="panel portal-panel">
-    <div class="panel-header">
-        <div>
-            {% if management_view %}
-            <h3>Weekly Service Throughput</h3>
-            {% else %}
-            <h3>Shift Throughput Projection</h3>
-            {% endif %}
-            <p class="panel-subtitle">Use mode toggles to compare pace</p>
-        </div>
-        <div class="dashboard-controls" data-throughput-controls>
-            <button class="segment-btn active" type="button" data-throughput-mode="service">Service Load</button>
-            <button class="segment-btn" type="button" data-throughput-mode="tasks">Task Progress</button>
-        </div>
-    </div>
-    <div class="throughput-grid" data-throughput-grid>
-        {% for point in throughput %}
-        <div class="throughput-item">
-            <div class="throughput-bar-wrap">
-                <span class="throughput-bar" data-service="{{ point.value }}" data-tasks="{{ point.task_value }}" style="height: {{ point.value }}%"></span>
+<section class="dashboard-panel-group" data-dashboard-panel-group="throughput" hidden>
+    <section class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                {% if management_view %}
+                <h3>Weekly Service Throughput</h3>
+                {% else %}
+                <h3>Shift Throughput Projection</h3>
+                {% endif %}
+                <p class="panel-subtitle">Use mode toggles to compare pace</p>
             </div>
-            <strong>{{ point.label }}</strong>
-            <small class="throughput-value" data-service="{{ point.value }}" data-tasks="{{ point.task_value }}">{{ point.value }}%</small>
+            <div class="dashboard-controls" data-throughput-controls>
+                <button class="segment-btn active" type="button" data-throughput-mode="service">Service Load</button>
+                <button class="segment-btn" type="button" data-throughput-mode="tasks">Task Progress</button>
+            </div>
         </div>
-        {% endfor %}
-    </div>
+        <div class="throughput-grid" data-throughput-grid>
+            {% for point in throughput %}
+            <div class="throughput-item">
+                <div class="throughput-bar-wrap">
+                    <span class="throughput-bar" data-service="{{ point.value }}" data-tasks="{{ point.task_value }}" style="height: {{ point.value }}%"></span>
+                </div>
+                <strong>{{ point.label }}</strong>
+                <small class="throughput-value" data-service="{{ point.value }}" data-tasks="{{ point.task_value }}">{{ point.value }}%</small>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
 </section>
 {% endblock %}

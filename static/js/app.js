@@ -133,8 +133,37 @@
                 passwordInput.type = isShowing ? "password" : "text";
                 button.textContent = isShowing ? "Show" : "Hide";
                 button.setAttribute("aria-pressed", String(!isShowing));
+                button.setAttribute(
+                    "aria-label",
+                    isShowing ? "Show password" : "Hide password",
+                );
             });
         });
+    }
+
+    const dashboardPanelButtons = document.querySelectorAll("[data-dashboard-panel-target]");
+    const dashboardPanelGroups = document.querySelectorAll("[data-dashboard-panel-group]");
+    if (dashboardPanelButtons.length && dashboardPanelGroups.length) {
+        const setDashboardPanel = (target) => {
+            dashboardPanelGroups.forEach((group) => {
+                const isMatch = group.dataset.dashboardPanelGroup === target;
+                group.hidden = !isMatch;
+            });
+
+            dashboardPanelButtons.forEach((button) => {
+                const isActive = button.dataset.dashboardPanelTarget === target;
+                button.classList.toggle("active", isActive);
+            });
+        };
+
+        dashboardPanelButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setDashboardPanel(button.dataset.dashboardPanelTarget);
+            });
+        });
+
+        const defaultTarget = dashboardPanelButtons[0].dataset.dashboardPanelTarget;
+        setDashboardPanel(defaultTarget);
     }
 
     const insightTitle = document.getElementById("insightTitle");
