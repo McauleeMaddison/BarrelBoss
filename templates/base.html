@@ -30,19 +30,22 @@
 
         {% with current=request.resolver_match.view_name %}
         <nav class="nav-links">
-            <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}">Dashboard</a>
-            <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}">Stock</a>
-            <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}">Breakages</a>
-            <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}">Checklists</a>
-            <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}">Shifts</a>
-            <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}">Orders</a>
+            <p class="nav-section-title">Operations</p>
+            <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}" data-nav-icon="DB">Dashboard</a>
+            <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}" data-nav-icon="ST">Stock</a>
+            <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">Breakages</a>
+            <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="CL">Checklists</a>
+            <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">Shifts</a>
+            <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="OR">Orders</a>
             {% if is_management %}
-            <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}">Suppliers</a>
-            <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}">Staff</a>
-            <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}">Reports</a>
-            <a class="nav-link{% if current == 'audit:list' %} active{% endif %}" href="{% url 'audit:list' %}">Audit Log</a>
+            <p class="nav-section-title">Management</p>
+            <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}" data-nav-icon="SU">Suppliers</a>
+            <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}" data-nav-icon="SF">Staff</a>
+            <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}" data-nav-icon="RP">Reports</a>
+            <a class="nav-link{% if current == 'audit:list' %} active{% endif %}" href="{% url 'audit:list' %}" data-nav-icon="AU">Audit Log</a>
             {% endif %}
-            <a class="nav-link{% if current == 'settings' %} active{% endif %}" href="{% url 'settings' %}">Settings</a>
+            <p class="nav-section-title">System</p>
+            <a class="nav-link{% if current == 'settings' %} active{% endif %}" href="{% url 'settings' %}" data-nav-icon="SE">Settings</a>
         </nav>
         {% endwith %}
 
