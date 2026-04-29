@@ -1920,6 +1920,37 @@ tbody tr:hover {
     box-shadow: 0 0 0 3px rgba(212, 161, 70, 0.16);
 }
 
+.password-toggle-wrap {
+    position: relative;
+}
+
+.password-toggle-wrap .login-card input,
+.password-toggle-wrap input {
+    padding-right: 4.5rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 1px solid rgba(212, 161, 70, 0.35);
+    border-radius: 0.55rem;
+    background: rgba(20, 14, 20, 0.88);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    padding: 0.34rem 0.58rem;
+    cursor: pointer;
+}
+
+.password-toggle-btn:hover {
+    color: var(--text);
+    border-color: rgba(212, 161, 70, 0.58);
+}
+
 .login-card button {
     width: 100%;
     margin-top: 1rem;

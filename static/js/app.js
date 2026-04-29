@@ -115,6 +115,28 @@
         });
     }
 
+    const passwordToggleButtons = document.querySelectorAll("[data-password-toggle]");
+    if (passwordToggleButtons.length) {
+        passwordToggleButtons.forEach((button) => {
+            const targetId = button.dataset.passwordTarget;
+            if (!targetId) {
+                return;
+            }
+
+            const passwordInput = document.getElementById(targetId);
+            if (!passwordInput) {
+                return;
+            }
+
+            button.addEventListener("click", () => {
+                const isShowing = passwordInput.type === "text";
+                passwordInput.type = isShowing ? "password" : "text";
+                button.textContent = isShowing ? "Show" : "Hide";
+                button.setAttribute("aria-pressed", String(!isShowing));
+            });
+        });
+    }
+
     const insightTitle = document.getElementById("insightTitle");
     const insightDelta = document.getElementById("insightDelta");
     const insightNote = document.getElementById("insightNote");

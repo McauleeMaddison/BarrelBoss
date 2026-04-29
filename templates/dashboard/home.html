@@ -37,39 +37,22 @@
 </section>
 {% endwith %}
 
-<section class="dashboard-stack">
-    <article class="panel portal-panel">
-        <div class="panel-header">
-            <h3>Quick Actions</h3>
-            <span class="panel-header-meta">Fast access</span>
-        </div>
-        <div class="action-grid">
-            {% for action in quick_actions %}
-            <a class="action-tile" href="{% url action.url_name %}">
-                <strong>{{ action.title }}</strong>
-                <span>{{ action.meta }}</span>
-            </a>
-            {% endfor %}
-        </div>
-    </article>
-
-    <article class="panel portal-panel">
-        <div class="panel-header">
-            <h3>Today's Focus</h3>
-            <span class="panel-header-meta">Shift priorities</span>
-        </div>
-        <ul class="focus-list">
-            {% for item in focus_list %}
-            <li>
-                <div>
-                    <strong>{{ item.task }}</strong>
-                    <small>{{ item.owner }} - Due {{ item.due }}</small>
-                </div>
-                <span class="badge">{{ item.state }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-    </article>
+<section class="panel portal-panel">
+    <div class="panel-header">
+        <h3>Today's Focus</h3>
+        <span class="panel-header-meta">Shift priorities</span>
+    </div>
+    <ul class="focus-list">
+        {% for item in focus_list %}
+        <li>
+            <div>
+                <strong>{{ item.task }}</strong>
+                <small>{{ item.owner }} - Due {{ item.due }}</small>
+            </div>
+            <span class="badge">{{ item.state }}</span>
+        </li>
+        {% endfor %}
+    </ul>
 </section>
 
 <section class="panel portal-panel">

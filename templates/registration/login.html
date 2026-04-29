@@ -35,12 +35,25 @@
             <label for="id_username">Username</label>
             <input id="id_username" name="username" type="text" autocomplete="username" required>
             <label for="id_password">Password</label>
-            <input id="id_password" name="password" type="password" autocomplete="current-password" required>
+            <div class="password-toggle-wrap">
+                <input id="id_password" name="password" type="password" autocomplete="current-password" required>
+                <button
+                    type="button"
+                    class="password-toggle-btn"
+                    data-password-toggle
+                    data-password-target="id_password"
+                    aria-controls="id_password"
+                    aria-pressed="false"
+                >
+                    Show
+                </button>
+            </div>
             <button type="submit">Sign In</button>
             <input type="hidden" name="next" value="{{ next }}">
         </form>
     </section>
 </div>
+<script src="{% static 'js/app.js' %}" defer></script>
 <script src="{% static 'js/pwa.js' %}" defer></script>
 </body>
 </html>
