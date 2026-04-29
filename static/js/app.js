@@ -224,6 +224,144 @@
         }
     }
 
+    const tableSortExtractValue = (cell) => {
+        const raw = (cell?.dataset?.sortValue || cell?.textContent || "").replace(/\s+/g, " ").trim();
+
+        if (!raw || raw === "-" || raw === "—") {
+            return { kind: "empty", value: "" };
+        }
+
+        const maybeDate = Date.parse(raw);
+        if (!Number.isNaN(maybeDate) && (raw.includes("-") || raw.includes("/") || /[A-Za-z]{3,}/.test(raw))) {
+            return { kind: "number", value: maybeDate };
+        }
+
+        const numericCandidate = raw
+            .replace(/,/g, "")
+            .replace(/[£$€%]/g, "")
+            .replace(/mins?/gi, "")
+            .replace(/h$/i, "")
+            .trim();
+
+        if (/^-?\d+(\.\d+)?$/.test(numericCandidate)) {
+            return { kind: "number", value: Number.parseFloat(numericCandidate) };
+        }
+
+        return { kind: "text", value: raw.toLowerCase() };
+    };
+
+    const setupDataTables = () => {
+        const dataTables = document.querySelectorAll("table.data-table");
+        if (!dataTables.length) {
+            return;
+        }
+
+        dataTables.forEach((table) => {
+            const headers = Array.from(table.querySelectorAll("thead th"));
+            const bodySection = table.tBodies && table.tBodies.length ? table.tBodies[0] : null;
+            if (!headers.length || !bodySection) {
+                return;
+            }
+
+            Array.from(bodySection.rows).forEach((row) => {
+                Array.from(row.cells).forEach((cell, columnIndex) => {
+                    const headerCell = headers[columnIndex];
+                    const headerLabel = headerCell
+                        ? headerCell.textContent.replace(/\s+/g, " ").trim()
+                        : `Column ${columnIndex + 1}`;
+                    cell.setAttribute("data-label", headerLabel || `Column ${columnIndex + 1}`);
+                });
+            });
+
+            if (!table.classList.contains("js-sortable")) {
+                return;
+            }
+
+            headers.forEach((header, columnIndex) => {
+                const heading = header.textContent.replace(/\s+/g, " ").trim().toLowerCase();
+                const sortDisabled = header.dataset.sort === "off" || heading.includes("action") || heading === "toggle";
+                if (sortDisabled) {
+                    return;
+                }
+
+                const hasCells = Array.from(bodySection.rows).some((row) => row.cells[columnIndex]);
+                if (!hasCells) {
+                    return;
+                }
+
+                header.classList.add("is-sortable");
+                header.tabIndex = 0;
+                header.setAttribute("role", "button");
+                header.setAttribute("aria-sort", "none");
+
+                const sortColumn = () => {
+                    const nextDirection = header.dataset.sortDirection === "asc" ? "desc" : "asc";
+                    const directionFactor = nextDirection === "asc" ? 1 : -1;
+
+                    headers.forEach((item) => {
+                        item.removeAttribute("data-sort-direction");
+                        if (item.classList.contains("is-sortable")) {
+                            item.setAttribute("aria-sort", "none");
+                        }
+                    });
+
+                    header.dataset.sortDirection = nextDirection;
+                    header.setAttribute("aria-sort", nextDirection === "asc" ? "ascending" : "descending");
+
+                    const indexedRows = Array.from(bodySection.rows).map((row, rowIndex) => ({
+                        row,
+                        rowIndex,
+                        sortValue: tableSortExtractValue(row.cells[columnIndex]),
+                    }));
+
+                    indexedRows.sort((left, right) => {
+                        const leftEmpty = left.sortValue.kind === "empty";
+                        const rightEmpty = right.sortValue.kind === "empty";
+                        if (leftEmpty || rightEmpty) {
+                            if (leftEmpty && rightEmpty) {
+                                return left.rowIndex - right.rowIndex;
+                            }
+                            return leftEmpty ? 1 : -1;
+                        }
+
+                        if (left.sortValue.kind === "number" && right.sortValue.kind === "number") {
+                            const numericDiff = left.sortValue.value - right.sortValue.value;
+                            return numericDiff === 0
+                                ? left.rowIndex - right.rowIndex
+                                : numericDiff * directionFactor;
+                        }
+
+                        const textDiff = String(left.sortValue.value).localeCompare(
+                            String(right.sortValue.value),
+                            undefined,
+                            { numeric: true, sensitivity: "base" },
+                        );
+
+                        if (textDiff === 0) {
+                            return left.rowIndex - right.rowIndex;
+                        }
+
+                        return textDiff * directionFactor;
+                    });
+
+                    indexedRows.forEach(({ row }) => {
+                        bodySection.appendChild(row);
+                    });
+                };
+
+                header.addEventListener("click", sortColumn);
+                header.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        sortColumn();
+                    }
+                });
+            });
+        });
+    };
+
+    setupDataTables();
+
     const pushSettingsNode = document.querySelector("[data-push-settings]");
     const pushStatus = document.getElementById("pushStatus");
 

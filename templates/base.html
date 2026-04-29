@@ -10,6 +10,8 @@
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
+    <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
     <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
 </head>
@@ -80,6 +82,24 @@
                 <div class="user-pill">{{ request.user.get_username|default:'Guest' }} ({{ user_role_label }})</div>
             </div>
         </header>
+        <div class="topbar-utility" role="region" aria-label="Quick actions">
+            <div class="topbar-status-row">
+                <span class="status-chip status-chip-live">System Live</span>
+                <span class="status-chip">{% now "H:i" %} UK</span>
+                <span class="status-chip status-chip-role">{{ user_role_label }}</span>
+            </div>
+            <div class="topbar-quick-actions">
+                {% block topbar_quick_actions %}
+                <a class="quick-action-link" href="{% url role_home_url_name %}">Dashboard</a>
+                <a class="quick-action-link" href="{% url 'stock:list' %}">Stock</a>
+                <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
+                <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
+                {% if is_management %}
+                <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">+ Add Stock</a>
+                {% endif %}
+                {% endblock %}
+            </div>
+        </div>
 
         {% if messages %}
             <div class="messages">
