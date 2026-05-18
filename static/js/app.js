@@ -1,9 +1,95 @@
 (() => {
     const body = document.body;
+    const themeStorageKey = "barrelboss-theme";
     const menuButton = document.querySelector(".menu-btn");
     const closeButton = document.querySelector(".sidebar-close");
     const overlay = document.querySelector(".nav-overlay");
     const navLinks = document.querySelectorAll(".nav-links .nav-link");
+    const themeToggleButton = document.querySelector("[data-theme-toggle]");
+    const themeToggleLabel = document.querySelector("[data-theme-toggle-label]");
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    const prefersDarkScheme = window.matchMedia
+        ? window.matchMedia("(prefers-color-scheme: dark)")
+        : null;
+
+    const getStoredTheme = () => {
+        try {
+            return window.localStorage.getItem(themeStorageKey);
+        } catch (_error) {
+            return null;
+        }
+    };
+
+    const setStoredTheme = (theme) => {
+        try {
+            window.localStorage.setItem(themeStorageKey, theme);
+        } catch (_error) {
+            // Ignore storage errors (for example, private browsing restrictions).
+        }
+    };
+
+    const applyTheme = (theme, { persist = false } = {}) => {
+        const normalizedTheme = theme === "dark" ? "dark" : "light";
+        body.dataset.theme = normalizedTheme;
+        body.classList.toggle("theme-dark", normalizedTheme === "dark");
+        body.classList.toggle("theme-light", normalizedTheme === "light");
+
+        if (themeToggleButton) {
+            themeToggleButton.setAttribute(
+                "aria-pressed",
+                String(normalizedTheme === "dark"),
+            );
+        }
+
+        if (themeToggleLabel) {
+            themeToggleLabel.textContent =
+                normalizedTheme === "dark" ? "Dark" : "Light";
+        }
+
+        if (themeColorMeta) {
+            themeColorMeta.setAttribute(
+                "content",
+                normalizedTheme === "dark" ? "#101317" : "#f5f6f8",
+            );
+        }
+
+        if (persist) {
+            setStoredTheme(normalizedTheme);
+        }
+    };
+
+    const resolveInitialTheme = () => {
+        const stored = getStoredTheme();
+        if (stored === "light" || stored === "dark") {
+            return stored;
+        }
+        if (prefersDarkScheme && prefersDarkScheme.matches) {
+            return "dark";
+        }
+        return "light";
+    };
+
+    applyTheme(resolveInitialTheme());
+
+    if (themeToggleButton) {
+        themeToggleButton.addEventListener("click", () => {
+            const current = body.dataset.theme === "dark" ? "dark" : "light";
+            applyTheme(current === "dark" ? "light" : "dark", { persist: true });
+        });
+    }
+
+    if (prefersDarkScheme && !getStoredTheme()) {
+        const handleSchemeChange = (event) => {
+            applyTheme(event.matches ? "dark" : "light");
+        };
+
+        if (typeof prefersDarkScheme.addEventListener === "function") {
+            prefersDarkScheme.addEventListener("change", handleSchemeChange);
+        } else if (typeof prefersDarkScheme.addListener === "function") {
+            prefersDarkScheme.addListener(handleSchemeChange);
+        }
+    }
+
     const setNavState = (isOpen) => {
         body.classList.toggle("nav-open", isOpen);
         if (menuButton) {
@@ -94,36 +180,6 @@
 
         const defaultTarget = dashboardPanelButtons[0].dataset.dashboardPanelTarget;
         setDashboardPanel(defaultTarget);
-    }
-
-    const insightTitle = document.getElementById("insightTitle");
-    const insightDelta = document.getElementById("insightDelta");
-    const insightNote = document.getElementById("insightNote");
-    const metricCards = document.querySelectorAll(".metric-interactive");
-
-    if (metricCards.length && insightTitle && insightDelta && insightNote) {
-        const updateInsight = (card) => {
-            insightTitle.textContent = card.dataset.insightTitle || "Live Insight";
-            insightDelta.textContent = card.dataset.insightDelta || "";
-            insightNote.textContent = card.dataset.insightNote || "";
-
-            metricCards.forEach((item) => item.classList.remove("active"));
-            card.classList.add("active");
-        };
-
-        metricCards.forEach((card, index) => {
-            if (index === 0) {
-                card.classList.add("active");
-            }
-
-            card.addEventListener("click", () => updateInsight(card));
-            card.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    updateInsight(card);
-                }
-            });
-        });
     }
 
     const activityButtons = document.querySelectorAll("[data-activity-filter]");

@@ -18,13 +18,6 @@
     </div>
     <h3 class="portal-hero-title">{{ overview_heading }}</h3>
     <p class="portal-hero-copy">{{ overview_copy }}</p>
-</section>
-
-<section class="panel portal-panel">
-    <div class="panel-header">
-        <h3>Dashboard View</h3>
-        <span class="panel-header-meta">Choose focus</span>
-    </div>
     <div class="dashboard-controls dashboard-panel-controls" data-dashboard-panel-controls>
         <button class="segment-btn active" type="button" data-dashboard-panel-target="overview">Overview</button>
         <button class="segment-btn" type="button" data-dashboard-panel-target="focus">Priorities</button>
@@ -36,7 +29,7 @@
 <section class="dashboard-panel-group" data-dashboard-panel-group="overview">
     <section class="metric-grid">
         {% for card in metrics %}
-        <article class="metric-card {{ card.tone }} metric-interactive" tabindex="0" role="button" data-insight-title="{{ card.label }}" data-insight-delta="{{ card.delta }}" data-insight-note="{{ card.note }}">
+        <article class="metric-card {{ card.tone }}">
             <h3>{{ card.label }}</h3>
             <p>{{ card.value }}</p>
             <span class="metric-delta">{{ card.delta }}</span>
@@ -44,14 +37,6 @@
         </article>
         {% endfor %}
     </section>
-
-    {% with first_card=metrics.0 %}
-    <section class="panel dashboard-insight" id="dashboardInsight">
-        <h3 id="insightTitle">{{ first_card.label }}</h3>
-        <p class="metric-delta" id="insightDelta">{{ first_card.delta }}</p>
-        <p id="insightNote">{{ first_card.note }}</p>
-    </section>
-    {% endwith %}
 </section>
 
 <section class="dashboard-panel-group" data-dashboard-panel-group="focus" hidden>
