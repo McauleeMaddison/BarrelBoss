@@ -3336,3 +3336,355 @@ table.data-table td {
         max-width: none;
     }
 }
+
+/* 2026 dashboard refinement: minimal and professional */
+.dashboard-minimal {
+    background:
+        radial-gradient(920px 420px at 100% -8%, rgba(52, 99, 164, 0.12), transparent 55%),
+        linear-gradient(180deg, #f4f7fb 0%, #edf2f7 100%);
+}
+
+.dashboard-minimal .shell-bg {
+    display: none;
+}
+
+.dashboard-minimal .main-content {
+    max-width: 1320px;
+}
+
+.dashboard-minimal .page-shell,
+.dashboard-minimal .dashboard-view,
+.dashboard-minimal .dashboard-panel-group {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.dashboard-minimal .topbar {
+    border: 1px solid #dbe4ee;
+    background: #ffffff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+
+.dashboard-minimal .topbar p {
+    color: #6c8099;
+}
+
+.dashboard-minimal .topbar-utility {
+    border: 1px solid #e0e8f0;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.dashboard-minimal .status-chip {
+    border-color: #d5e0eb;
+    background: #f8fbff;
+    color: #526b87;
+}
+
+.dashboard-minimal .status-chip-live {
+    border-color: #b9dac9;
+    background: #eefaf4;
+    color: #0e7e53;
+}
+
+.dashboard-minimal .status-chip-role {
+    border-color: #c8d9ec;
+    background: #eff5fc;
+    color: #274b75;
+}
+
+.dashboard-minimal .quick-action-link {
+    border-color: #d3deea;
+    background: #ffffff;
+    color: #3b5775;
+}
+
+.dashboard-minimal .quick-action-link:hover {
+    border-color: #afc3db;
+    background: #f6f9fd;
+}
+
+.dashboard-minimal .quick-action-link-cta {
+    border-color: #95b3d6;
+    background: #edf4fb;
+    color: #204a77;
+}
+
+.dashboard-minimal .panel {
+    background: #ffffff;
+    border: 1px solid #dbe4ee;
+    border-radius: 0.95rem;
+    padding: 1rem 1.05rem;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.dashboard-minimal .panel::before,
+.dashboard-minimal .portal-hero::after {
+    display: none;
+}
+
+.dashboard-minimal .portal-hero {
+    background: #ffffff;
+    border-color: #d9e3ee;
+}
+
+.dashboard-minimal .portal-hero-head {
+    margin-bottom: 0.56rem;
+}
+
+.dashboard-minimal .kicker {
+    color: #5a6f88;
+    letter-spacing: 0.11em;
+}
+
+.dashboard-minimal .portal-badge {
+    border: 1px solid #c5d8ed;
+    background: #edf5fd;
+    color: #204a77;
+    letter-spacing: 0.03em;
+    text-transform: none;
+}
+
+.dashboard-minimal .portal-hero-title {
+    max-width: 38ch;
+    color: #12243c;
+}
+
+.dashboard-minimal .portal-hero-copy {
+    color: #4f6682;
+    max-width: 70ch;
+}
+
+.dashboard-minimal .panel-header h3 {
+    color: #152943;
+}
+
+.dashboard-minimal .panel-header-meta {
+    border: 1px solid #d4e0ec;
+    background: #f7fafe;
+    color: #59718d;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+}
+
+.dashboard-minimal .panel-subtitle,
+.dashboard-minimal .metric-note {
+    color: #587089;
+}
+
+.dashboard-minimal .dashboard-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.dashboard-minimal .segment-btn {
+    border: 1px solid #d2deeb;
+    background: #f7fafe;
+    color: #36536f;
+    min-height: 36px;
+    padding: 0.4rem 0.74rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.dashboard-minimal .segment-btn.active,
+.dashboard-minimal .segment-btn:hover {
+    border-color: #2f4d70;
+    background: #2f4d70;
+    color: #ffffff;
+}
+
+.dashboard-minimal .metric-grid {
+    grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+    gap: 0.76rem;
+    margin-bottom: 0;
+}
+
+.dashboard-minimal .metric-card {
+    min-height: 0;
+    padding: 0.88rem;
+    border: 1px solid #d7e2ee;
+    box-shadow: none;
+    background: #ffffff;
+}
+
+.dashboard-minimal .metric-card h3 {
+    margin-bottom: 0.5rem;
+    color: #5c7088;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+.dashboard-minimal .metric-card p {
+    color: #142842;
+    font-size: 1.5rem;
+}
+
+.dashboard-minimal .metric-interactive:hover,
+.dashboard-minimal .metric-interactive.active {
+    border-color: #9fb8d5;
+    background: #f8fbff;
+    transform: none;
+}
+
+.dashboard-minimal .metric-card.warn,
+.dashboard-minimal .metric-card.alert,
+.dashboard-minimal .metric-card.ok,
+.dashboard-minimal .metric-card.neutral {
+    border-top: 1px solid #d7e2ee;
+}
+
+.dashboard-minimal .metric-card.warn {
+    border-left: 4px solid #c08a2a;
+}
+
+.dashboard-minimal .metric-card.alert {
+    border-left: 4px solid #c44b4b;
+}
+
+.dashboard-minimal .metric-card.ok {
+    border-left: 4px solid #1e9a71;
+}
+
+.dashboard-minimal .metric-card.neutral {
+    border-left: 4px solid #6d8daf;
+}
+
+.dashboard-minimal .metric-delta {
+    color: #2a5078;
+    font-size: 0.77rem;
+}
+
+.dashboard-minimal .dashboard-insight {
+    background: #f7fafe;
+    border-color: #d4dfeb;
+    box-shadow: none;
+}
+
+.dashboard-minimal .dashboard-insight h3 {
+    color: #163153;
+}
+
+.dashboard-minimal .focus-list li,
+.dashboard-minimal .activity-list li {
+    border: 1px solid #dbe5ef;
+    background: #ffffff;
+    border-radius: 0.72rem;
+}
+
+.dashboard-minimal .focus-list small {
+    color: #5a738d;
+}
+
+.dashboard-minimal .activity-list strong {
+    color: #476482;
+}
+
+.dashboard-minimal .activity-chip {
+    border: 1px solid #d4dfea;
+    background: #f6f9fd;
+    color: #395978;
+}
+
+.dashboard-minimal .badge {
+    border: 1px solid #d3deea;
+    background: #f7fafe;
+    color: #385674;
+}
+
+.dashboard-minimal .throughput-bar-wrap {
+    border: 1px solid #d6e1ed;
+    background: #f1f6fb;
+}
+
+.dashboard-minimal .throughput-bar {
+    background: linear-gradient(180deg, #6b90bc 0%, #2f4d70 100%);
+}
+
+.dashboard-minimal .throughput-item strong {
+    color: #566f8a;
+}
+
+.dashboard-minimal .throughput-value {
+    color: #22466f;
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .dashboard-minimal .dashboard-controls {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.18rem;
+    }
+
+    .dashboard-minimal .dashboard-controls .segment-btn {
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 720px) {
+    .dashboard-minimal .panel {
+        padding: 0.84rem 0.88rem;
+    }
+
+    .dashboard-minimal .portal-hero-title {
+        max-width: 100%;
+        font-size: clamp(1.18rem, 5vw, 1.42rem);
+    }
+
+    .dashboard-minimal .metric-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 2026 form readability patch: unify all app forms with light, high-contrast fields */
+.stock-filter-form select,
+.stock-filter-form input,
+.form-field input,
+.form-field select,
+.form-field textarea,
+.inline-status-form select {
+    background: #ffffff;
+    color: #10233e;
+    border: 1px solid #c6d6e9;
+}
+
+.stock-filter-form select:hover,
+.stock-filter-form input:hover,
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover,
+.inline-status-form select:hover {
+    border-color: #9fb6d3;
+}
+
+.stock-filter-form select:focus,
+.stock-filter-form input:focus,
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.inline-status-form select:focus {
+    border-color: #4f76a7;
+    box-shadow: 0 0 0 3px rgba(79, 118, 167, 0.16);
+    outline: none;
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+    color: #7a92ad;
+}
+
+.form-field input[type="date"] {
+    color-scheme: light;
+}
+
+.form-field input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    min-height: auto;
+    padding: 0;
+    accent-color: #2f4d70;
+}

@@ -15,7 +15,7 @@
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
     <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
 </head>
-<body class="app-shell">
+<body class="app-shell {% block body_class %}{% endblock %}">
 <button class="nav-overlay" type="button" aria-label="Close navigation"></button>
 <div class="shell-bg"></div>
 <div class="layout">
