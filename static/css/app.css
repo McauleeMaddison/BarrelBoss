@@ -122,7 +122,8 @@ h1, h2, h3 {
     left: 0;
     z-index: 18;
     width: min(328px, 88vw);
-    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -199,6 +200,7 @@ h1, h2, h3 {
 
 body.nav-open {
     overflow: hidden;
+    overscroll-behavior: none;
 }
 
 body.nav-open .nav-overlay {
@@ -209,6 +211,16 @@ body.nav-open .nav-overlay {
 
 body.nav-open .sidebar {
     transform: translateX(0);
+}
+
+body.nav-open .main-content {
+    pointer-events: none;
+    user-select: none;
+}
+
+body.nav-open .sidebar,
+body.nav-open .sidebar * {
+    pointer-events: auto;
 }
 
 .nav-links {
@@ -3888,6 +3900,9 @@ table.data-table td {
 }
 
 .app-shell .topbar-utility {
+    position: relative;
+    top: auto;
+    z-index: 1;
     justify-content: flex-start;
     padding: 0.52rem 0.72rem;
 }
@@ -4090,15 +4105,30 @@ table.data-table td {
 
 .app-shell .dashboard-panel-select {
     display: none;
+    appearance: none;
+    -webkit-appearance: none;
     width: 100%;
     min-height: 2.45rem;
     border: 1px solid var(--ui-glass-border);
     border-radius: 0.72rem;
-    padding: 0.5rem 0.78rem;
-    background: linear-gradient(145deg, var(--ui-glass-strong) 0%, var(--ui-glass) 70%, var(--ui-glass-soft) 100%);
+    padding: 0.5rem 2.2rem 0.5rem 0.78rem;
+    background-image:
+        linear-gradient(145deg, var(--ui-glass-strong) 0%, var(--ui-glass) 70%, var(--ui-glass-soft) 100%),
+        linear-gradient(45deg, transparent 50%, var(--ui-muted) 50%),
+        linear-gradient(135deg, var(--ui-muted) 50%, transparent 50%);
+    background-position:
+        0 0,
+        calc(100% - 1rem) calc(50% + 0.08rem),
+        calc(100% - 0.72rem) calc(50% + 0.08rem);
+    background-size:
+        100% 100%,
+        0.36rem 0.36rem,
+        0.36rem 0.36rem;
+    background-repeat: no-repeat;
     color: var(--ui-text);
     font-weight: 600;
     letter-spacing: 0.01em;
+    line-height: 1.2;
 }
 
 .app-shell .segment-btn {

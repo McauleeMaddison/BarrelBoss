@@ -8,10 +8,10 @@
 <section class="panel portal-hero">
     <div class="portal-hero-head">
         {% if management_view %}
-        <p class="kicker">{{ greeting }}, management team.</p>
+        <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"manager" }}.</p>
         <span class="badge portal-badge">Management Mode</span>
         {% else %}
-        <p class="kicker">{{ greeting }}, team member.</p>
+        <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
         <span class="badge portal-badge">Staff Mode</span>
         {% endif %}
     </div>

@@ -8,9 +8,13 @@
     const themeToggleButton = document.querySelector("[data-theme-toggle]");
     const themeToggleLabel = document.querySelector("[data-theme-toggle-label]");
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    const isMobileNav = window.matchMedia(
+        "(max-width: 1180px), (hover: none) and (pointer: coarse) and (max-width: 1366px)",
+    );
     const prefersDarkScheme = window.matchMedia
         ? window.matchMedia("(prefers-color-scheme: dark)")
         : null;
+    let lockedScrollY = 0;
 
     const getStoredTheme = () => {
         try {
@@ -90,10 +94,46 @@
         }
     }
 
+    const lockBodyScroll = () => {
+        lockedScrollY = window.scrollY || window.pageYOffset || 0;
+        body.style.position = "fixed";
+        body.style.top = `-${lockedScrollY}px`;
+        body.style.left = "0";
+        body.style.right = "0";
+        body.style.width = "100%";
+    };
+
+    const unlockBodyScroll = () => {
+        if (!body.style.position) {
+            return;
+        }
+
+        body.style.position = "";
+        body.style.top = "";
+        body.style.left = "";
+        body.style.right = "";
+        body.style.width = "";
+        window.scrollTo(0, lockedScrollY);
+    };
+
     const setNavState = (isOpen) => {
         body.classList.toggle("nav-open", isOpen);
         if (menuButton) {
             menuButton.setAttribute("aria-expanded", String(isOpen));
+        }
+
+        if (overlay) {
+            overlay.setAttribute("aria-hidden", String(!isOpen));
+        }
+
+        if (isMobileNav.matches) {
+            if (isOpen) {
+                lockBodyScroll();
+            } else {
+                unlockBodyScroll();
+            }
+        } else {
+            unlockBodyScroll();
         }
     };
     const openNav = () => setNavState(true);
@@ -115,6 +155,7 @@
 
     if (overlay) {
         overlay.addEventListener("click", closeNav);
+        overlay.addEventListener("touchend", closeNav, { passive: true });
     }
 
     if (navLinks.length) {
