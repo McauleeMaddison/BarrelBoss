@@ -3796,10 +3796,6 @@ table.data-table td {
     opacity: 0.78;
 }
 
-.app-shell .layout {
-    z-index: 1;
-}
-
 .app-shell h1,
 .app-shell h2,
 .app-shell h3,
