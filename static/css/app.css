@@ -3703,20 +3703,20 @@ table.data-table td {
     --ui-accent: #b07a3d;
     --ui-accent-strong: #8f602c;
     --ui-accent-soft: #f3e8d9;
-    --ui-success: #22885e;
-    --ui-danger: #bf4545;
-    --ui-success-soft: #eaf7f1;
-    --ui-success-border: #b6dec9;
-    --ui-danger-soft: #fdeeee;
-    --ui-danger-border: #e8c1c1;
+    --ui-success: #5f738d;
+    --ui-danger: #5f738d;
+    --ui-success-soft: #f1f4f8;
+    --ui-success-border: #c9d2dd;
+    --ui-danger-soft: #f1f4f8;
+    --ui-danger-border: #c9d2dd;
     --ui-accent-border: #ccb08a;
     --ui-focus-ring: rgba(176, 122, 61, 0.24);
     --ui-shadow-soft: 0 10px 24px rgba(23, 36, 56, 0.06);
     --ui-shadow-strong: 0 18px 40px rgba(23, 36, 56, 0.1);
     color: var(--ui-text);
     background:
-        radial-gradient(900px 430px at 100% -10%, rgba(176, 122, 61, 0.12), transparent 58%),
-        radial-gradient(820px 460px at -10% 100%, rgba(89, 107, 130, 0.12), transparent 62%),
+        radial-gradient(900px 430px at 100% -10%, rgba(205, 214, 224, 0.4), transparent 58%),
+        radial-gradient(820px 460px at -10% 100%, rgba(190, 200, 212, 0.35), transparent 62%),
         linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%);
 }
 
@@ -3733,17 +3733,21 @@ table.data-table td {
     --ui-accent: #c99961;
     --ui-accent-strong: #e0b07a;
     --ui-accent-soft: #3b3127;
-    --ui-success: #4dc38f;
-    --ui-danger: #ea7a7a;
-    --ui-success-soft: #1b382d;
-    --ui-success-border: #336f57;
-    --ui-danger-soft: #3a2424;
-    --ui-danger-border: #7b4444;
+    --ui-success: #9fb0c5;
+    --ui-danger: #9fb0c5;
+    --ui-success-soft: #212c3a;
+    --ui-success-border: #445469;
+    --ui-danger-soft: #212c3a;
+    --ui-danger-border: #445469;
     --ui-accent-border: #896842;
     --ui-focus-ring: rgba(201, 153, 97, 0.3);
     --ui-shadow-soft: 0 12px 26px rgba(0, 0, 0, 0.35);
     --ui-shadow-strong: 0 20px 46px rgba(0, 0, 0, 0.42);
     color: var(--ui-text);
+    background:
+        radial-gradient(900px 430px at 100% -10%, rgba(117, 131, 150, 0.22), transparent 58%),
+        radial-gradient(820px 460px at -10% 100%, rgba(97, 113, 132, 0.2), transparent 62%),
+        linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%);
 }
 
 .app-shell .shell-bg {
@@ -3881,11 +3885,11 @@ table.data-table td {
     height: 0.78rem;
     border-radius: 999px;
     border: 1px solid var(--ui-border-strong);
-    background: linear-gradient(135deg, var(--ui-surface) 0%, var(--ui-accent) 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #c8d1dc 100%);
 }
 
 .app-shell[data-theme="dark"] .theme-toggle-swatch {
-    background: linear-gradient(135deg, #d1d9e6 0%, var(--ui-accent) 100%);
+    background: linear-gradient(135deg, #d7dfeb 0%, #7f90a5 100%);
 }
 
 .app-shell .theme-toggle-btn:hover,
@@ -3902,15 +3906,15 @@ table.data-table td {
 }
 
 .app-shell .status-chip-live {
-    border-color: var(--ui-success-border);
-    background: var(--ui-success-soft);
-    color: var(--ui-success);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface);
+    color: var(--ui-text);
 }
 
 .app-shell .status-chip-role {
-    border-color: var(--ui-accent-border);
-    background: var(--ui-accent-soft);
-    color: var(--ui-accent-strong);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface);
+    color: var(--ui-text);
 }
 
 .app-shell .quick-action-link:hover {
@@ -3920,9 +3924,9 @@ table.data-table td {
 }
 
 .app-shell .quick-action-link-cta {
-    border-color: var(--ui-accent-border);
-    background: var(--ui-accent-soft);
-    color: var(--ui-accent-strong);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface);
+    color: var(--ui-text);
 }
 
 .app-shell .panel {
@@ -3975,9 +3979,9 @@ table.data-table td {
 
 .app-shell .segment-btn.active,
 .app-shell .segment-btn:hover {
-    border-color: var(--ui-accent-border);
-    background: var(--ui-accent-soft);
-    color: var(--ui-accent-strong);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface);
+    color: var(--ui-text);
 }
 
 .app-shell .metric-grid {
@@ -4007,15 +4011,15 @@ table.data-table td {
 }
 
 .app-shell .metric-card.alert {
-    border-top-color: var(--ui-danger);
+    border-top-color: var(--ui-border-strong);
 }
 
 .app-shell .metric-card.warn {
-    border-top-color: var(--ui-accent);
+    border-top-color: var(--ui-border-strong);
 }
 
 .app-shell .metric-card.ok {
-    border-top-color: var(--ui-success);
+    border-top-color: var(--ui-border-strong);
 }
 
 .app-shell .metric-card.neutral {
@@ -4050,14 +4054,14 @@ table.data-table td {
 
 .app-shell .throughput-bar,
 .app-shell .shift-chart-fill {
-    background: linear-gradient(180deg, var(--ui-accent) 0%, var(--ui-accent-strong) 100%);
+    background: linear-gradient(180deg, #d4dbe4 0%, #9eacbc 100%);
 }
 
 .app-shell .throughput-value,
 .app-shell .shift-chart-hours,
 .app-shell .detail-kicker,
 .app-shell .form-subtitle {
-    color: var(--ui-accent-strong);
+    color: var(--ui-text);
 }
 
 .app-shell .data-table,
@@ -4169,9 +4173,9 @@ table.data-table td {
 }
 
 .app-shell .table-action-danger {
-    border-color: var(--ui-danger-border);
-    color: var(--ui-danger);
-    background: var(--ui-danger-soft);
+    border-color: var(--ui-border-strong);
+    color: var(--ui-text);
+    background: var(--ui-surface-soft);
 }
 
 .app-shell .messages .message {
@@ -4181,16 +4185,16 @@ table.data-table td {
 }
 
 .app-shell .message-success {
-    border-color: var(--ui-success-border);
-    background: var(--ui-success-soft);
-    color: var(--ui-success);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface-soft);
+    color: var(--ui-text);
 }
 
 .app-shell .message-error,
 .app-shell .message-danger {
-    border-color: var(--ui-danger-border);
-    background: var(--ui-danger-soft);
-    color: var(--ui-danger);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface-soft);
+    color: var(--ui-text);
 }
 
 @media (max-width: 1024px) {
