@@ -5,12 +5,12 @@
 
 {% block content %}
 <section class="panel stock-form-panel">
-    <h3>Delete breakage record for "{{ record.item_name }}"?</h3>
-    <p>This will permanently remove the incident from the history table.</p>
+    <h3>Delete breakage record for {{ record.item_name }}?</h3>
+    <p>This permanently removes the incident from reporting history.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}
-        <button type="submit" class="action-btn">Confirm Delete</button>
+        <button type="submit" class="action-btn">Delete Record</button>
         <a class="table-action" href="{% url 'breakages:list' %}">Cancel</a>
     </form>
 </section>

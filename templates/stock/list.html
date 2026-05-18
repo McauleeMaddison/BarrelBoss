@@ -6,22 +6,22 @@
 {% block content %}
 <section class="panel portal-hero inventory-hero">
     <div class="portal-hero-head">
-        <p class="kicker">Inventory Command</p>
-        <span class="badge portal-badge">Live Stock Control</span>
+        <p class="kicker">Inventory</p>
+        <span class="badge portal-badge">Stock Control</span>
     </div>
-    <h3 class="portal-hero-title">Stock Health & Restock Risk</h3>
+    <h3 class="portal-hero-title">Stock Health and Reorder Risk</h3>
     <p class="portal-hero-copy">
-        Monitor urgency bands, track quantity gaps, and keep supplier-driven inventory flow predictable.
+        Prioritize low lines, close quantity gaps, and keep replenishment cycles reliable.
     </p>
     <div class="report-toolbar">
         {% if is_management %}
         <div class="settings-actions">
-            <a class="action-btn action-link" href="{% url 'stock:add' %}">Add Item</a>
+            <a class="action-btn action-link" href="{% url 'stock:add' %}">Create Item</a>
             <a class="table-action" href="{% url 'orders:add' %}">Create Order</a>
-            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Download CSV</a>
+            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
         </div>
         {% else %}
-        <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Download CSV</a>
+        <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
         {% endif %}
         <div class="dashboard-controls">
             <span class="panel-header-meta">Items: {{ total_items }}</span>
@@ -68,7 +68,7 @@
     <div class="panel-header">
         <div>
             <h3>Current Inventory</h3>
-            <p class="panel-subtitle">Use urgency filters to focus on what needs action first.</p>
+            <p class="panel-subtitle">Use filters to surface what needs action first.</p>
         </div>
     </div>
 
@@ -94,7 +94,7 @@
                 {% endfor %}
             </select>
         </div>
-        <button class="action-btn" type="submit">Apply Filter</button>
+        <button class="action-btn" type="submit">Apply Filters</button>
         <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
     </form>
 
@@ -146,7 +146,7 @@
     </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
-    <p class="empty-state">No stock items found for this filter yet.</p>
+    <p class="empty-state">No inventory items match this filter.</p>
     {% endif %}
 </section>
 {% endblock %}

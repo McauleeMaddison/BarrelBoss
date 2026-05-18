@@ -5,12 +5,12 @@
 
 {% block content %}
 <section class="panel stock-form-panel">
-    <h3>Delete "{{ supplier.name }}"?</h3>
-    <p>This permanently removes the supplier record. Related stock items will keep running and set supplier to empty.</p>
+    <h3>Delete supplier: {{ supplier.name }}?</h3>
+    <p>This permanently removes the supplier record. Related stock items remain active with an empty supplier field.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}
-        <button type="submit" class="action-btn">Confirm Delete</button>
+        <button type="submit" class="action-btn">Delete Supplier</button>
         <a class="table-action" href="{% url 'suppliers:list' %}">Cancel</a>
     </form>
 </section>

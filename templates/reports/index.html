@@ -11,7 +11,7 @@
     </div>
     <h3 class="portal-hero-title">Operational Performance Cockpit</h3>
     <p class="portal-hero-copy">
-        Review stock risk, supplier spend, breakage loss, and checklist discipline from one business summary.
+        Review stock risk, supplier spend, breakage loss, and checklist completion in one management summary.
     </p>
     <div class="report-toolbar">
         <form method="get" class="report-range-form">
@@ -26,7 +26,7 @@
             </button>
             {% endfor %}
         </form>
-        <a href="?range={{ selected_range }}&export=csv" class="table-action report-export-btn">Download CSV</a>
+        <a href="?range={{ selected_range }}&export=csv" class="table-action report-export-btn">Export CSV</a>
     </div>
     <p class="report-window-meta">
         Current window: {{ report_window_label }}<br>
@@ -48,7 +48,7 @@
     <div class="panel-header">
         <div>
             <h3>Executive Highlights</h3>
-            <p class="panel-subtitle">Priority signals to review before service opens</p>
+            <p class="panel-subtitle">Priority signals to review before service starts</p>
         </div>
     </div>
     <div class="report-highlight-grid">

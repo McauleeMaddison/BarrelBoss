@@ -627,7 +627,7 @@ def reports_page(request):
                 f"{_format_currency(top_supplier_row['total_spend'])} across "
                 f"{top_supplier_row['total_units'] or 0} units"
                 if top_supplier_row
-                else "No delivered supplier spend in this window."
+                else "No delivered supplier spend recorded in this period."
             ),
             "tone": "neutral",
         },
@@ -637,7 +637,7 @@ def reports_page(request):
             "meta": (
                 f"{top_category_row['total_units'] or 0} units delivered"
                 if top_category_row
-                else "No delivered stock volume in this window."
+                else "No delivered stock volume recorded in this period."
             ),
             "tone": "ok",
         },
@@ -647,7 +647,7 @@ def reports_page(request):
             "meta": (
                 f"{weakest_checklist_row['completion_rate']}% completion"
                 if weakest_checklist_row
-                else "No checklist activity in this window."
+                else "No checklist activity recorded in this period."
             ),
             "tone": "alert" if weakest_checklist_row and weakest_checklist_row["completion_rate"] < 70 else "neutral",
         },
@@ -658,7 +658,7 @@ def reports_page(request):
                 f"{dominant_breakage_issue['total_units']} units across "
                 f"{dominant_breakage_issue['total_reports']} report(s)"
                 if dominant_breakage_issue
-                else "No breakages logged in this window."
+                else "No breakage incidents logged in this period."
             ),
             "tone": "warn" if dominant_breakage_issue else "ok",
         },

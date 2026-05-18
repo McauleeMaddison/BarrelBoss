@@ -6,7 +6,7 @@
 {% block content %}
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Suppliers Found</h3>
+        <h3>Suppliers in View</h3>
         <p>{{ supplier_count }}</p>
     </article>
 </section>
@@ -14,7 +14,7 @@
 <section class="panel">
     <div class="panel-header">
         <h3>Supplier Directory</h3>
-        <a class="action-btn action-link" href="{% url 'suppliers:add' %}">Add Supplier</a>
+        <a class="action-btn action-link" href="{% url 'suppliers:add' %}">Create Supplier</a>
     </div>
 
     <form method="get" class="stock-filter-form">
@@ -34,36 +34,38 @@
     </form>
 
     {% if suppliers %}
-    <table class="js-sortable data-table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Contact</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Category</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for supplier in suppliers %}
-            <tr>
-                <td>{{ supplier.name }}</td>
-                <td>{{ supplier.contact_name|default:'-' }}</td>
-                <td>{{ supplier.phone|default:'-' }}</td>
-                <td>{{ supplier.email|default:'-' }}</td>
-                <td>{{ supplier.get_category_supplied_display }}</td>
-                <td class="stock-actions-cell">
-                    <a class="table-action" href="{% url 'suppliers:edit' supplier.pk %}">Edit</a>
-                    <a class="table-action table-action-danger" href="{% url 'suppliers:delete' supplier.pk %}">Delete</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="report-table-wrap">
+        <table class="js-sortable data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ supplier.name }}</td>
+                    <td>{{ supplier.contact_name|default:'-' }}</td>
+                    <td>{{ supplier.phone|default:'-' }}</td>
+                    <td>{{ supplier.email|default:'-' }}</td>
+                    <td>{{ supplier.get_category_supplied_display }}</td>
+                    <td class="stock-actions-cell">
+                        <a class="table-action" href="{% url 'suppliers:edit' supplier.pk %}">Edit</a>
+                        <a class="table-action table-action-danger" href="{% url 'suppliers:delete' supplier.pk %}">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
-    <p class="empty-state">No suppliers found for this filter yet.</p>
+    <p class="empty-state">No suppliers match this filter.</p>
     {% endif %}
 </section>
 {% endblock %}

@@ -6,17 +6,17 @@
 {% block content %}
 <section class="panel portal-hero staff-hero">
     <div class="portal-hero-head">
-        <p class="kicker">Team Management</p>
+        <p class="kicker">People Management</p>
         <span class="badge portal-badge">People & Roles</span>
     </div>
-    <h3 class="portal-hero-title">Staff Directory & Access Controls</h3>
+    <h3 class="portal-hero-title">Staff Directory and Access Control</h3>
     <p class="portal-hero-copy">
-        Manage active users, role assignments, and notification readiness from one clean operations view.
+        Manage active users, role permissions, and alert readiness from one operational view.
     </p>
     <div class="report-toolbar">
         <div class="settings-actions">
-            <a class="action-btn action-link" href="{% url 'staff_add' %}">Add Staff</a>
-            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Download CSV</a>
+            <a class="action-btn action-link" href="{% url 'staff_add' %}">Create Staff Member</a>
+            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
         </div>
         <div class="dashboard-controls">
             <span class="panel-header-meta">Total: {{ team_total }}</span>
@@ -58,7 +58,7 @@
     <div class="panel-header">
         <div>
             <h3>Team Members</h3>
-            <p class="panel-subtitle">Filter by role, status, and push-alert readiness.</p>
+            <p class="panel-subtitle">Filter by role, status, and push alert readiness.</p>
         </div>
     </div>
 
@@ -154,7 +154,7 @@
     </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
-    <p class="empty-state">No staff profiles found for this filter.</p>
+    <p class="empty-state">No staff profiles match this filter.</p>
     {% endif %}
 </section>
 {% endblock %}

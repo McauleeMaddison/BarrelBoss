@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#100f14">
+    <meta name="theme-color" content="#f4f7fb">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
-    <title>BarrelBoss Login</title>
+    <title>BarrelBoss | Sign In</title>
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
@@ -20,17 +20,17 @@
     <section class="login-hero">
         <img class="login-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
         <p class="eyebrow">BarrelBoss</p>
-        <h1>Run your cellar and bar floor without guesswork.</h1>
-        <p>Monitor stock, barrel orders, breakages, and shift checklists from one dashboard built for pub teams.</p>
+        <h1>Run your venue operations with clarity.</h1>
+        <p>Track stock, orders, breakages, shifts, and tasks from one workspace built for pub teams.</p>
     </section>
 
     <section class="login-card">
         <h2>Sign In</h2>
-        <p>Use your staff account to continue.</p>
+        <p>Use your staff credentials to continue.</p>
         <form method="post">
             {% csrf_token %}
             {% if form.errors %}
-                <p class="error-text">Your username or password was not recognised.</p>
+                <p class="error-text">Your username or password was not recognized.</p>
             {% endif %}
             <label for="id_username">Username</label>
             <input id="id_username" name="username" type="text" autocomplete="username" required>

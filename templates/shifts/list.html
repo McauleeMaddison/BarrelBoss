@@ -7,12 +7,12 @@
 <section class="panel portal-hero shifts-hero">
     <div class="portal-hero-head">
         <p class="kicker">{% if is_management %}Workforce Planning{% else %}My Shift Schedule{% endif %}</p>
-        <span class="badge portal-badge">{% if is_management %}Team Planner{% else %}Staff Portal{% endif %}</span>
+        <span class="badge portal-badge">{% if is_management %}Team Planner{% else %}Schedule View{% endif %}</span>
     </div>
-    <h3 class="portal-hero-title">{% if is_management %}Shift Coverage & Hours Performance{% else %}Shift Hours & Upcoming Timeline{% endif %}</h3>
+    <h3 class="portal-hero-title">{% if is_management %}Shift Coverage and Hours Performance{% else %}Shift Hours and Upcoming Timeline{% endif %}</h3>
     <p class="portal-hero-copy">
         {% if is_management %}
-        Allocate shifts, monitor weekly capacity, and keep payroll-hour visibility clear across the team.
+        Allocate shifts, monitor weekly capacity, and keep payroll visibility clear across the team.
         {% else %}
         Track your upcoming shifts, worked-hour totals, and this week’s schedule at a glance.
         {% endif %}
@@ -106,7 +106,7 @@
             {% else %}
             <h3>My Shift Hours</h3>
             {% endif %}
-            <p class="panel-subtitle">Filter by staff and range to inspect daily workload.</p>
+            <p class="panel-subtitle">Filter by staff and date range to inspect workload.</p>
         </div>
     </div>
 
@@ -164,7 +164,7 @@
                     {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
                     <td>{{ shift.start_time|time:"H:i" }}</td>
                     <td>{{ shift.end_time|time:"H:i" }}</td>
-                    <td>{{ shift.break_minutes }} mins</td>
+                    <td>{{ shift.break_minutes }} min</td>
                     <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
                     <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
                     {% if is_management %}
@@ -180,7 +180,7 @@
     </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
-    <p class="empty-state">No shifts found for this view yet.</p>
+    <p class="empty-state">No shifts found for this view.</p>
     {% endif %}
 </section>
 {% endblock %}

@@ -6,7 +6,10 @@
 {% block content %}
 <section class="panel stock-form-panel">
     <div class="panel-header">
-        <h3>{{ page_title }}</h3>
+        <div>
+            <h3>{{ page_title }}</h3>
+            <p class="panel-subtitle">Maintain role, profile, and shift-alert settings for each staff account.</p>
+        </div>
         <a class="table-action" href="{% url 'staff' %}">Back to Staff</a>
     </div>
 

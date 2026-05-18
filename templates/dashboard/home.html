@@ -20,14 +20,14 @@
 
 <section class="panel portal-panel">
     <div class="panel-header">
-        <h3>Quick View</h3>
-        <span class="panel-header-meta">Minimal mode</span>
+        <h3>Operational Views</h3>
+        <span class="panel-header-meta">Select perspective</span>
     </div>
     <div class="dashboard-controls dashboard-panel-controls" data-dashboard-panel-controls>
-        <button class="segment-btn active" type="button" data-dashboard-panel-target="overview">Overview Cards</button>
-        <button class="segment-btn" type="button" data-dashboard-panel-target="focus">Focus Cards</button>
-        <button class="segment-btn" type="button" data-dashboard-panel-target="activity">Activity Cards</button>
-        <button class="segment-btn" type="button" data-dashboard-panel-target="throughput">Throughput Cards</button>
+        <button class="segment-btn active" type="button" data-dashboard-panel-target="overview">Summary</button>
+        <button class="segment-btn" type="button" data-dashboard-panel-target="focus">Priorities</button>
+        <button class="segment-btn" type="button" data-dashboard-panel-target="activity">Activity</button>
+        <button class="segment-btn" type="button" data-dashboard-panel-target="throughput">Capacity</button>
     </div>
 </section>
 
@@ -55,8 +55,8 @@
 <section class="dashboard-panel-group" data-dashboard-panel-group="focus" hidden>
     <section class="panel portal-panel">
         <div class="panel-header">
-            <h3>Today's Focus</h3>
-            <span class="panel-header-meta">Shift priorities</span>
+            <h3>Priority Queue</h3>
+            <span class="panel-header-meta">Recommended next actions</span>
         </div>
         <ul class="focus-list">
             {% for item in focus_list %}
@@ -77,7 +77,7 @@
         <div class="panel-header">
             <div>
                 <h3>Recent Operational Activity</h3>
-                <p class="panel-subtitle">Filter by workflow</p>
+                <p class="panel-subtitle">Filter by operational workstream</p>
             </div>
             <div class="dashboard-controls" data-activity-controls>
                 <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
@@ -104,11 +104,11 @@
                 {% else %}
                 <h3>Shift Throughput Projection</h3>
                 {% endif %}
-                <p class="panel-subtitle">Use mode toggles to compare pace</p>
+                <p class="panel-subtitle">Compare service demand against task completion</p>
             </div>
             <div class="dashboard-controls" data-throughput-controls>
-                <button class="segment-btn active" type="button" data-throughput-mode="service">Service Load</button>
-                <button class="segment-btn" type="button" data-throughput-mode="tasks">Task Progress</button>
+                <button class="segment-btn active" type="button" data-throughput-mode="service">Service Demand</button>
+                <button class="segment-btn" type="button" data-throughput-mode="tasks">Task Output</button>
             </div>
         </div>
         <div class="throughput-grid" data-throughput-grid>

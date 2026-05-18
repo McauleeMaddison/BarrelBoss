@@ -120,50 +120,50 @@ def _management_dashboard_payload():
             "value": low_stock_count,
             "tone": "alert",
             "delta": (
-                "Inventory healthy this week"
+                "Inventory is stable this week"
                 if low_stock_count == 0
                 else f"{low_stock_count} item(s) require replenishment"
             ),
-            "note": "Prioritize supplier orders for urgent lines",
+            "note": "Prioritize replenishment orders for critical lines",
         },
         {
             "label": "Order Requests Awaiting Approval",
             "value": pending_order_count,
             "tone": "warn",
             "delta": _format_delta(pending_order_count, pending_order_prev, "vs previous 7 days"),
-            "note": "Review draft staff requests before supplier cut-off",
+            "note": "Review draft requests before supplier cut-off",
         },
         {
             "label": "Shifts Scheduled This Week",
             "value": shifts_this_week,
             "tone": "ok",
             "delta": _format_delta(shifts_this_week, shifts_last_week, "vs last week"),
-            "note": "Keep staffing aligned to expected service load",
+            "note": "Keep staffing aligned with expected service demand",
         },
         {
             "label": "Breakages This Week",
             "value": breakages_this_week,
             "tone": "neutral",
             "delta": _format_delta(breakages_this_week, breakages_last_week, "vs previous 7 days"),
-            "note": "Track recurring loss patterns and replacement costs",
+            "note": "Track recurring loss patterns and replacement cost exposure",
         },
     ]
 
     quick_actions = [
         {
-            "title": "Review Order Requests",
+            "title": "Review Order Approvals",
             "url_name": "orders:list",
-            "meta": "Approve, update status, and track deliveries.",
+            "meta": "Approve requests, update status, and track delivery commitments.",
         },
         {
-            "title": "Manage Shift Hours",
+            "title": "Manage Shift Allocation",
             "url_name": "shifts:list",
-            "meta": "Adjust planned and worked shift times.",
+            "meta": "Adjust planned and recorded shift hours.",
         },
         {
-            "title": "Review Suppliers",
+            "title": "Maintain Supplier Data",
             "url_name": "suppliers:list",
-            "meta": "Update contacts and ordering categories.",
+            "meta": "Update supplier contacts and procurement categories.",
         },
     ]
 
@@ -172,7 +172,7 @@ def _management_dashboard_payload():
     if next_draft:
         focus_list.append(
             {
-                "task": f"Approve {next_draft.reference} request",
+                "task": f"Approve request {next_draft.reference}",
                 "owner": next_draft.created_by.username if next_draft.created_by else "Staff",
                 "due": next_draft.created_at.astimezone(timezone.get_current_timezone()).strftime("%H:%M"),
                 "state": "Pending",
@@ -183,7 +183,7 @@ def _management_dashboard_payload():
     if overdue_task:
         focus_list.append(
             {
-                "task": f"Resolve overdue checklist: {overdue_task.title}",
+                "task": f"Resolve overdue checklist task: {overdue_task.title}",
                 "owner": overdue_task.assigned_to.username if overdue_task.assigned_to else "Unassigned",
                 "due": overdue_task.due_date.strftime("%d %b"),
                 "state": "Overdue",
@@ -197,7 +197,7 @@ def _management_dashboard_payload():
     if due_delivery:
         focus_list.append(
             {
-                "task": f"Track delivery for {due_delivery.reference}",
+                "task": f"Confirm delivery progress for {due_delivery.reference}",
                 "owner": due_delivery.supplier.name,
                 "due": due_delivery.delivery_date.strftime("%d %b"),
                 "state": "Scheduled",
@@ -207,7 +207,7 @@ def _management_dashboard_payload():
     if not focus_list:
         focus_list.append(
             {
-                "task": "No urgent operational blockers",
+                "task": "No urgent operational blockers identified",
                 "owner": "System",
                 "due": "Today",
                 "state": "Clear",
@@ -221,7 +221,7 @@ def _management_dashboard_payload():
                 "moment": order.updated_at,
                 "category": "orders",
                 "text": (
-                    f"{order.reference} is {order.get_status_display().lower()} "
+                    f"{order.reference} is now {order.get_status_display().lower()} "
                     f"({order.supplier.name})"
                 ),
             }
@@ -233,7 +233,7 @@ def _management_dashboard_payload():
                 "moment": shift.updated_at,
                 "category": "shifts",
                 "text": (
-                    f"Shift updated for {shift.staff.username} on {shift.shift_date:%d %b} "
+                    f"Shift updated: {shift.staff.username} on {shift.shift_date:%d %b} "
                     f"({shift.start_time:%H:%M}-{shift.end_time:%H:%M})"
                 ),
             }
@@ -245,7 +245,7 @@ def _management_dashboard_payload():
             {
                 "moment": task.updated_at,
                 "category": "checklists",
-                "text": f"Checklist {status_label}: {task.title}",
+                "text": f"Checklist task {status_label}: {task.title}",
             }
         )
 
@@ -255,7 +255,7 @@ def _management_dashboard_payload():
                 "moment": record.created_at,
                 "category": "breakages",
                 "text": (
-                    f"{record.quantity} {record.item_name} logged as "
+                    f"{record.quantity} {record.item_name} recorded as "
                     f"{record.get_issue_type_display().lower()}"
                 ),
             }
@@ -274,7 +274,7 @@ def _management_dashboard_payload():
         activity = [
             {
                 "time": "Now",
-                "text": "No recent operational events recorded yet.",
+                "text": "No recent operational events recorded.",
                 "category": "orders",
             }
         ]
@@ -364,14 +364,14 @@ def _staff_dashboard_payload(user):
             "value": open_order_count,
             "tone": "warn",
             "delta": f"{pending_delivery_count} pending delivery",
-            "note": "Draft requests can still be edited before approval",
+            "note": "Draft requests can still be edited prior to approval",
         },
         {
             "label": "My Tasks Due Today",
             "value": tasks_due_today,
             "tone": "neutral",
             "delta": f"{tasks_overdue} overdue",
-            "note": "Complete checklists before handover",
+            "note": "Complete assigned checklist tasks before handover",
         },
         {
             "label": "My Breakages This Week",
@@ -384,19 +384,19 @@ def _staff_dashboard_payload(user):
 
     quick_actions = [
         {
-            "title": "Check My Shift Hours",
+            "title": "Review My Shift Hours",
             "url_name": "shifts:list",
             "meta": "View upcoming shifts and weekly totals.",
         },
         {
-            "title": "Create Stock Order Request",
+            "title": "Create Order Request",
             "url_name": "orders:add",
-            "meta": "Submit a draft order for manager approval.",
+            "meta": "Submit a draft order request for manager approval.",
         },
         {
-            "title": "View My Orders",
+            "title": "Review My Orders",
             "url_name": "orders:list",
-            "meta": "Track request status and delivery progress.",
+            "meta": "Track request status and expected delivery dates.",
         },
     ]
 
@@ -404,7 +404,7 @@ def _staff_dashboard_payload(user):
     if next_shift:
         focus_list.append(
             {
-                "task": "Prepare for next scheduled shift",
+                "task": "Prepare for scheduled shift",
                 "owner": "You",
                 "due": f"{next_shift.shift_date:%d %b} {next_shift.start_time:%H:%M}",
                 "state": "Scheduled",
@@ -449,7 +449,7 @@ def _staff_dashboard_payload(user):
             {
                 "moment": order.updated_at,
                 "category": "orders",
-                "text": f"{order.reference} is {order.get_status_display().lower()}",
+                "text": f"{order.reference} is now {order.get_status_display().lower()}",
             }
         )
 
@@ -471,7 +471,7 @@ def _staff_dashboard_payload(user):
             {
                 "moment": task.updated_at,
                 "category": "checklists",
-                "text": f"Checklist {task_state}: {task.title}",
+                "text": f"Checklist task {task_state}: {task.title}",
             }
         )
 
@@ -480,7 +480,7 @@ def _staff_dashboard_payload(user):
             {
                 "moment": record.created_at,
                 "category": "breakages",
-                "text": f"{record.quantity} {record.item_name} logged ({record.get_issue_type_display()})",
+                "text": f"{record.quantity} {record.item_name} recorded ({record.get_issue_type_display()})",
             }
         )
 
@@ -497,7 +497,7 @@ def _staff_dashboard_payload(user):
         activity = [
             {
                 "time": "Now",
-                "text": "No recent activity yet. Start by checking shifts or tasks.",
+                "text": "No recent activity recorded. Start with shifts or tasks.",
                 "category": "shifts",
             }
         ]

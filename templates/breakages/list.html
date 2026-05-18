@@ -17,7 +17,7 @@
 
 <section class="panel">
     <div class="panel-header">
-        <h3>Recent Breakage Reports</h3>
+        <h3>Breakage Log</h3>
         <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
     </div>
 
@@ -38,37 +38,39 @@
     </form>
 
     {% if records %}
-    <table class="js-sortable data-table">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Issue</th>
-                <th>Reported By</th>
-                <th>Date</th>
-                {% if is_management %}<th>Actions</th>{% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in records %}
-            <tr>
-                <td>{{ row.item_name }}</td>
-                <td>{{ row.quantity }}</td>
-                <td>{{ row.get_issue_type_display }}</td>
-                <td>{{ row.reported_by.username|default:'-' }}</td>
-                <td>{{ row.created_at|date:'Y-m-d H:i' }}</td>
-                {% if is_management %}
-                <td class="stock-actions-cell">
-                    <a class="table-action table-action-danger" href="{% url 'breakages:delete' row.pk %}">Delete</a>
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="report-table-wrap">
+        <table class="js-sortable data-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Issue</th>
+                    <th>Reported By</th>
+                    <th>Date</th>
+                    {% if is_management %}<th>Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in records %}
+                <tr>
+                    <td>{{ row.item_name }}</td>
+                    <td>{{ row.quantity }}</td>
+                    <td>{{ row.get_issue_type_display }}</td>
+                    <td>{{ row.reported_by.username|default:'-' }}</td>
+                    <td>{{ row.created_at|date:'Y-m-d H:i' }}</td>
+                    {% if is_management %}
+                    <td class="stock-actions-cell">
+                        <a class="table-action table-action-danger" href="{% url 'breakages:delete' row.pk %}">Delete</a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
-    <p class="empty-state">No breakage records found for this filter yet.</p>
+    <p class="empty-state">No breakage records match this filter.</p>
     {% endif %}
 </section>
 {% endblock %}

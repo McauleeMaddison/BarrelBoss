@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#100f14">
+    <meta name="theme-color" content="#f4f7fb">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
@@ -23,7 +23,7 @@
         <div class="brand-wrap">
             <a class="brand" href="{% url role_home_url_name %}">
                 <img class="brand-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
-                <p class="brand-subtitle">Pub Operations Console</p>
+                <p class="brand-subtitle">Operations Workspace</p>
             </a>
             <button type="button" class="sidebar-close" aria-label="Close navigation">✕</button>
         </div>
@@ -38,7 +38,7 @@
             <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">Shifts</a>
             <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="OR">Orders</a>
             {% if is_management %}
-            <p class="nav-section-title">Management</p>
+            <p class="nav-section-title">Administration</p>
             <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}" data-nav-icon="SU">Suppliers</a>
             <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}" data-nav-icon="SF">Staff</a>
             <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}" data-nav-icon="RP">Reports</a>
@@ -51,7 +51,7 @@
 
         <form action="{% url 'logout' %}" method="post" class="logout-form">
             {% csrf_token %}
-            <button type="submit" class="logout-btn">Logout</button>
+            <button type="submit" class="logout-btn">Sign Out</button>
         </form>
     </aside>
 
@@ -81,7 +81,7 @@
         </header>
         <div class="topbar-utility" role="region" aria-label="Quick actions">
             <div class="topbar-status-row">
-                <span class="status-chip status-chip-live">System Live</span>
+                <span class="status-chip status-chip-live">System Online</span>
                 <span class="status-chip">{% now "H:i" %} UK</span>
                 <span class="status-chip status-chip-role">{{ user_role_label }}</span>
             </div>
@@ -89,43 +89,43 @@
                 {% block topbar_quick_actions %}
                 {% with current_path=request.path %}
                     {% if '/stock/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'stock:list' %}">Stock List</a>
+                    <a class="quick-action-link" href="{% url 'stock:list' %}">Inventory</a>
                     {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">+ Add Item</a>
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">Create Item</a>
                     <a class="quick-action-link" href="{% url 'orders:add' %}">Create Order</a>
                     <a class="quick-action-link" href="{% url 'suppliers:list' %}">Suppliers</a>
                     {% else %}
-                    <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
+                    <a class="quick-action-link" href="{% url 'orders:list' %}">Order Status</a>
                     <a class="quick-action-link" href="{% url 'breakages:list' %}">Breakages</a>
                     {% endif %}
                     {% elif '/orders/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'orders:list' %}">Order Queue</a>
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'orders:add' %}">+ New Order</a>
-                    <a class="quick-action-link" href="{% url 'stock:list' %}">Stock</a>
+                    <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'orders:add' %}">Create Order</a>
+                    <a class="quick-action-link" href="{% url 'stock:list' %}">Inventory</a>
                     {% if is_management %}
                     <a class="quick-action-link" href="{% url 'suppliers:list' %}">Suppliers</a>
                     {% endif %}
                     {% elif '/checklists/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'checklists:list' %}">Checklist Board</a>
+                    <a class="quick-action-link" href="{% url 'checklists:list' %}">Task Board</a>
                     {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'checklists:add' %}">+ Assign Task</a>
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'checklists:add' %}">Assign Task</a>
                     {% endif %}
                     <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
                     <a class="quick-action-link" href="{% url 'dashboard:home' %}">Dashboard</a>
                     {% elif '/shifts/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shift Planner</a>
+                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shift Plan</a>
                     {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'shifts:add' %}">+ Schedule Shift</a>
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'shifts:add' %}">Schedule Shift</a>
                     {% endif %}
                     <a class="quick-action-link" href="{% url 'checklists:list' %}">Checklists</a>
                     <a class="quick-action-link" href="{% url 'dashboard:home' %}">Dashboard</a>
                     {% else %}
-                    <a class="quick-action-link" href="{% url role_home_url_name %}">Dashboard</a>
-                    <a class="quick-action-link" href="{% url 'stock:list' %}">Stock</a>
+                    <a class="quick-action-link" href="{% url role_home_url_name %}">Home</a>
+                    <a class="quick-action-link" href="{% url 'stock:list' %}">Inventory</a>
                     <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
                     <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
                     {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">+ Add Stock</a>
+                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">Create Stock Item</a>
                     {% endif %}
                     {% endif %}
                 {% endwith %}

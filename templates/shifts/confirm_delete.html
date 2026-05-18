@@ -7,11 +7,11 @@
 <section class="panel stock-form-panel detail-panel">
     <p class="detail-kicker">Scheduling</p>
     <h3 class="detail-title">Delete shift for {{ shift.staff.username }} on {{ shift.shift_date }}?</h3>
-    <p class="panel-subtitle">This permanently removes the shift and recorded hours from BarrelBoss.</p>
+    <p class="panel-subtitle">This permanently removes the shift and logged hours from schedule records.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}
-        <button type="submit" class="action-btn">Confirm Delete</button>
+        <button type="submit" class="action-btn">Delete Shift</button>
         <a class="table-action" href="{% url 'shifts:list' %}">Cancel</a>
     </form>
 </section>

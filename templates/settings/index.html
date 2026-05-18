@@ -6,8 +6,8 @@
 {% block content %}
 <section class="panel settings-hero">
     <p class="kicker">Configuration</p>
-    <h3>Notification Centre</h3>
-    <p>Control shift-hour notifications and manage who receives staff scheduling alerts.</p>
+    <h3>Notification Center</h3>
+    <p>Control device notifications and manage which staff receive shift assignment alerts.</p>
 </section>
 
 <section class="settings-grid">
@@ -17,7 +17,7 @@
             <span class="panel-header-meta">Push</span>
         </div>
         <p class="settings-copy">
-            Receive a push notification when your shift hours are allocated or updated.
+            Receive a push alert when your shifts are assigned or updated.
         </p>
         <p class="settings-status" id="pushStatus">
             {% if push_subscription_count %}
@@ -41,7 +41,7 @@
                 data-push-enable
                 {% if push_subscription_count %}hidden{% endif %}
             >
-                Enable Shift Alerts
+                Enable Alerts
             </button>
             <button
                 type="button"
@@ -54,7 +54,7 @@
         </div>
         {% if not web_push_configured %}
         <p class="settings-note">
-            Push is not configured yet on the server. Add web push VAPID keys in environment variables.
+            Push is not configured on the server. Add web push VAPID keys in environment variables.
         </p>
         {% endif %}
     </article>
@@ -66,7 +66,7 @@
             <span class="panel-header-meta">Manager</span>
         </div>
         <p class="settings-copy">
-            Choose which staff members should receive push notifications when shifts are allocated.
+            Choose which staff members receive push alerts when shifts are assigned.
         </p>
         <form method="post" class="settings-form">
             {% csrf_token %}
@@ -86,11 +86,11 @@
                     >
                 </label>
                 {% empty %}
-                <p class="empty-state">No active staff profiles found yet.</p>
+                <p class="empty-state">No active staff profiles available.</p>
                 {% endfor %}
             </div>
             <div class="form-actions">
-                <button type="submit" class="action-btn">Save Alert Preferences</button>
+                <button type="submit" class="action-btn">Save Preferences</button>
             </div>
         </form>
     </article>

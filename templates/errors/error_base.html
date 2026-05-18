@@ -19,7 +19,7 @@
             <h1>{% block heading %}Something went wrong{% endblock %}</h1>
             <p>{% block message %}Please try again or return to the login page.{% endblock %}</p>
             <div class="settings-actions">
-                <a class="action-btn action-link" href="{% url 'login' %}">Go To Login</a>
+                <a class="action-btn action-link" href="{% url 'login' %}">Return to Login</a>
                 <a class="table-action" href="javascript:history.back()">Go Back</a>
             </div>
             {% block detail %}{% endblock %}

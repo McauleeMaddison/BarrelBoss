@@ -6,12 +6,12 @@
 {% block content %}
 <section class="panel stock-form-panel detail-panel">
     <p class="detail-kicker">Task Planning</p>
-    <h3 class="detail-title">Delete checklist task "{{ task.title }}"?</h3>
-    <p class="panel-subtitle">This permanently removes the task from your checklist history.</p>
+    <h3 class="detail-title">Delete checklist task: {{ task.title }}?</h3>
+    <p class="panel-subtitle">This permanently removes the task from checklist history.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}
-        <button type="submit" class="action-btn">Confirm Delete</button>
+        <button type="submit" class="action-btn">Delete Task</button>
         <a class="table-action" href="{% url 'checklists:list' %}">Cancel</a>
     </form>
 </section>

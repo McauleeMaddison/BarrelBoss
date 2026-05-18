@@ -16,7 +16,7 @@
     <article class="metric-card warn">
         <h3>Critical Changes</h3>
         <p>{{ critical_count }}</p>
-        <span class="metric-note">Delete + status update actions</span>
+        <span class="metric-note">Delete and status update actions</span>
     </article>
 </section>
 
@@ -24,7 +24,7 @@
     <div class="panel-header">
         <div>
             <h3>Business Accountability Trail</h3>
-            <p class="panel-subtitle">Track who changed what and when across core operations.</p>
+            <p class="panel-subtitle">Track who changed what, when, and where across core operations.</p>
         </div>
     </div>
 
@@ -98,7 +98,7 @@
     </div>
     {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
     {% else %}
-    <p class="empty-state">No audit events found for this filter.</p>
+    <p class="empty-state">No audit events match this filter.</p>
     {% endif %}
 </section>
 {% endblock %}

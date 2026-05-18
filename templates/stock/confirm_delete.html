@@ -6,12 +6,12 @@
 {% block content %}
 <section class="panel stock-form-panel detail-panel">
     <p class="detail-kicker">Inventory</p>
-    <h3 class="detail-title">Remove "{{ item.name }}"?</h3>
-    <p class="panel-subtitle">This will remove the item from active inventory and hide it from the stock list.</p>
+    <h3 class="detail-title">Remove {{ item.name }} from inventory?</h3>
+    <p class="panel-subtitle">This archives the item from active stock and removes it from day-to-day views.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}
-        <button type="submit" class="action-btn">Confirm Remove</button>
+        <button type="submit" class="action-btn">Remove Item</button>
         <a class="table-action" href="{% url 'stock:list' %}">Cancel</a>
     </form>
 </section>
