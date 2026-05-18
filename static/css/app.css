@@ -3691,62 +3691,62 @@ table.data-table td {
 
 /* 2026 visual reset: clean white/silver/bronze + matched dark mode */
 .app-shell {
-    --ui-bg: #f3f5f7;
-    --ui-bg-2: #e9edf2;
+    --ui-bg: #f4f7ff;
+    --ui-bg-2: #edf2fb;
     --ui-surface: #ffffff;
-    --ui-surface-soft: #f7f9fb;
-    --ui-surface-strong: #edf1f5;
-    --ui-border: #d7dee7;
-    --ui-border-strong: #c3ccd8;
-    --ui-text: #172438;
-    --ui-muted: #63748a;
-    --ui-accent: #b07a3d;
-    --ui-accent-strong: #8f602c;
-    --ui-accent-soft: #f3e8d9;
-    --ui-success: #5f738d;
-    --ui-danger: #5f738d;
-    --ui-success-soft: #f1f4f8;
-    --ui-success-border: #c9d2dd;
-    --ui-danger-soft: #f1f4f8;
-    --ui-danger-border: #c9d2dd;
-    --ui-accent-border: #ccb08a;
-    --ui-focus-ring: rgba(176, 122, 61, 0.24);
-    --ui-shadow-soft: 0 10px 24px rgba(23, 36, 56, 0.06);
-    --ui-shadow-strong: 0 18px 40px rgba(23, 36, 56, 0.1);
+    --ui-surface-soft: #f4f7fe;
+    --ui-surface-strong: #e8effa;
+    --ui-border: #d2dced;
+    --ui-border-strong: #bccae0;
+    --ui-text: #15233a;
+    --ui-muted: #5f7089;
+    --ui-accent: #586dff;
+    --ui-accent-strong: #4156dd;
+    --ui-accent-soft: #e6ebff;
+    --ui-success: #4f6fa8;
+    --ui-danger: #4f6fa8;
+    --ui-success-soft: #ecf1fb;
+    --ui-success-border: #c6d4ec;
+    --ui-danger-soft: #ecf1fb;
+    --ui-danger-border: #c6d4ec;
+    --ui-accent-border: #9fb0ff;
+    --ui-focus-ring: rgba(88, 109, 255, 0.26);
+    --ui-shadow-soft: 0 10px 28px rgba(33, 48, 86, 0.09);
+    --ui-shadow-strong: 0 22px 46px rgba(33, 48, 86, 0.14);
     color: var(--ui-text);
     background:
-        radial-gradient(900px 430px at 100% -10%, rgba(205, 214, 224, 0.4), transparent 58%),
-        radial-gradient(820px 460px at -10% 100%, rgba(190, 200, 212, 0.35), transparent 62%),
+        radial-gradient(980px 460px at 100% -12%, rgba(88, 109, 255, 0.16), transparent 60%),
+        radial-gradient(840px 520px at -10% 102%, rgba(69, 196, 230, 0.12), transparent 65%),
         linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%);
 }
 
 .app-shell[data-theme="dark"] {
-    --ui-bg: #101317;
-    --ui-bg-2: #171d26;
-    --ui-surface: #1b222d;
-    --ui-surface-soft: #212a37;
-    --ui-surface-strong: #273243;
-    --ui-border: #303c4d;
-    --ui-border-strong: #3d4c61;
-    --ui-text: #e8eef6;
-    --ui-muted: #a5b3c6;
-    --ui-accent: #c99961;
-    --ui-accent-strong: #e0b07a;
-    --ui-accent-soft: #3b3127;
-    --ui-success: #9fb0c5;
-    --ui-danger: #9fb0c5;
-    --ui-success-soft: #212c3a;
-    --ui-success-border: #445469;
-    --ui-danger-soft: #212c3a;
-    --ui-danger-border: #445469;
-    --ui-accent-border: #896842;
-    --ui-focus-ring: rgba(201, 153, 97, 0.3);
-    --ui-shadow-soft: 0 12px 26px rgba(0, 0, 0, 0.35);
-    --ui-shadow-strong: 0 20px 46px rgba(0, 0, 0, 0.42);
+    --ui-bg: #090f1f;
+    --ui-bg-2: #101a33;
+    --ui-surface: #131e34;
+    --ui-surface-soft: #1a2943;
+    --ui-surface-strong: #233454;
+    --ui-border: #2c4063;
+    --ui-border-strong: #3d5780;
+    --ui-text: #e6eeff;
+    --ui-muted: #9fb2d1;
+    --ui-accent: #7f90ff;
+    --ui-accent-strong: #9cadff;
+    --ui-accent-soft: #273861;
+    --ui-success: #9fb2d1;
+    --ui-danger: #9fb2d1;
+    --ui-success-soft: #1a2a46;
+    --ui-success-border: #355383;
+    --ui-danger-soft: #1a2a46;
+    --ui-danger-border: #355383;
+    --ui-accent-border: #5f7dbe;
+    --ui-focus-ring: rgba(127, 144, 255, 0.34);
+    --ui-shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.42);
+    --ui-shadow-strong: 0 22px 50px rgba(0, 0, 0, 0.5);
     color: var(--ui-text);
     background:
-        radial-gradient(900px 430px at 100% -10%, rgba(117, 131, 150, 0.22), transparent 58%),
-        radial-gradient(820px 460px at -10% 100%, rgba(97, 113, 132, 0.2), transparent 62%),
+        radial-gradient(980px 460px at 100% -12%, rgba(108, 128, 255, 0.22), transparent 60%),
+        radial-gradient(840px 520px at -10% 102%, rgba(66, 178, 224, 0.14), transparent 65%),
         linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%);
 }
 
@@ -3764,7 +3764,7 @@ table.data-table td {
 .app-shell .sidebar {
     background: var(--ui-surface);
     border-right: 1px solid var(--ui-border);
-    box-shadow: 18px 0 36px rgba(23, 36, 56, 0.12);
+    box-shadow: 24px 0 44px rgba(18, 30, 54, 0.22);
 }
 
 .app-shell .brand-wrap {
@@ -3829,7 +3829,7 @@ table.data-table td {
 
 .app-shell .main-content {
     max-width: 1360px;
-    padding: 1rem clamp(0.9rem, 2vw, 1.5rem);
+    padding: 0.95rem clamp(0.85rem, 2vw, 1.5rem);
 }
 
 .app-shell .page-shell {
@@ -3839,7 +3839,7 @@ table.data-table td {
 .app-shell .topbar,
 .app-shell .topbar-utility {
     border: 1px solid var(--ui-border);
-    background: var(--ui-surface);
+    background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-soft));
     box-shadow: var(--ui-shadow-soft);
 }
 
@@ -3885,11 +3885,11 @@ table.data-table td {
     height: 0.78rem;
     border-radius: 999px;
     border: 1px solid var(--ui-border-strong);
-    background: linear-gradient(135deg, #f8fafc 0%, #c8d1dc 100%);
+    background: linear-gradient(135deg, #f3f7ff 0%, #7f90ff 100%);
 }
 
 .app-shell[data-theme="dark"] .theme-toggle-swatch {
-    background: linear-gradient(135deg, #d7dfeb 0%, #7f90a5 100%);
+    background: linear-gradient(135deg, #cdd7f7 0%, #5f7dbe 100%);
 }
 
 .app-shell .theme-toggle-btn:hover,
@@ -3925,12 +3925,12 @@ table.data-table td {
 
 .app-shell .quick-action-link-cta {
     border-color: var(--ui-border-strong);
-    background: var(--ui-surface);
-    color: var(--ui-text);
+    background: var(--ui-accent-soft);
+    color: var(--ui-accent-strong);
 }
 
 .app-shell .panel {
-    background: var(--ui-surface);
+    background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-soft));
     border: 1px solid var(--ui-border);
     border-radius: 1rem;
     box-shadow: var(--ui-shadow-soft);
@@ -3998,9 +3998,9 @@ table.data-table td {
 
 .app-shell .segment-btn.active,
 .app-shell .segment-btn:hover {
-    border-color: var(--ui-border-strong);
-    background: var(--ui-surface);
-    color: var(--ui-text);
+    border-color: var(--ui-accent-border);
+    background: var(--ui-accent-soft);
+    color: var(--ui-accent-strong);
 }
 
 .app-shell .metric-grid {
@@ -4009,7 +4009,7 @@ table.data-table td {
 
 .app-shell .metric-card {
     min-height: 0;
-    background: var(--ui-surface);
+    background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-soft));
     border: 1px solid var(--ui-border);
     border-top: 3px solid var(--ui-border-strong);
     box-shadow: none;
@@ -4030,15 +4030,15 @@ table.data-table td {
 }
 
 .app-shell .metric-card.alert {
-    border-top-color: var(--ui-border-strong);
+    border-top-color: #7e92ff;
 }
 
 .app-shell .metric-card.warn {
-    border-top-color: var(--ui-border-strong);
+    border-top-color: #5f7dff;
 }
 
 .app-shell .metric-card.ok {
-    border-top-color: var(--ui-border-strong);
+    border-top-color: #48a5cf;
 }
 
 .app-shell .metric-card.neutral {
@@ -4089,7 +4089,7 @@ table.data-table td {
 
 .app-shell .throughput-bar,
 .app-shell .shift-chart-fill {
-    background: linear-gradient(180deg, #d4dbe4 0%, #9eacbc 100%);
+    background: linear-gradient(180deg, #8da2ff 0%, #4f6ef0 50%, #45b3d9 100%);
 }
 
 .app-shell .throughput-value,
@@ -4183,14 +4183,14 @@ table.data-table td {
 }
 
 .app-shell .action-btn {
-    border: 1px solid var(--ui-accent);
-    background: var(--ui-accent);
+    border: 1px solid var(--ui-accent-strong);
+    background: linear-gradient(135deg, var(--ui-accent) 0%, #45b3d9 100%);
     color: #ffffff;
 }
 
 .app-shell .action-btn:hover {
-    border-color: var(--ui-accent-strong);
-    background: var(--ui-accent-strong);
+    border-color: #45b3d9;
+    background: linear-gradient(135deg, var(--ui-accent-strong) 0%, #2e97be 100%);
     box-shadow: none;
 }
 
@@ -4239,28 +4239,68 @@ table.data-table td {
 }
 
 @media (max-width: 1024px) {
+    .app-shell .topbar {
+        align-items: stretch;
+        gap: 0.55rem;
+    }
+
+    .app-shell .topbar-start {
+        width: 100%;
+    }
+
     .app-shell .topbar-end {
         width: 100%;
-        justify-content: flex-start;
+        justify-content: stretch;
         gap: 0.45rem;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .app-shell .theme-toggle-btn,
     .app-shell .switch-account-form,
     .app-shell .user-pill {
-        flex: 1 1 auto;
+        width: 100%;
         justify-content: center;
         text-align: center;
+    }
+
+    .app-shell .topbar-quick-actions {
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.15rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .app-shell .quick-action-link {
+        flex: 0 0 auto;
+        white-space: nowrap;
     }
 }
 
 @media (max-width: 720px) {
+    .app-shell .main-content {
+        padding: 0.72rem;
+    }
+
     .app-shell .panel {
-        padding: 0.82rem;
+        padding: 0.8rem;
     }
 
     .app-shell .topbar,
     .app-shell .topbar-utility {
-        padding: 0.62rem;
+        padding: 0.58rem;
+    }
+
+    .app-shell .topbar-end {
+        grid-template-columns: 1fr;
+    }
+
+    .app-shell .metric-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .app-shell .segment-btn {
+        min-height: 40px;
     }
 }
