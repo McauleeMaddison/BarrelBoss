@@ -3711,12 +3711,22 @@ table.data-table td {
     --ui-danger-border: #c6d4ec;
     --ui-accent-border: #9fb0ff;
     --ui-focus-ring: rgba(88, 109, 255, 0.26);
-    --ui-shadow-soft: 0 10px 28px rgba(33, 48, 86, 0.09);
-    --ui-shadow-strong: 0 22px 46px rgba(33, 48, 86, 0.14);
+    --ui-shadow-soft: 0 16px 36px rgba(33, 48, 86, 0.12);
+    --ui-shadow-strong: 0 30px 58px rgba(33, 48, 86, 0.18);
+    --ui-glass: rgba(255, 255, 255, 0.68);
+    --ui-glass-soft: rgba(244, 248, 255, 0.56);
+    --ui-glass-strong: rgba(255, 255, 255, 0.82);
+    --ui-glass-border: rgba(255, 255, 255, 0.58);
+    --ui-glass-sheen: rgba(255, 255, 255, 0.52);
     color: var(--ui-text);
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    min-height: 100dvh;
     background:
-        radial-gradient(980px 460px at 100% -12%, rgba(88, 109, 255, 0.16), transparent 60%),
-        radial-gradient(840px 520px at -10% 102%, rgba(69, 196, 230, 0.12), transparent 65%),
+        radial-gradient(980px 460px at 100% -12%, rgba(88, 109, 255, 0.2), transparent 60%),
+        radial-gradient(840px 520px at -10% 102%, rgba(69, 196, 230, 0.16), transparent 65%),
+        radial-gradient(760px 360px at 50% 110%, rgba(255, 255, 255, 0.32), transparent 74%),
         linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%);
 }
 
@@ -3743,6 +3753,11 @@ table.data-table td {
     --ui-focus-ring: rgba(127, 144, 255, 0.34);
     --ui-shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.42);
     --ui-shadow-strong: 0 22px 50px rgba(0, 0, 0, 0.5);
+    --ui-glass: rgba(21, 33, 54, 0.66);
+    --ui-glass-soft: rgba(17, 27, 45, 0.56);
+    --ui-glass-strong: rgba(26, 40, 64, 0.8);
+    --ui-glass-border: rgba(173, 196, 232, 0.22);
+    --ui-glass-sheen: rgba(187, 207, 239, 0.12);
     color: var(--ui-text);
     background:
         radial-gradient(980px 460px at 100% -12%, rgba(108, 128, 255, 0.22), transparent 60%),
@@ -3751,7 +3766,26 @@ table.data-table td {
 }
 
 .app-shell .shell-bg {
-    display: none;
+    display: block;
+    background:
+        radial-gradient(760px 420px at 14% 8%, rgba(255, 255, 255, 0.48), transparent 72%),
+        radial-gradient(660px 400px at 86% 90%, rgba(88, 109, 255, 0.16), transparent 70%),
+        linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+    mix-blend-mode: screen;
+    opacity: 0.84;
+    animation: none;
+}
+
+.app-shell[data-theme="dark"] .shell-bg {
+    background:
+        radial-gradient(820px 420px at 10% 0%, rgba(123, 148, 255, 0.24), transparent 72%),
+        radial-gradient(680px 440px at 92% 94%, rgba(90, 179, 232, 0.18), transparent 72%);
+    mix-blend-mode: normal;
+    opacity: 0.78;
+}
+
+.app-shell .layout {
+    z-index: 1;
 }
 
 .app-shell h1,
@@ -3762,9 +3796,11 @@ table.data-table td {
 }
 
 .app-shell .sidebar {
-    background: var(--ui-surface);
-    border-right: 1px solid var(--ui-border);
+    background: linear-gradient(185deg, var(--ui-glass-strong) 0%, var(--ui-glass) 58%, var(--ui-glass-soft) 100%);
+    border-right: 1px solid var(--ui-glass-border);
     box-shadow: 24px 0 44px rgba(18, 30, 54, 0.22);
+    backdrop-filter: blur(22px) saturate(145%);
+    -webkit-backdrop-filter: blur(22px) saturate(145%);
 }
 
 .app-shell .brand-wrap {
@@ -3838,13 +3874,33 @@ table.data-table td {
 
 .app-shell .topbar,
 .app-shell .topbar-utility {
-    border: 1px solid var(--ui-border);
-    background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-soft));
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--ui-glass-border);
+    background: linear-gradient(145deg, var(--ui-glass-strong) 0%, var(--ui-glass) 58%, var(--ui-glass-soft) 100%);
     box-shadow: var(--ui-shadow-soft);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
 }
 
 .app-shell .topbar {
     border-radius: 1rem;
+}
+
+.app-shell .topbar-utility {
+    justify-content: flex-start;
+    padding: 0.52rem 0.72rem;
+}
+
+.app-shell .topbar-status-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.app-shell .topbar-quick-actions {
+    display: none !important;
 }
 
 .app-shell .topbar p {
@@ -3900,20 +3956,24 @@ table.data-table td {
 
 .app-shell .status-chip,
 .app-shell .quick-action-link {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface-soft);
+    border: 1px solid var(--ui-glass-border);
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
     color: var(--ui-muted);
+    font-size: 0.64rem;
+    letter-spacing: 0.07em;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
 .app-shell .status-chip-live {
     border-color: var(--ui-border-strong);
-    background: var(--ui-surface);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08));
     color: var(--ui-text);
 }
 
 .app-shell .status-chip-role {
     border-color: var(--ui-border-strong);
-    background: var(--ui-surface);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08));
     color: var(--ui-text);
 }
 
@@ -3925,25 +3985,40 @@ table.data-table td {
 
 .app-shell .quick-action-link-cta {
     border-color: var(--ui-border-strong);
-    background: var(--ui-accent-soft);
+    background: linear-gradient(145deg, var(--ui-accent-soft), rgba(127, 144, 255, 0.16));
     color: var(--ui-accent-strong);
 }
 
 .app-shell .panel {
-    background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-soft));
-    border: 1px solid var(--ui-border);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(145deg, var(--ui-glass-strong) 0%, var(--ui-glass) 62%, var(--ui-glass-soft) 100%);
+    border: 1px solid var(--ui-glass-border);
     border-radius: 1rem;
     box-shadow: var(--ui-shadow-soft);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
     padding: 1rem;
 }
 
 .app-shell .panel::before,
-.app-shell .portal-hero::after {
-    display: none;
+.app-shell .portal-hero::after,
+.app-shell .metric-card::before,
+.app-shell .topbar::before,
+.app-shell .topbar-utility::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        linear-gradient(170deg, var(--ui-glass-sheen) 0%, rgba(255, 255, 255, 0) 40%),
+        radial-gradient(460px 120px at 82% -16%, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 70%);
+    opacity: 0.56;
 }
 
 .app-shell .portal-hero {
-    background: var(--ui-surface);
+    background: linear-gradient(145deg, var(--ui-glass-strong) 0%, var(--ui-glass) 62%, var(--ui-glass-soft) 100%);
 }
 
 .app-shell .kicker {
@@ -3957,6 +4032,18 @@ table.data-table td {
 .app-shell .badge {
     border: 1px solid var(--ui-border);
     background: var(--ui-surface-soft);
+    color: var(--ui-muted);
+}
+
+.app-shell .portal-badge {
+    display: none;
+}
+
+.app-shell .panel-header-meta {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    min-height: auto;
     color: var(--ui-muted);
 }
 
@@ -3989,6 +4076,31 @@ table.data-table td {
     gap: 0.45rem;
 }
 
+.app-shell .dashboard-panel-select-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.app-shell .dashboard-panel-select {
+    display: none;
+    width: 100%;
+    min-height: 2.45rem;
+    border: 1px solid var(--ui-glass-border);
+    border-radius: 0.72rem;
+    padding: 0.5rem 0.78rem;
+    background: linear-gradient(145deg, var(--ui-glass-strong) 0%, var(--ui-glass) 70%, var(--ui-glass-soft) 100%);
+    color: var(--ui-text);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
 .app-shell .segment-btn {
     border: 1px solid var(--ui-border);
     background: var(--ui-surface-soft);
@@ -4009,10 +4121,14 @@ table.data-table td {
 
 .app-shell .metric-card {
     min-height: 0;
-    background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-soft));
-    border: 1px solid var(--ui-border);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(150deg, var(--ui-glass-strong) 0%, var(--ui-glass) 62%, var(--ui-glass-soft) 100%);
+    border: 1px solid var(--ui-glass-border);
     border-top: 3px solid var(--ui-border-strong);
-    box-shadow: none;
+    box-shadow: var(--ui-shadow-soft);
+    backdrop-filter: blur(16px) saturate(145%);
+    -webkit-backdrop-filter: blur(16px) saturate(145%);
     padding: 0.9rem;
 }
 
@@ -4059,8 +4175,10 @@ table.data-table td {
 
 .app-shell .focus-list li,
 .app-shell .activity-list li {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface-soft);
+    border: 1px solid var(--ui-glass-border);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
 
 .app-shell .shift-timeline-today,
@@ -4077,8 +4195,8 @@ table.data-table td {
 }
 
 .app-shell .activity-chip {
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface);
+    border: 1px solid var(--ui-glass-border);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
     color: var(--ui-muted);
 }
 
@@ -4298,6 +4416,18 @@ table.data-table td {
 
     .app-shell .metric-grid {
         grid-template-columns: 1fr;
+    }
+
+    .app-shell .dashboard-panel-controls {
+        display: block;
+    }
+
+    .app-shell .dashboard-panel-controls .segment-btn {
+        display: none;
+    }
+
+    .app-shell .dashboard-panel-select {
+        display: block;
     }
 
     .app-shell .segment-btn {

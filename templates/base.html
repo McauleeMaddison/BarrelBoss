@@ -89,57 +89,11 @@
                 <div class="user-pill">{{ request.user.get_username|default:'Guest' }} ({{ user_role_label }})</div>
             </div>
         </header>
-        <div class="topbar-utility" role="region" aria-label="Quick actions">
+        <div class="topbar-utility" role="region" aria-label="System status">
             <div class="topbar-status-row">
                 <span class="status-chip status-chip-live">System Online</span>
                 <span class="status-chip">{% now "H:i" %} UK</span>
                 <span class="status-chip status-chip-role">{{ user_role_label }}</span>
-            </div>
-            <div class="topbar-quick-actions">
-                {% block topbar_quick_actions %}
-                {% with current_path=request.path %}
-                    {% if '/stock/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'stock:list' %}">Inventory</a>
-                    {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">Create Item</a>
-                    <a class="quick-action-link" href="{% url 'orders:add' %}">Create Order</a>
-                    <a class="quick-action-link" href="{% url 'suppliers:list' %}">Suppliers</a>
-                    {% else %}
-                    <a class="quick-action-link" href="{% url 'orders:list' %}">Order Status</a>
-                    <a class="quick-action-link" href="{% url 'breakages:list' %}">Breakages</a>
-                    {% endif %}
-                    {% elif '/orders/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'orders:add' %}">Create Order</a>
-                    <a class="quick-action-link" href="{% url 'stock:list' %}">Inventory</a>
-                    {% if is_management %}
-                    <a class="quick-action-link" href="{% url 'suppliers:list' %}">Suppliers</a>
-                    {% endif %}
-                    {% elif '/checklists/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'checklists:list' %}">Task Board</a>
-                    {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'checklists:add' %}">Assign Task</a>
-                    {% endif %}
-                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
-                    <a class="quick-action-link" href="{% url 'dashboard:home' %}">Dashboard</a>
-                    {% elif '/shifts/' in current_path %}
-                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shift Plan</a>
-                    {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'shifts:add' %}">Schedule Shift</a>
-                    {% endif %}
-                    <a class="quick-action-link" href="{% url 'checklists:list' %}">Checklists</a>
-                    <a class="quick-action-link" href="{% url 'dashboard:home' %}">Dashboard</a>
-                    {% else %}
-                    <a class="quick-action-link" href="{% url role_home_url_name %}">Home</a>
-                    <a class="quick-action-link" href="{% url 'stock:list' %}">Inventory</a>
-                    <a class="quick-action-link" href="{% url 'orders:list' %}">Orders</a>
-                    <a class="quick-action-link" href="{% url 'shifts:list' %}">Shifts</a>
-                    {% if is_management %}
-                    <a class="quick-action-link quick-action-link-cta" href="{% url 'stock:add' %}">Create Stock Item</a>
-                    {% endif %}
-                    {% endif %}
-                {% endwith %}
-                {% endblock %}
             </div>
         </div>
 

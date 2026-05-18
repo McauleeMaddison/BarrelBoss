@@ -159,6 +159,7 @@
 
     const dashboardPanelButtons = document.querySelectorAll("[data-dashboard-panel-target]");
     const dashboardPanelGroups = document.querySelectorAll("[data-dashboard-panel-group]");
+    const dashboardPanelSelect = document.querySelector("[data-dashboard-panel-select]");
     if (dashboardPanelButtons.length && dashboardPanelGroups.length) {
         const setDashboardPanel = (target) => {
             dashboardPanelGroups.forEach((group) => {
@@ -170,6 +171,10 @@
                 const isActive = button.dataset.dashboardPanelTarget === target;
                 button.classList.toggle("active", isActive);
             });
+
+            if (dashboardPanelSelect && dashboardPanelSelect.value !== target) {
+                dashboardPanelSelect.value = target;
+            }
         };
 
         dashboardPanelButtons.forEach((button) => {
@@ -178,7 +183,13 @@
             });
         });
 
-        const defaultTarget = dashboardPanelButtons[0].dataset.dashboardPanelTarget;
+        if (dashboardPanelSelect) {
+            dashboardPanelSelect.addEventListener("change", () => {
+                setDashboardPanel(dashboardPanelSelect.value);
+            });
+        }
+
+        const defaultTarget = dashboardPanelSelect?.value || dashboardPanelButtons[0].dataset.dashboardPanelTarget;
         setDashboardPanel(defaultTarget);
     }
 
