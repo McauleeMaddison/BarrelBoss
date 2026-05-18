@@ -3960,6 +3960,25 @@ table.data-table td {
     color: var(--ui-muted);
 }
 
+.app-shell .badge-stock-critical,
+.app-shell .badge-stock-low,
+.app-shell .badge-stock-watch,
+.app-shell .badge-stock-healthy,
+.app-shell .badge-status-draft,
+.app-shell .badge-status-ordered,
+.app-shell .badge-status-pending,
+.app-shell .badge-status-delivered,
+.app-shell .badge-status-cancelled,
+.app-shell .badge-role-landlord,
+.app-shell .badge-role-manager,
+.app-shell .badge-role-staff,
+.app-shell .badge-alert-enabled,
+.app-shell .badge-alert-disabled {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface-soft);
+    color: var(--ui-text);
+}
+
 .app-shell .portal-hero-copy,
 .app-shell .panel-subtitle,
 .app-shell .metric-note {
@@ -4026,6 +4045,13 @@ table.data-table td {
     border-top-color: var(--ui-border-strong);
 }
 
+.app-shell .metric-card.warn,
+.app-shell .metric-card.alert,
+.app-shell .metric-card.ok,
+.app-shell .metric-card.neutral {
+    border-left: 1px solid var(--ui-border);
+}
+
 .app-shell .metric-delta {
     color: var(--ui-text);
     font-weight: 700;
@@ -4035,6 +4061,15 @@ table.data-table td {
 .app-shell .activity-list li {
     border: 1px solid var(--ui-border);
     background: var(--ui-surface-soft);
+}
+
+.app-shell .shift-timeline-today,
+.app-shell .shift-timeline-upcoming,
+.app-shell .shift-timeline-past,
+.app-shell .shift-hours-pill {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface-soft);
+    color: var(--ui-text);
 }
 
 .app-shell .activity-list strong {
@@ -4176,6 +4211,12 @@ table.data-table td {
     border-color: var(--ui-border-strong);
     color: var(--ui-text);
     background: var(--ui-surface-soft);
+}
+
+.app-shell .table-action-danger:hover {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface-strong);
+    color: var(--ui-text);
 }
 
 .app-shell .messages .message {
