@@ -3256,6 +3256,38 @@ table.data-table td {
     box-shadow: var(--shadow-strong);
 }
 
+.login-card label {
+    color: #334d6b;
+}
+
+.login-card input {
+    background: #ffffff;
+    color: #0d2343;
+    border: 1px solid #9fb6d3;
+}
+
+.login-card input::placeholder {
+    color: #6a809b;
+    opacity: 1;
+}
+
+.login-card input:hover {
+    border-color: #7f9ec3;
+}
+
+.login-card input:focus {
+    border-color: #4f76a7;
+    box-shadow: 0 0 0 3px rgba(79, 118, 167, 0.18);
+}
+
+.login-card input:-webkit-autofill,
+.login-card input:-webkit-autofill:hover,
+.login-card input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #0d2343;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+    transition: background-color 9999s ease-out 0s;
+}
+
 .login-submit-btn {
     background: #b57a17;
     border-color: #b57a17;
