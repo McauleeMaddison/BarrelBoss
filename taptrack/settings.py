@@ -101,6 +101,7 @@ POSTGRES_CONFIG_PRESENT = all(
 
 DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip()
 DATABASE_SSL_REQUIRE = env_flag("DATABASE_SSL_REQUIRE", True)
+DATABASE_CONNECT_TIMEOUT = int(os.getenv("DATABASE_CONNECT_TIMEOUT", "15"))
 
 if DATABASE_URL:
     try:
@@ -136,6 +137,10 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+if DATABASES["default"].get("ENGINE") == "django.db.backends.postgresql":
+    default_options = DATABASES["default"].setdefault("OPTIONS", {})
+    default_options.setdefault("connect_timeout", DATABASE_CONNECT_TIMEOUT)
 
 AUTH_PASSWORD_VALIDATORS = [
     {

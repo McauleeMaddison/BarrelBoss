@@ -4,6 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: bash scripts/predeploy_check_and_migrate.sh
     startCommand: gunicorn taptrack.wsgi:application --bind 0.0.0.0:$PORT --log-file - --access-logfile - --timeout 120 --graceful-timeout 30 --keep-alive 75 --worker-tmp-dir /dev/shm
     healthCheckPath: /accounts/login/
     envVars:
@@ -15,6 +16,8 @@ services:
         value: "https://barrelboss.onrender.com"
       - key: DATABASE_SSL_REQUIRE
         value: "true"
+      - key: DATABASE_CONNECT_TIMEOUT
+        value: "15"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
