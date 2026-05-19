@@ -4001,16 +4001,22 @@ table.data-table td {
     position: relative;
     top: auto;
     z-index: 1;
+    width: fit-content;
+    max-width: 100%;
     justify-content: flex-start;
-    padding: 0.52rem 0.72rem;
+    padding: 0.34rem;
     margin-bottom: 1.22rem;
+    border-radius: 999px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
 }
 
 .app-shell .topbar-status-row {
-    width: 100%;
+    position: relative;
+    z-index: 1;
+    width: auto;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.38rem;
     flex-wrap: wrap;
 }
 
@@ -4092,10 +4098,32 @@ table.data-table td {
     border: 1px solid var(--ui-glass-border);
     background: linear-gradient(150deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
     color: var(--ui-muted);
-    font-size: 0.64rem;
-    letter-spacing: 0.07em;
+    font-size: 0.72rem;
+    letter-spacing: 0.045em;
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+.app-shell .status-chip {
+    position: relative;
+    min-height: 2.1rem;
+    padding: 0.42rem 0.72rem 0.42rem 1.7rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.app-shell .status-chip::before {
+    content: "";
+    position: absolute;
+    left: 0.72rem;
+    top: 50%;
+    width: 0.46rem;
+    height: 0.46rem;
+    border-radius: 999px;
+    transform: translateY(-50%);
+    background: var(--ui-accent);
+    box-shadow: 0 0 0 3px rgba(127, 144, 255, 0.14);
 }
 
 .app-shell .status-chip-live {
@@ -4104,10 +4132,19 @@ table.data-table td {
     color: var(--ui-text);
 }
 
+.app-shell .status-chip-live::before {
+    background: #45b3d9;
+    box-shadow: 0 0 0 3px rgba(69, 179, 217, 0.16);
+}
+
 .app-shell .status-chip-role {
     border-color: var(--ui-border-strong);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08));
     color: var(--ui-text);
+}
+
+.app-shell .status-chip-role::before {
+    background: var(--ui-accent-strong);
 }
 
 .app-shell .quick-action-link:hover {
@@ -4723,6 +4760,30 @@ table.data-table td {
         flex: 0 0 auto;
         white-space: nowrap;
     }
+
+    .app-shell .topbar-utility {
+        width: 100%;
+        padding: 0.38rem;
+        border-radius: 1rem;
+    }
+
+    .app-shell .topbar-status-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.44rem;
+    }
+
+    .app-shell .status-chip {
+        justify-content: center;
+        min-width: 0;
+        padding: 0.46rem 0.62rem 0.46rem 1.45rem;
+        text-align: center;
+    }
+
+    .app-shell .status-chip::before {
+        left: 0.58rem;
+    }
 }
 
 @media (max-width: 720px) {
@@ -4757,7 +4818,12 @@ table.data-table td {
     }
 
     .app-shell .topbar-utility {
+        padding: 0.42rem;
         margin-bottom: 1rem;
+    }
+
+    .app-shell .topbar-status-row {
+        gap: 0.42rem;
     }
 
     .app-shell .topbar-end {
@@ -4804,8 +4870,17 @@ table.data-table td {
     }
 
     .app-shell .status-chip {
-        min-height: 2rem;
-        padding: 0.3rem 0.72rem;
+        min-height: 2.05rem;
+        padding: 0.42rem 0.46rem 0.42rem 1.24rem;
+        font-size: 0.66rem;
+        letter-spacing: 0.035em;
+    }
+
+    .app-shell .status-chip::before {
+        left: 0.48rem;
+        width: 0.38rem;
+        height: 0.38rem;
+        box-shadow: 0 0 0 2px rgba(127, 144, 255, 0.14);
     }
 
     .app-shell .shift-chart-grid {
@@ -4832,6 +4907,16 @@ table.data-table td {
 
     .app-shell .shift-chart-fill {
         border-radius: 0.58rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .app-shell .topbar-status-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .app-shell .status-chip-live {
+        grid-column: 1 / -1;
     }
 }
 
