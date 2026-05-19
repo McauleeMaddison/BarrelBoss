@@ -243,6 +243,11 @@ body.nav-open .shell-bg {
     gap: 0.24rem;
 }
 
+.nav-section {
+    display: grid;
+    gap: 0.24rem;
+}
+
 .nav-section-title {
     margin: 0.72rem 0 0.24rem;
     color: rgba(212, 161, 70, 0.9);
@@ -5001,20 +5006,37 @@ table.data-table td {
         flex: 1 1 auto;
         display: flex;
         flex-direction: column;
-        justify-content: space-evenly;
         min-height: 0;
-        gap: clamp(0.12rem, 0.55svh, 0.34rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 0.06rem 0.06rem 0.18rem 0;
+        gap: clamp(0.68rem, 1.1svh, 0.92rem);
+        scrollbar-width: none;
+    }
+
+    .app-shell .nav-links::-webkit-scrollbar {
+        display: none;
+    }
+
+    .app-shell .nav-section {
+        display: grid;
+        gap: 0.24rem;
+    }
+
+    .app-shell .nav-section-system {
+        margin-top: auto;
+        padding-top: 0.22rem;
     }
 
     .app-shell .nav-section-title {
-        margin: 0.28rem 0 0.08rem;
+        margin: 0 0 0.08rem;
         font-size: 0.68rem;
         letter-spacing: 0.1em;
         color: var(--ui-muted);
     }
 
     .app-shell .nav-section-title:first-child {
-        margin-top: 0.06rem;
+        margin-top: 0;
     }
 
     .app-shell .nav-link {
