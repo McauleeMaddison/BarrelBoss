@@ -103,6 +103,8 @@ h1, h2, h3 {
 }
 
 .nav-overlay {
+    appearance: none;
+    -webkit-appearance: none;
     display: block;
     position: fixed;
     inset: 0;
@@ -3846,7 +3848,20 @@ table.data-table td {
 }
 
 .app-shell .nav-overlay {
-    background: rgba(6, 12, 24, 0.74);
+    background: rgba(5, 10, 20, 0.76);
+    backdrop-filter: blur(3px) saturate(82%);
+    -webkit-backdrop-filter: blur(3px) saturate(82%);
+}
+
+.app-shell.nav-open .shell-bg {
+    mix-blend-mode: normal;
+    opacity: 0.12;
+}
+
+.app-shell.nav-open .nav-overlay {
+    background:
+        linear-gradient(90deg, rgba(5, 10, 20, 0.7) 0%, rgba(5, 10, 20, 0.82) 44%, rgba(5, 10, 20, 0.9) 100%),
+        rgba(5, 10, 20, 0.82);
 }
 
 .app-shell[data-theme="dark"] .shell-bg {
@@ -4922,7 +4937,9 @@ table.data-table td {
 
 @media (max-width: 1180px), (hover: none) and (pointer: coarse) and (max-width: 1366px) {
     .app-shell .nav-overlay {
-        background: rgba(6, 10, 20, 0.78);
+        background:
+            linear-gradient(90deg, rgba(5, 10, 20, 0.68) 0%, rgba(5, 10, 20, 0.84) 56%, rgba(5, 10, 20, 0.92) 100%),
+            rgba(5, 10, 20, 0.84);
     }
 
     .app-shell .sidebar {
@@ -4981,11 +4998,16 @@ table.data-table td {
     }
 
     .app-shell .nav-links {
-        gap: 0.18rem;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        min-height: 0;
+        gap: clamp(0.12rem, 0.55svh, 0.34rem);
     }
 
     .app-shell .nav-section-title {
-        margin: 0.46rem 0 0.12rem;
+        margin: 0.28rem 0 0.08rem;
         font-size: 0.68rem;
         letter-spacing: 0.1em;
         color: var(--ui-muted);
@@ -5033,8 +5055,8 @@ table.data-table td {
     }
 
     .app-shell .logout-form {
-        margin-top: auto;
-        padding-top: 0.46rem;
+        margin-top: 0;
+        padding-top: 0.32rem;
         border-top: 1px solid var(--ui-border);
     }
 
