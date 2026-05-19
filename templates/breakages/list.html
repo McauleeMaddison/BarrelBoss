@@ -22,16 +22,20 @@
     </div>
 
     <form method="get" class="stock-filter-form">
-        <label for="q">Search</label>
-        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+        <div class="filter-field">
+            <label for="q">Search</label>
+            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+        </div>
 
-        <label for="issue">Issue Type</label>
-        <select id="issue" name="issue">
-            <option value="">All Types</option>
-            {% for value, label in issue_choices %}
-            <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="issue">Issue Type</label>
+            <select id="issue" name="issue">
+                <option value="">All Types</option>
+                {% for value, label in issue_choices %}
+                <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
         <button class="action-btn" type="submit">Apply</button>
         <a class="table-action" href="{% url 'breakages:list' %}">Reset</a>

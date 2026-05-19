@@ -112,21 +112,25 @@
 
     <form method="get" class="stock-filter-form">
         {% if is_management %}
-        <label for="staff">Staff</label>
-        <select id="staff" name="staff">
-            <option value="">All Staff</option>
-            {% for team_member in team_members %}
-            <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="staff">Staff</label>
+            <select id="staff" name="staff">
+                <option value="">All Staff</option>
+                {% for team_member in team_members %}
+                <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
         {% endif %}
 
-        <label for="range">Range</label>
-        <select id="range" name="range">
-            {% for value, label in range_choices %}
-            <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="range">Range</label>
+            <select id="range" name="range">
+                {% for value, label in range_choices %}
+                <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
         <button class="action-btn" type="submit">Apply</button>
         <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>

@@ -58,24 +58,30 @@
     </div>
 
     <form method="get" class="stock-filter-form">
-        <label for="q">Search</label>
-        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Task title or assignee">
+        <div class="filter-field">
+            <label for="q">Search</label>
+            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Task title or assignee">
+        </div>
 
-        <label for="type">Type</label>
-        <select id="type" name="type">
-            <option value="">All Types</option>
-            {% for value, label in type_choices %}
-            <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="type">Type</label>
+            <select id="type" name="type">
+                <option value="">All Types</option>
+                {% for value, label in type_choices %}
+                <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            <option value="">All Statuses</option>
-            {% for value, label in status_choices %}
-            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="">All Statuses</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
         <button class="action-btn" type="submit">Apply</button>
         <a class="table-action" href="{% url 'checklists:list' %}">Reset</a>

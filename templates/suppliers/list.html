@@ -18,16 +18,20 @@
     </div>
 
     <form method="get" class="stock-filter-form">
-        <label for="q">Search</label>
-        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Name, contact, email or phone">
+        <div class="filter-field">
+            <label for="q">Search</label>
+            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Name, contact, email or phone">
+        </div>
 
-        <label for="category">Category</label>
-        <select id="category" name="category">
-            <option value="">All Categories</option>
-            {% for value, label in category_choices %}
-            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div class="filter-field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">All Categories</option>
+                {% for value, label in category_choices %}
+                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
         <button class="action-btn" type="submit">Apply</button>
         <a class="table-action" href="{% url 'suppliers:list' %}">Reset</a>
