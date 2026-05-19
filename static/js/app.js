@@ -8,9 +8,7 @@
     const themeToggleButton = document.querySelector("[data-theme-toggle]");
     const themeToggleLabel = document.querySelector("[data-theme-toggle-label]");
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    const isMobileNav = window.matchMedia(
-        "(max-width: 1180px), (hover: none) and (pointer: coarse) and (max-width: 1366px)",
-    );
+    const isMobileNav = window.matchMedia("(max-width: 900px)");
     const prefersDarkScheme = window.matchMedia
         ? window.matchMedia("(prefers-color-scheme: dark)")
         : null;
