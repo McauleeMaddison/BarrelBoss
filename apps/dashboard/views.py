@@ -22,15 +22,13 @@ def _greeting_line():
     return "Good evening"
 
 
-def _format_delta(current_value, previous_value, suffix):
+def _build_trend(current_value, previous_value, suffix):
     change = current_value - previous_value
     if change > 0:
-        prefix = f"+{change}"
-    elif change < 0:
-        prefix = str(change)
-    else:
-        prefix = "0"
-    return f"{prefix} {suffix}"
+        return {"label": f"+{change} {suffix}", "direction": "up"}
+    if change < 0:
+        return {"label": f"{change} {suffix}", "direction": "down"}
+    return {"label": f"0 {suffix}", "direction": "flat"}
 
 
 def _format_activity_time(moment):
@@ -119,32 +117,62 @@ def _management_dashboard_payload():
             "label": "Low Stock Items",
             "value": low_stock_count,
             "tone": "alert",
-            "delta": (
-                "Inventory is stable this week"
-                if low_stock_count == 0
-                else f"{low_stock_count} item(s) require replenishment"
+            "state": "Restock now" if low_stock_count else "Stable",
+            "state_tone": "alert" if low_stock_count else "ok",
+            "summary": (
+                f"{low_stock_count} item(s) are below minimum level."
+                if low_stock_count
+                else "No live stock lines are currently below minimum."
             ),
+            "trend": {"label": "Live inventory snapshot", "direction": "flat"},
             "note": "Prioritize replenishment orders for critical lines",
         },
         {
             "label": "Order Requests Awaiting Approval",
             "value": pending_order_count,
             "tone": "warn",
-            "delta": _format_delta(pending_order_count, pending_order_prev, "vs previous 7 days"),
+            "state": "Review queue" if pending_order_count else "Queue clear",
+            "state_tone": "warn" if pending_order_count else "ok",
+            "summary": (
+                f"{pending_order_count} request(s) are waiting on approval."
+                if pending_order_count
+                else "No draft requests are waiting for sign-off."
+            ),
+            "trend": _build_trend(
+                pending_order_count,
+                pending_order_prev,
+                "vs previous 7 days",
+            ),
             "note": "Review draft requests before supplier cut-off",
         },
         {
             "label": "Shifts Scheduled This Week",
             "value": shifts_this_week,
             "tone": "ok",
-            "delta": _format_delta(shifts_this_week, shifts_last_week, "vs last week"),
+            "state": "Coverage booked" if shifts_this_week else "Needs scheduling",
+            "state_tone": "ok" if shifts_this_week else "warn",
+            "summary": (
+                f"{deliveries_due_today} delivery(ies) land today and {deliveries_due_tomorrow} tomorrow."
+            ),
+            "trend": _build_trend(shifts_this_week, shifts_last_week, "vs last week"),
             "note": "Keep staffing aligned with expected service demand",
         },
         {
             "label": "Breakages This Week",
             "value": breakages_this_week,
             "tone": "neutral",
-            "delta": _format_delta(breakages_this_week, breakages_last_week, "vs previous 7 days"),
+            "state": "Investigate" if breakages_this_week else "Quiet week",
+            "state_tone": "alert" if breakages_this_week else "ok",
+            "summary": (
+                "Loss patterns need review before replacement orders go out."
+                if breakages_this_week
+                else "No new incident pressure has been recorded this week."
+            ),
+            "trend": _build_trend(
+                breakages_this_week,
+                breakages_last_week,
+                "vs previous 7 days",
+            ),
             "note": "Track recurring loss patterns and replacement cost exposure",
         },
     ]
@@ -337,9 +365,23 @@ def _staff_dashboard_payload(user):
         status__in=[Order.Status.DRAFT, Order.Status.ORDERED, Order.Status.PENDING_DELIVERY]
     ).count()
     pending_delivery_count = my_orders_qs.filter(status=Order.Status.PENDING_DELIVERY).count()
+    submitted_orders_this_week = my_orders_qs.filter(
+        created_at__date__gte=seven_day_start
+    ).count()
+    submitted_orders_last_week = my_orders_qs.filter(
+        created_at__date__range=(previous_seven_start, previous_seven_end)
+    ).count()
 
     tasks_due_today = my_tasks_qs.filter(due_date=today, completed=False).count()
     tasks_overdue = my_tasks_qs.filter(due_date__lt=today, completed=False).count()
+    completed_tasks_this_week = my_tasks_qs.filter(
+        completed=True,
+        completed_at__date__gte=seven_day_start,
+    ).count()
+    completed_tasks_last_week = my_tasks_qs.filter(
+        completed=True,
+        completed_at__date__range=(previous_seven_start, previous_seven_end),
+    ).count()
 
     breakages_this_week = my_breakages_qs.filter(created_at__date__gte=seven_day_start).count()
     breakages_last_week = my_breakages_qs.filter(
@@ -356,28 +398,68 @@ def _staff_dashboard_payload(user):
             "label": "Hours This Week",
             "value": f"{hours_this_week:.1f}",
             "tone": "ok",
-            "delta": _format_delta(round(hours_this_week), round(hours_last_week), "hours vs last week"),
-            "note": next_shift_note,
+            "state": "Next shift booked" if next_shift else "No shift booked",
+            "state_tone": "ok" if next_shift else "warn",
+            "summary": next_shift_note,
+            "trend": _build_trend(
+                round(hours_this_week),
+                round(hours_last_week),
+                "hours vs last week",
+            ),
+            "note": "Weekly allocation against the previous rota window.",
         },
         {
             "label": "My Open Order Requests",
             "value": open_order_count,
             "tone": "warn",
-            "delta": f"{pending_delivery_count} pending delivery",
+            "state": "Needs approval" if open_order_count else "No blockers",
+            "state_tone": "warn" if open_order_count else "ok",
+            "summary": (
+                f"{pending_delivery_count} request(s) are pending delivery."
+                if pending_delivery_count
+                else "No deliveries are waiting on your follow-through."
+            ),
+            "trend": _build_trend(
+                submitted_orders_this_week,
+                submitted_orders_last_week,
+                "submitted vs previous 7 days",
+            ),
             "note": "Draft requests can still be edited prior to approval",
         },
         {
             "label": "My Tasks Due Today",
             "value": tasks_due_today,
             "tone": "neutral",
-            "delta": f"{tasks_overdue} overdue",
+            "state": "Close today" if tasks_due_today or tasks_overdue else "Clear today",
+            "state_tone": "warn" if tasks_due_today or tasks_overdue else "ok",
+            "summary": (
+                f"{tasks_overdue} overdue task(s) still need completion."
+                if tasks_overdue
+                else "No overdue checklist tasks are carrying into this shift."
+            ),
+            "trend": _build_trend(
+                completed_tasks_this_week,
+                completed_tasks_last_week,
+                "completed vs previous 7 days",
+            ),
             "note": "Complete assigned checklist tasks before handover",
         },
         {
             "label": "My Breakages This Week",
             "value": breakages_this_week,
             "tone": "alert",
-            "delta": _format_delta(breakages_this_week, breakages_last_week, "vs previous 7 days"),
+            "state": "Log follow-up" if breakages_this_week else "No incidents",
+            "state_tone": "alert" if breakages_this_week else "ok",
+            "summary": (
+                "Recent incidents still need accurate classification and closure."
+                if breakages_this_week
+                else "No breakage pressure has been recorded in the last 7 days."
+            ),
+            "trend": _build_trend(
+                breakages_this_week,
+                breakages_last_week,
+                "vs previous 7 days",
+            ),
             "note": "Report and classify incidents before shift end",
         },
     ]

@@ -270,6 +270,22 @@ class StaffManagementTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "team_staff")
         self.assertContains(response, "Bartender")
+        self.assertEqual(response.context["team_active_rate"], 100)
+        self.assertFalse(response.context["filters_active"])
+
+    def test_staff_list_context_exposes_active_filter_summary(self):
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.get(
+            reverse("staff"),
+            {"q": "team_staff", "status": "active", "alerts": "enabled"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["filters_active"])
+        self.assertEqual(response.context["active_filter_count"], 3)
+        self.assertEqual(response.context["selected_status_label"], "Active")
+        self.assertEqual(response.context["selected_alerts_label"], "Alerts Enabled")
+        self.assertIn("label", response.context["join_trend"])
 
     def test_staff_cannot_access_staff_management(self):
         self.client.login(username="team_staff", password="strong-pass-123")

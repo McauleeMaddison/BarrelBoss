@@ -66,6 +66,24 @@ class ChecklistViewTests(TestCase):
         self.assertContains(response, "Restock fridges")
         self.assertContains(response, "Count till")
 
+    def test_checklist_context_exposes_filter_summary_and_trend(self):
+        self.client.login(username="task_manager", password="strong-pass-123")
+        response = self.client.get(
+            reverse("checklists:list"),
+            {
+                "q": "Restock",
+                "type": Checklist.ChecklistType.OPENING,
+                "status": "pending",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["filters_active"])
+        self.assertEqual(response.context["active_filter_count"], 3)
+        self.assertEqual(response.context["selected_type_label"], "Opening")
+        self.assertEqual(response.context["selected_status_label"], "Pending")
+        self.assertIn("label", response.context["completion_trend"])
+
     def test_manager_can_create_task(self):
         self.client.login(username="task_manager", password="strong-pass-123")
         response = self.client.post(

@@ -252,6 +252,30 @@
         setDashboardPanel(defaultTarget);
     }
 
+    const filterToggleButtons = document.querySelectorAll("[data-filter-toggle]");
+    if (filterToggleButtons.length) {
+        filterToggleButtons.forEach((button) => {
+            const filterShell = button.closest("[data-filter-shell]");
+            if (!filterShell) {
+                return;
+            }
+
+            const syncExpandedState = () => {
+                button.setAttribute(
+                    "aria-expanded",
+                    String(filterShell.classList.contains("is-open")),
+                );
+            };
+
+            syncExpandedState();
+
+            button.addEventListener("click", () => {
+                filterShell.classList.toggle("is-open");
+                syncExpandedState();
+            });
+        });
+    }
+
     const activityButtons = document.querySelectorAll("[data-activity-filter]");
     const activityRows = document.querySelectorAll("#activityList [data-activity-category]");
 

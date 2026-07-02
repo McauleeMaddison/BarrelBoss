@@ -58,6 +58,8 @@ class DashboardAccessTests(TestCase):
         self.assertTrue(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Management Portal")
         self.assertEqual(len(response.context["metrics"]), 4)
+        self.assertIn("state", response.context["metrics"][0])
+        self.assertIn("trend", response.context["metrics"][0])
         self.assertContains(response, "Management Overview")
 
     def test_staff_portal_context(self):
@@ -68,6 +70,8 @@ class DashboardAccessTests(TestCase):
         self.assertFalse(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Staff Portal")
         self.assertEqual(len(response.context["quick_actions"]), 3)
+        self.assertIn("state", response.context["metrics"][0])
+        self.assertIn("trend", response.context["metrics"][0])
         self.assertContains(response, "Staff Shift Overview")
 
     def test_staff_cannot_access_management_portal(self):

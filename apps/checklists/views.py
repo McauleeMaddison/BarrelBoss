@@ -15,6 +15,15 @@ from .forms import ChecklistForm
 from .models import Checklist
 
 
+def _build_trend(current_value, previous_value, suffix):
+    change = current_value - previous_value
+    if change > 0:
+        return {"label": f"+{change} {suffix}", "direction": "up"}
+    if change < 0:
+        return {"label": f"{change} {suffix}", "direction": "down"}
+    return {"label": f"0 {suffix}", "direction": "flat"}
+
+
 def _sync_completed_timestamp(task):
     if task.completed and not task.completed_at:
         task.completed_at = timezone.now()
@@ -53,6 +62,8 @@ def list_checklists(request):
     tasks = list(page_obj.object_list)
     today = timezone.localdate()
     week_ago = today - timedelta(days=7)
+    previous_week_start = week_ago - timedelta(days=7)
+    previous_week_end = week_ago - timedelta(days=1)
 
     visible_qs = Checklist.objects.select_related("assigned_to")
     if not is_management(request.user):
@@ -61,6 +72,68 @@ def list_checklists(request):
     total = visible_qs.count()
     completed_count = visible_qs.filter(completed=True).count()
     completion_rate = int((completed_count / total) * 100) if total else 0
+    due_today_count = visible_qs.filter(due_date=today, completed=False).count()
+    overdue_count = visible_qs.filter(due_date__lt=today, completed=False).count()
+    completed_week_count = visible_qs.filter(
+        completed=True,
+        completed_at__date__gte=week_ago,
+    ).count()
+    completed_previous_week_count = visible_qs.filter(
+        completed=True,
+        completed_at__date__range=(previous_week_start, previous_week_end),
+    ).count()
+
+    filters_active = bool(query or selected_type or selected_status)
+    active_filter_count = sum(bool(value) for value in [query, selected_type, selected_status])
+
+    selected_type_label = dict(Checklist.ChecklistType.choices).get(selected_type, "")
+    status_choices = [
+        ("pending", "Pending"),
+        ("completed", "Completed"),
+    ]
+    selected_status_label = dict(status_choices).get(selected_status, "")
+
+    if overdue_count:
+        queue_state_label = "Needs intervention"
+        queue_state_copy = f"{overdue_count} overdue task(s) need immediate follow-up."
+        queue_state_tone = "alert"
+    elif due_today_count:
+        queue_state_label = "Active today"
+        queue_state_copy = f"{due_today_count} task(s) are due in the current shift window."
+        queue_state_tone = "warn"
+    else:
+        queue_state_label = "Under control"
+        queue_state_copy = "No overdue backlog and no tasks due today."
+        queue_state_tone = "ok"
+
+    hero_signals = [
+        {
+            "label": "Queue health",
+            "value": queue_state_label,
+            "copy": queue_state_copy,
+            "tone": queue_state_tone,
+        },
+        {
+            "label": "Weekly output",
+            "value": f"{completed_week_count} closed",
+            "copy": _build_trend(
+                completed_week_count,
+                completed_previous_week_count,
+                "vs previous 7 days",
+            )["label"],
+            "tone": "ok",
+        },
+        {
+            "label": "Control mode",
+            "value": "Assignment control" if is_management(request.user) else "Personal execution",
+            "copy": (
+                "Managers can rebalance ownership and clean up blockers."
+                if is_management(request.user)
+                else "Only your assigned tasks are shown in this queue."
+            ),
+            "tone": "neutral",
+        },
+    ]
 
     context = {
         "tasks": tasks,
@@ -68,21 +141,26 @@ def list_checklists(request):
         "is_paginated": page_obj.has_other_pages(),
         "pagination_query": build_query_string(request),
         "task_count": tasks_qs.count(),
-        "due_today_count": visible_qs.filter(due_date=today, completed=False).count(),
-        "overdue_count": visible_qs.filter(due_date__lt=today, completed=False).count(),
-        "completed_week_count": visible_qs.filter(
-            completed=True,
-            completed_at__date__gte=week_ago,
-        ).count(),
+        "due_today_count": due_today_count,
+        "overdue_count": overdue_count,
+        "completed_week_count": completed_week_count,
+        "completed_previous_week_count": completed_previous_week_count,
         "completion_rate": completion_rate,
         "type_choices": Checklist.ChecklistType.choices,
         "selected_type": selected_type,
+        "selected_type_label": selected_type_label,
         "selected_status": selected_status,
+        "selected_status_label": selected_status_label,
         "query": query,
-        "status_choices": [
-            ("pending", "Pending"),
-            ("completed", "Completed"),
-        ],
+        "status_choices": status_choices,
+        "filters_active": filters_active,
+        "active_filter_count": active_filter_count,
+        "hero_signals": hero_signals,
+        "completion_trend": _build_trend(
+            completed_week_count,
+            completed_previous_week_count,
+            "vs previous 7 days",
+        ),
     }
     return render(request, "checklists/list.html", context)
 

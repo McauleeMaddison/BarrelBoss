@@ -17,35 +17,76 @@
         Track assigned tasks, close them on time, and keep handover quality high.
         {% endif %}
     </p>
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
     <div class="report-toolbar">
         {% if is_management %}
         <a class="action-btn action-link" href="{% url 'checklists:add' %}">Assign Task</a>
         {% endif %}
-        <div class="dashboard-controls">
-            <span class="panel-header-meta">Visible: {{ task_count }}</span>
-            <span class="panel-header-meta">Due Today: {{ due_today_count }}</span>
-            <span class="panel-header-meta">Overdue: {{ overdue_count }}</span>
-        </div>
     </div>
 </section>
 
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Visible Tasks</h3>
-        <p>{{ task_count }}</p>
+        <div class="metric-card-head">
+            <h3>Visible Tasks</h3>
+            <span class="metric-state metric-state-neutral">Queue view</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ task_count }}</p>
+            <span class="metric-summary">{{ completion_rate }}% of visible tasks are currently complete.</span>
+            <span class="metric-delta metric-delta-{{ completion_trend.direction }}">{{ completion_trend.label }}</span>
+            <span class="metric-note">Use this as the live working queue for the selected scope.</span>
+        </div>
     </article>
     <article class="metric-card warn">
-        <h3>Due Today</h3>
-        <p>{{ due_today_count }}</p>
+        <div class="metric-card-head">
+            <h3>Due Today</h3>
+            <span class="metric-state metric-state-warn">Current focus</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ due_today_count }}</p>
+            <span class="metric-summary">Tasks that should close before the end of today’s shift cycle.</span>
+            <span class="metric-note">Keep these items moving before they roll into tomorrow’s queue.</span>
+        </div>
     </article>
     <article class="metric-card alert">
-        <h3>Overdue</h3>
-        <p>{{ overdue_count }}</p>
+        <div class="metric-card-head">
+            <h3>Overdue</h3>
+            <span class="metric-state metric-state-{% if overdue_count %}alert{% else %}ok{% endif %}">
+                {% if overdue_count %}Escalate{% else %}Clear{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ overdue_count }}</p>
+            <span class="metric-summary">
+                {% if overdue_count %}
+                These tasks have already slipped past their due date.
+                {% else %}
+                No tasks are sitting overdue in the current queue.
+                {% endif %}
+            </span>
+            <span class="metric-note">Use this as the quickest signal for operational slippage.</span>
+        </div>
     </article>
     <article class="metric-card ok">
-        <h3>Completion Rate</h3>
-        <p>{{ completion_rate }}%</p>
-        <span class="metric-note">{{ completed_week_count }} completed in last 7 days</span>
+        <div class="metric-card-head">
+            <h3>Completion Rate</h3>
+            <span class="metric-state metric-state-ok">Weekly output</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ completion_rate }}%</p>
+            <span class="metric-summary">{{ completed_week_count }} task(s) completed in the last 7 days.</span>
+            <span class="metric-delta metric-delta-{{ completion_trend.direction }}">{{ completion_trend.label }}</span>
+            <span class="metric-note">Completion rate reflects the full visible set, not just today’s queue.</span>
+        </div>
     </article>
 </section>
 
@@ -57,35 +98,58 @@
         {% endif %}
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="q">Search</label>
-            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Task title or assignee">
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% if selected_type_label %}<span class="filter-chip">{{ selected_type_label }}</span>{% endif %}
+                {% if selected_status_label %}<span class="filter-chip">{{ selected_status_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">All checklist tasks in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <div class="filter-field">
-            <label for="type">Type</label>
-            <select id="type" name="type">
-                <option value="">All Types</option>
-                {% for value, label in type_choices %}
-                <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Task title or assignee">
+            </div>
 
-        <div class="filter-field">
-            <label for="status">Status</label>
-            <select id="status" name="status">
-                <option value="">All Statuses</option>
-                {% for value, label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="filter-field">
+                <label for="type">Type</label>
+                <select id="type" name="type">
+                    <option value="">All Types</option>
+                    {% for value, label in type_choices %}
+                    <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'checklists:list' %}">Reset</a>
-    </form>
+            <div class="filter-field">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'checklists:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if tasks %}
     <div class="report-table-wrap">

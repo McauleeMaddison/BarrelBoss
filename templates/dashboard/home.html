@@ -67,10 +67,22 @@
     <section class="metric-grid">
         {% for card in metrics %}
         <article class="metric-card {{ card.tone }}">
-            <h3>{{ card.label }}</h3>
-            <p>{{ card.value }}</p>
-            <span class="metric-delta">{{ card.delta }}</span>
-            <span class="metric-note">{{ card.note }}</span>
+            <div class="metric-card-head">
+                <h3>{{ card.label }}</h3>
+                {% if card.state %}
+                <span class="metric-state metric-state-{{ card.state_tone|default:card.tone }}">{{ card.state }}</span>
+                {% endif %}
+            </div>
+            <div class="metric-card-body">
+                <p>{{ card.value }}</p>
+                {% if card.summary %}
+                <span class="metric-summary">{{ card.summary }}</span>
+                {% endif %}
+                {% if card.trend %}
+                <span class="metric-delta metric-delta-{{ card.trend.direction }}">{{ card.trend.label }}</span>
+                {% endif %}
+                <span class="metric-note">{{ card.note }}</span>
+            </div>
         </article>
         {% endfor %}
     </section>

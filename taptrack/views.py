@@ -33,6 +33,19 @@ from taptrack.pagination import build_query_string, paginate_collection
 User = get_user_model()
 
 
+def _build_trend(current_value, previous_value, suffix):
+    change = current_value - previous_value
+    if change > 0:
+        return {"label": f"+{change} {suffix}", "direction": "up"}
+    if change < 0:
+        return {"label": f"{change} {suffix}", "direction": "down"}
+    return {"label": f"0 {suffix}", "direction": "flat"}
+
+
+def _ratio(part, whole):
+    return int(round((part / whole) * 100)) if whole else 0
+
+
 def _allowed_role_values_for_manager(editor_user):
     editor_role = get_user_role(editor_user)
     if editor_role == StaffProfile.Role.LANDLORD:
@@ -52,6 +65,10 @@ def staff_page(request):
     selected_status = request.GET.get("status", "all")
     selected_role = request.GET.get("role", "")
     selected_alerts = request.GET.get("alerts", "all")
+    today = timezone.localdate()
+    seven_day_start = today - timedelta(days=6)
+    previous_seven_start = seven_day_start - timedelta(days=7)
+    previous_seven_end = seven_day_start - timedelta(days=1)
 
     staff_qs = StaffProfile.objects.select_related("user").order_by("user__username")
     if query:
@@ -157,6 +174,71 @@ def staff_page(request):
         1 for item in staff_rows if item.notify_on_shift_assignment
     )
     team_management = sum(1 for item in staff_rows if item.role in MANAGEMENT_ROLES)
+    team_total = len(staff_rows)
+    team_inactive = team_total - team_active
+    team_shift_alerts_disabled = team_total - team_shift_alerts_enabled
+    team_active_rate = _ratio(team_active, team_total)
+    team_shift_alert_rate = _ratio(team_shift_alerts_enabled, team_total)
+
+    recent_joined_count = staff_qs.filter(user__date_joined__date__gte=seven_day_start).count()
+    previous_recent_joined_count = staff_qs.filter(
+        user__date_joined__date__range=(previous_seven_start, previous_seven_end)
+    ).count()
+    join_trend = _build_trend(
+        recent_joined_count,
+        previous_recent_joined_count,
+        "joined vs previous 7 days",
+    )
+
+    if team_inactive:
+        coverage_signal = {
+            "label": "Coverage",
+            "value": f"{team_active_rate}% active",
+            "copy": f"{team_inactive} profile(s) are inactive in this roster view.",
+            "tone": "warn",
+        }
+    else:
+        coverage_signal = {
+            "label": "Coverage",
+            "value": f"{team_active_rate}% active",
+            "copy": "Every visible profile is currently active.",
+            "tone": "ok",
+        }
+
+    alert_signal = {
+        "label": "Alert adoption",
+        "value": f"{team_shift_alert_rate}% enabled",
+        "copy": f"{team_shift_alerts_enabled} profile(s) receive shift assignment push alerts.",
+        "tone": "neutral",
+    }
+    leadership_signal = {
+        "label": "Leadership mix",
+        "value": f"{team_management} management",
+        "copy": "Landlord and manager roles stay visible alongside the wider roster.",
+        "tone": "neutral",
+    }
+
+    status_choices = [
+        ("all", "All"),
+        ("active", "Active"),
+        ("inactive", "Inactive"),
+    ]
+    alert_choices = [
+        ("all", "All"),
+        ("enabled", "Alerts Enabled"),
+        ("disabled", "Alerts Disabled"),
+    ]
+    filters_active = bool(
+        query or selected_status != "all" or selected_role or selected_alerts != "all"
+    )
+    active_filter_count = sum(
+        [
+            bool(query),
+            selected_status != "all",
+            bool(selected_role),
+            selected_alerts != "all",
+        ]
+    )
 
     context = {
         "team_profiles": display_rows,
@@ -166,25 +248,28 @@ def staff_page(request):
         "filter_query": build_query_string(request, exclude_keys={"export"}),
         "query": query,
         "selected_status": selected_status,
+        "selected_status_label": dict(status_choices).get(selected_status, ""),
         "selected_role": selected_role,
+        "selected_role_label": dict(StaffProfile.Role.choices).get(selected_role, ""),
         "selected_alerts": selected_alerts,
-        "status_choices": [
-            ("all", "All"),
-            ("active", "Active"),
-            ("inactive", "Inactive"),
-        ],
-        "alert_choices": [
-            ("all", "All"),
-            ("enabled", "Alerts Enabled"),
-            ("disabled", "Alerts Disabled"),
-        ],
+        "selected_alerts_label": dict(alert_choices).get(selected_alerts, ""),
+        "status_choices": status_choices,
+        "alert_choices": alert_choices,
         "role_choices": StaffProfile.Role.choices,
-        "team_total": len(staff_rows),
+        "team_total": team_total,
         "team_active": team_active,
-        "team_inactive": len(staff_rows) - team_active,
+        "team_inactive": team_inactive,
         "team_management": team_management,
         "team_shift_alerts_enabled": team_shift_alerts_enabled,
-        "team_shift_alerts_disabled": len(staff_rows) - team_shift_alerts_enabled,
+        "team_shift_alerts_disabled": team_shift_alerts_disabled,
+        "team_active_rate": team_active_rate,
+        "team_shift_alert_rate": team_shift_alert_rate,
+        "recent_joined_count": recent_joined_count,
+        "previous_recent_joined_count": previous_recent_joined_count,
+        "join_trend": join_trend,
+        "filters_active": filters_active,
+        "active_filter_count": active_filter_count,
+        "hero_signals": [coverage_signal, alert_signal, leadership_signal],
     }
     return render(request, "accounts/staff.html", context)
 

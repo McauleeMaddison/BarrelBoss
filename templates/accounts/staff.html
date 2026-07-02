@@ -13,44 +13,72 @@
     <p class="portal-hero-copy">
         Manage active users, role permissions, and alert readiness from one operational view.
     </p>
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
     <div class="report-toolbar">
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'staff_add' %}">Create Staff Member</a>
             <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
-        </div>
-        <div class="dashboard-controls">
-            <span class="panel-header-meta">Total: {{ team_total }}</span>
-            <span class="panel-header-meta">Active: {{ team_active }}</span>
-            <span class="panel-header-meta">Inactive: {{ team_inactive }}</span>
         </div>
     </div>
 </section>
 
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Team Records</h3>
-        <p>{{ team_total }}</p>
-        <span class="metric-note">Profiles matching current filters</span>
+        <div class="metric-card-head">
+            <h3>Team Records</h3>
+            <span class="metric-state metric-state-neutral">Roster scope</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ team_total }}</p>
+            <span class="metric-summary">{{ recent_joined_count }} joined in the last 7 days within this view.</span>
+            <span class="metric-delta metric-delta-{{ join_trend.direction }}">{{ join_trend.label }}</span>
+            <span class="metric-note">Profiles shown here already reflect your current filters.</span>
+        </div>
     </article>
     <article class="metric-card ok">
-        <h3>Active Staff</h3>
-        <p>{{ team_active }}</p>
-        <span class="metric-note">Currently marked active</span>
+        <div class="metric-card-head">
+            <h3>Active Coverage</h3>
+            <span class="metric-state metric-state-{% if team_inactive %}warn{% else %}ok{% endif %}">
+                {% if team_inactive %}Monitor{% else %}Healthy{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ team_active_rate }}%</p>
+            <span class="metric-summary">{{ team_active }} active and {{ team_inactive }} inactive profile(s).</span>
+            <span class="metric-note">Coverage is based on the currently filtered roster.</span>
+        </div>
     </article>
     <article class="metric-card warn">
-        <h3>Management Roles</h3>
-        <p>{{ team_management }}</p>
-        <span class="metric-note">Landlord + manager accounts</span>
+        <div class="metric-card-head">
+            <h3>Management Roles</h3>
+            <span class="metric-state metric-state-warn">Leadership</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ team_management }}</p>
+            <span class="metric-summary">Landlord and manager accounts currently visible in this scope.</span>
+            <span class="metric-note">Use this to spot whether the roster still has enough coverage at the top level.</span>
+        </div>
     </article>
     <article class="metric-card alert">
-        <h3>Shift Alerts Enabled</h3>
-        <p>{{ team_shift_alerts_enabled }}</p>
-        <span class="metric-note">Staff receiving shift push alerts</span>
-    </article>
-    <article class="metric-card neutral">
-        <h3>Shift Alerts Disabled</h3>
-        <p>{{ team_shift_alerts_disabled }}</p>
-        <span class="metric-note">Profiles not receiving shift assignment pushes</span>
+        <div class="metric-card-head">
+            <h3>Shift Alerts Enabled</h3>
+            <span class="metric-state metric-state-{% if team_shift_alerts_disabled %}warn{% else %}ok{% endif %}">
+                {% if team_shift_alerts_disabled %}Adoption gap{% else %}Push-ready{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ team_shift_alert_rate }}%</p>
+            <span class="metric-summary">{{ team_shift_alerts_enabled }} enabled and {{ team_shift_alerts_disabled }} disabled profile(s).</span>
+            <span class="metric-note">Push readiness matters most for shift assignment speed and acknowledgement.</span>
+        </div>
     </article>
 </section>
 
@@ -62,43 +90,67 @@
         </div>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="q">Search</label>
-            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Username, name, email, phone or title">
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% if selected_status_label and selected_status != 'all' %}<span class="filter-chip">{{ selected_status_label }}</span>{% endif %}
+                {% if selected_role_label %}<span class="filter-chip">{{ selected_role_label }}</span>{% endif %}
+                {% if selected_alerts_label and selected_alerts != 'all' %}<span class="filter-chip">{{ selected_alerts_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">All team records in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <div class="filter-field">
-            <label for="status">Status</label>
-            <select id="status" name="status">
-                {% for value, label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Username, name, email, phone or title">
+            </div>
 
-        <div class="filter-field">
-            <label for="role">Role</label>
-            <select id="role" name="role">
-                <option value="">All Roles</option>
-                {% for value, label in role_choices %}
-                <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="filter-field">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <div class="filter-field">
-            <label for="alerts">Shift Alerts</label>
-            <select id="alerts" name="alerts">
-                {% for value, label in alert_choices %}
-                <option value="{{ value }}" {% if selected_alerts == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="filter-field">
+                <label for="role">Role</label>
+                <select id="role" name="role">
+                    <option value="">All Roles</option>
+                    {% for value, label in role_choices %}
+                    <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'staff' %}">Reset</a>
-    </form>
+            <div class="filter-field">
+                <label for="alerts">Shift Alerts</label>
+                <select id="alerts" name="alerts">
+                    {% for value, label in alert_choices %}
+                    <option value="{{ value }}" {% if selected_alerts == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'staff' %}">Reset</a>
+        </form>
+    </div>
 
     {% if team_profiles %}
     <div class="staff-card-grid">

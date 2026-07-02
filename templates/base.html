@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260702-ui2">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260702-ui4">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
@@ -62,52 +62,54 @@
 
     <main class="main-content">
         <header class="topbar">
-            <div class="topbar-start">
-                <button
-                    type="button"
-                    class="menu-btn"
-                    data-nav-toggle
-                    aria-label="Open navigation"
-                    aria-controls="main-navigation"
-                    aria-expanded="false"
-                >
-                    <img
-                        class="menu-btn-logo"
-                        src="{% static 'images/barrelboss-logo.png' %}"
-                        alt="Open navigation"
+            <div class="topbar-primary">
+                <div class="topbar-start">
+                    <button
+                        type="button"
+                        class="menu-btn"
+                        data-nav-toggle
+                        aria-label="Open navigation"
+                        aria-controls="main-navigation"
+                        aria-expanded="false"
                     >
-                </button>
-                <div>
-                    <h2>{% block page_title %}Dashboard{% endblock %}</h2>
-                    <p>{% now "l, j F Y" %}</p>
+                        <img
+                            class="menu-btn-logo"
+                            src="{% static 'images/barrelboss-logo.png' %}"
+                            alt="Open navigation"
+                        >
+                    </button>
+                    <div class="topbar-title-block">
+                        <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+                        <p>{% now "l, j F Y" %}</p>
+                    </div>
+                </div>
+                <div class="topbar-end">
+                    <button
+                        type="button"
+                        class="theme-toggle-btn"
+                        data-theme-toggle
+                        aria-pressed="false"
+                        aria-label="Toggle color theme"
+                    >
+                        <span class="theme-toggle-swatch" aria-hidden="true"></span>
+                        <span class="theme-toggle-label" data-theme-toggle-label>Light</span>
+                    </button>
+                    <form action="{% url 'logout' %}" method="post" class="switch-account-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'login' %}">
+                        <button type="submit" class="topbar-switch-btn">Switch Account</button>
+                    </form>
+                    <div class="user-pill">{{ request.user.get_username|default:'Guest' }}</div>
                 </div>
             </div>
-            <div class="topbar-end">
-                <button
-                    type="button"
-                    class="theme-toggle-btn"
-                    data-theme-toggle
-                    aria-pressed="false"
-                    aria-label="Toggle color theme"
-                >
-                    <span class="theme-toggle-swatch" aria-hidden="true"></span>
-                    <span class="theme-toggle-label" data-theme-toggle-label>Light</span>
-                </button>
-                <form action="{% url 'logout' %}" method="post" class="switch-account-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{% url 'login' %}">
-                    <button type="submit" class="topbar-switch-btn">Switch Account</button>
-                </form>
-                <div class="user-pill">{{ request.user.get_username|default:'Guest' }}</div>
+            <div class="topbar-utility" role="region" aria-label="System status">
+                <div class="topbar-status-row">
+                    <span class="status-chip status-chip-live">System Online</span>
+                    <span class="status-chip">{% now "H:i" %} UK</span>
+                    <span class="status-chip status-chip-role">{{ user_role_label }}</span>
+                </div>
             </div>
         </header>
-        <div class="topbar-utility" role="region" aria-label="System status">
-            <div class="topbar-status-row">
-                <span class="status-chip status-chip-live">System Online</span>
-                <span class="status-chip">{% now "H:i" %} UK</span>
-                <span class="status-chip status-chip-role">{{ user_role_label }}</span>
-            </div>
-        </div>
 
         <div class="page-shell">
             {% if messages %}
@@ -190,6 +192,6 @@
     {% endwith %}
 </div>
 <script src="{% static 'js/pwa.js' %}" defer></script>
-<script src="{% static 'js/app.js' %}" defer></script>
+<script src="{% static 'js/app.js' %}?v=20260702-ui4" defer></script>
 </body>
 </html>
