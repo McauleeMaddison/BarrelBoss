@@ -51,6 +51,18 @@ def _to_scaled_percentages(values):
     return scaled
 
 
+def _build_chart_points(values):
+    scaled_values = _to_scaled_percentages(values)
+    return [
+        {
+            "height": scaled_values[index],
+            "value": value,
+            "is_latest": index == len(values) - 1,
+        }
+        for index, value in enumerate(values)
+    ]
+
+
 def _build_throughput(last_seven_dates, *, service_values, task_values):
     service_scaled = _to_scaled_percentages(service_values)
     task_scaled = _to_scaled_percentages(task_values)
@@ -111,6 +123,32 @@ def _management_dashboard_payload():
     breakages_last_week = breakage_qs.filter(
         created_at__date__range=(previous_seven_start, previous_seven_end)
     ).count()
+    overdue_task_count = checklist_qs.filter(completed=False, due_date__lt=today).count()
+
+    last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
+    order_request_series = []
+    draft_request_series = []
+    shift_series = []
+    delivery_series = []
+    breakage_series = []
+    task_output_series = []
+    for day in last_seven_dates:
+        order_request_series.append(order_qs.filter(created_at__date=day).count())
+        draft_request_series.append(
+            order_qs.filter(created_at__date=day, status=Order.Status.DRAFT).count()
+        )
+        shift_series.append(shift_qs.filter(shift_date=day).count())
+        delivery_series.append(
+            order_qs.filter(
+                delivery_date=day,
+                status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
+            ).count()
+        )
+        breakage_series.append(breakage_qs.filter(created_at__date=day).count())
+        task_output_series.append(
+            checklist_qs.filter(completed=True, completed_at__date=day).count()
+            + breakage_qs.filter(created_at__date=day).count()
+        )
 
     metrics = [
         {
@@ -126,6 +164,12 @@ def _management_dashboard_payload():
             ),
             "trend": {"label": "Live inventory snapshot", "direction": "flat"},
             "note": "Prioritize replenishment orders for critical lines",
+            "chart_label": "7d restock demand",
+            "chart_points": _build_chart_points(order_request_series),
+            "actions": [
+                {"label": "Open stock", "url_name": "stock:list"},
+                {"label": "Review orders", "url_name": "orders:list"},
+            ],
         },
         {
             "label": "Order Requests Awaiting Approval",
@@ -144,6 +188,11 @@ def _management_dashboard_payload():
                 "vs previous 7 days",
             ),
             "note": "Review draft requests before supplier cut-off",
+            "chart_label": "7d approval intake",
+            "chart_points": _build_chart_points(draft_request_series),
+            "actions": [
+                {"label": "Review orders", "url_name": "orders:list"},
+            ],
         },
         {
             "label": "Shifts Scheduled This Week",
@@ -156,6 +205,11 @@ def _management_dashboard_payload():
             ),
             "trend": _build_trend(shifts_this_week, shifts_last_week, "vs last week"),
             "note": "Keep staffing aligned with expected service demand",
+            "chart_label": "7d rota load",
+            "chart_points": _build_chart_points(shift_series),
+            "actions": [
+                {"label": "Open roster", "url_name": "shifts:list"},
+            ],
         },
         {
             "label": "Breakages This Week",
@@ -174,6 +228,11 @@ def _management_dashboard_payload():
                 "vs previous 7 days",
             ),
             "note": "Track recurring loss patterns and replacement cost exposure",
+            "chart_label": "7d incident flow",
+            "chart_points": _build_chart_points(breakage_series),
+            "actions": [
+                {"label": "Review breakages", "url_name": "breakages:list"},
+            ],
         },
     ]
 
@@ -242,6 +301,66 @@ def _management_dashboard_payload():
             }
         )
 
+    attention_items = []
+    if overdue_task_count:
+        attention_items.append(
+            {
+                "label": "Overdue tasks",
+                "value": f"{overdue_task_count} overdue",
+                "copy": "Checklist work has slipped past its due date and needs reassignment or completion.",
+                "tone": "alert",
+                "action_label": "Open queue",
+                "url_name": "checklists:list",
+                "query": "preset=overdue",
+            }
+        )
+    if pending_order_count:
+        attention_items.append(
+            {
+                "label": "Pending approvals",
+                "value": f"{pending_order_count} waiting",
+                "copy": "Draft order requests are still waiting for management sign-off.",
+                "tone": "warn",
+                "action_label": "Review orders",
+                "url_name": "orders:list",
+            }
+        )
+    if deliveries_due_today or deliveries_due_tomorrow:
+        attention_items.append(
+            {
+                "label": "Delivery watch",
+                "value": f"{deliveries_due_today + deliveries_due_tomorrow} incoming",
+                "copy": (
+                    f"{deliveries_due_today} due today and {deliveries_due_tomorrow} due tomorrow."
+                ),
+                "tone": "warn" if deliveries_due_today else "neutral",
+                "action_label": "Review deliveries",
+                "url_name": "orders:list",
+            }
+        )
+    if low_stock_count:
+        attention_items.append(
+            {
+                "label": "Restock pressure",
+                "value": f"{low_stock_count} low-stock",
+                "copy": "Critical inventory lines are already at or below their minimum level.",
+                "tone": "alert",
+                "action_label": "Open stock",
+                "url_name": "stock:list",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Attention rail",
+                "value": "No blockers",
+                "copy": "Approvals, deliveries, tasks, and inventory pressure are currently under control.",
+                "tone": "ok",
+                "action_label": "Open dashboard",
+                "url_name": "dashboard:management_portal",
+            }
+        )
+
     activity_events = []
     for order in order_qs.order_by("-updated_at")[:5]:
         activity_events.append(
@@ -307,16 +426,10 @@ def _management_dashboard_payload():
             }
         ]
 
-    last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
     service_values = []
-    task_values = []
-    for day in last_seven_dates:
+    for index, day in enumerate(last_seven_dates):
         service_values.append(
             order_qs.filter(created_at__date=day).count() + shift_qs.filter(shift_date=day).count()
-        )
-        task_values.append(
-            checklist_qs.filter(completed=True, completed_at__date=day).count()
-            + breakage_qs.filter(created_at__date=day).count()
         )
 
     return {
@@ -327,13 +440,14 @@ def _management_dashboard_payload():
             f"{deliveries_due_today} delivery(ies) due today and {deliveries_due_tomorrow} due tomorrow."
         ),
         "metrics": metrics,
+        "attention_items": attention_items,
         "activity": activity,
         "quick_actions": quick_actions,
         "focus_list": focus_list,
         "throughput": _build_throughput(
             last_seven_dates,
             service_values=service_values,
-            task_values=task_values,
+            task_values=task_output_series,
         ),
     }
 
@@ -387,6 +501,18 @@ def _staff_dashboard_payload(user):
     breakages_last_week = my_breakages_qs.filter(
         created_at__date__range=(previous_seven_start, previous_seven_end)
     ).count()
+    last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
+    hours_series = []
+    order_request_series = []
+    task_completion_series = []
+    breakage_series = []
+    for day in last_seven_dates:
+        hours_series.append(_sum_shift_hours(my_shifts_qs.filter(shift_date=day)))
+        order_request_series.append(my_orders_qs.filter(created_at__date=day).count())
+        task_completion_series.append(
+            my_tasks_qs.filter(completed=True, completed_at__date=day).count()
+        )
+        breakage_series.append(my_breakages_qs.filter(created_at__date=day).count())
 
     next_shift_note = (
         f"Next shift: {next_shift.shift_date:%a %d %b}, {next_shift.start_time:%H:%M}"
@@ -407,6 +533,11 @@ def _staff_dashboard_payload(user):
                 "hours vs last week",
             ),
             "note": "Weekly allocation against the previous rota window.",
+            "chart_label": "7d rota hours",
+            "chart_points": _build_chart_points(hours_series),
+            "actions": [
+                {"label": "Open roster", "url_name": "shifts:list"},
+            ],
         },
         {
             "label": "My Open Order Requests",
@@ -425,6 +556,12 @@ def _staff_dashboard_payload(user):
                 "submitted vs previous 7 days",
             ),
             "note": "Draft requests can still be edited prior to approval",
+            "chart_label": "7d order activity",
+            "chart_points": _build_chart_points(order_request_series),
+            "actions": [
+                {"label": "Review orders", "url_name": "orders:list"},
+                {"label": "New request", "url_name": "orders:add"},
+            ],
         },
         {
             "label": "My Tasks Due Today",
@@ -443,6 +580,12 @@ def _staff_dashboard_payload(user):
                 "completed vs previous 7 days",
             ),
             "note": "Complete assigned checklist tasks before handover",
+            "chart_label": "7d task output",
+            "chart_points": _build_chart_points(task_completion_series),
+            "actions": [
+                {"label": "Today queue", "url_name": "checklists:list", "query": "preset=today"},
+                {"label": "Overdue", "url_name": "checklists:list", "query": "preset=overdue"},
+            ],
         },
         {
             "label": "My Breakages This Week",
@@ -461,6 +604,11 @@ def _staff_dashboard_payload(user):
                 "vs previous 7 days",
             ),
             "note": "Report and classify incidents before shift end",
+            "chart_label": "7d incidents",
+            "chart_points": _build_chart_points(breakage_series),
+            "actions": [
+                {"label": "Review breakages", "url_name": "breakages:list"},
+            ],
         },
     ]
 
@@ -525,6 +673,65 @@ def _staff_dashboard_payload(user):
             }
         )
 
+    attention_items = []
+    if tasks_overdue:
+        attention_items.append(
+            {
+                "label": "Overdue tasks",
+                "value": f"{tasks_overdue} overdue",
+                "copy": "Assigned checklist work is still open beyond its due date.",
+                "tone": "alert",
+                "action_label": "Open checklist",
+                "url_name": "checklists:list",
+                "query": "preset=overdue",
+            }
+        )
+    if tasks_due_today:
+        attention_items.append(
+            {
+                "label": "Due today",
+                "value": f"{tasks_due_today} due",
+                "copy": "These tasks should close before the current shift finishes.",
+                "tone": "warn",
+                "action_label": "Open today",
+                "url_name": "checklists:list",
+                "query": "preset=today",
+            }
+        )
+    if open_order_count:
+        attention_items.append(
+            {
+                "label": "Approval queue",
+                "value": f"{open_order_count} open request(s)",
+                "copy": "Your open orders still need review, delivery follow-through, or sign-off.",
+                "tone": "warn",
+                "action_label": "Review orders",
+                "url_name": "orders:list",
+            }
+        )
+    if next_shift:
+        attention_items.append(
+            {
+                "label": "Upcoming shift",
+                "value": f"{next_shift.shift_date:%a %d %b}",
+                "copy": f"Starts at {next_shift.start_time:%H:%M}. Keep your task queue clear ahead of handover.",
+                "tone": "neutral",
+                "action_label": "Open roster",
+                "url_name": "shifts:list",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Attention rail",
+                "value": "Clear board",
+                "copy": "No overdue tasks, no open requests, and no immediate shift blockers are showing.",
+                "tone": "ok",
+                "action_label": "Open dashboard",
+                "url_name": "dashboard:staff_portal",
+            }
+        )
+
     activity_events = []
     for order in my_orders_qs.order_by("-updated_at")[:5]:
         activity_events.append(
@@ -584,15 +791,9 @@ def _staff_dashboard_payload(user):
             }
         ]
 
-    last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
     service_values = []
-    task_values = []
     for day in last_seven_dates:
-        shifts_for_day = my_shifts_qs.filter(shift_date=day)
-        service_values.append(_sum_shift_hours(shifts_for_day))
-        task_values.append(
-            my_tasks_qs.filter(completed=True, completed_at__date=day).count()
-        )
+        service_values.append(_sum_shift_hours(my_shifts_qs.filter(shift_date=day)))
 
     return {
         "portal_title": "Staff Portal",
@@ -602,13 +803,14 @@ def _staff_dashboard_payload(user):
             f"{tasks_due_today} task(s) due today and {tasks_overdue} overdue."
         ),
         "metrics": metrics,
+        "attention_items": attention_items,
         "activity": activity,
         "quick_actions": quick_actions,
         "focus_list": focus_list,
         "throughput": _build_throughput(
             last_seven_dates,
             service_values=service_values,
-            task_values=task_values,
+            task_values=task_completion_series,
         ),
     }
 

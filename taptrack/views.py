@@ -46,6 +46,26 @@ def _ratio(part, whole):
     return int(round((part / whole) * 100)) if whole else 0
 
 
+def _build_chart_points(values):
+    highest = max(values) if values else 0
+    chart = []
+    for index, value in enumerate(values):
+        if highest <= 0:
+            height = 0
+        else:
+            height = int(round((value / highest) * 100))
+            if value > 0 and height < 8:
+                height = 8
+        chart.append(
+            {
+                "height": height,
+                "value": value,
+                "is_latest": index == len(values) - 1,
+            }
+        )
+    return chart
+
+
 def _allowed_role_values_for_manager(editor_user):
     editor_role = get_user_role(editor_user)
     if editor_role == StaffProfile.Role.LANDLORD:
@@ -65,10 +85,12 @@ def staff_page(request):
     selected_status = request.GET.get("status", "all")
     selected_role = request.GET.get("role", "")
     selected_alerts = request.GET.get("alerts", "all")
+    selected_preset = request.GET.get("preset", "")
     today = timezone.localdate()
     seven_day_start = today - timedelta(days=6)
     previous_seven_start = seven_day_start - timedelta(days=7)
     previous_seven_end = seven_day_start - timedelta(days=1)
+    last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
 
     staff_qs = StaffProfile.objects.select_related("user").order_by("user__username")
     if query:
@@ -80,6 +102,13 @@ def staff_page(request):
             | Q(phone__icontains=query)
             | Q(job_title__icontains=query)
         )
+
+    if selected_preset == "inactive":
+        staff_qs = staff_qs.filter(is_active=False)
+    elif selected_preset == "alerts_off":
+        staff_qs = staff_qs.filter(notify_on_shift_assignment=False)
+    elif selected_preset == "management":
+        staff_qs = staff_qs.filter(role__in=MANAGEMENT_ROLES)
 
     if selected_status == "active":
         staff_qs = staff_qs.filter(is_active=True)
@@ -184,6 +213,7 @@ def staff_page(request):
     previous_recent_joined_count = staff_qs.filter(
         user__date_joined__date__range=(previous_seven_start, previous_seven_end)
     ).count()
+    joined_series = [staff_qs.filter(user__date_joined__date=day).count() for day in last_seven_dates]
     join_trend = _build_trend(
         recent_joined_count,
         previous_recent_joined_count,
@@ -229,7 +259,11 @@ def staff_page(request):
         ("disabled", "Alerts Disabled"),
     ]
     filters_active = bool(
-        query or selected_status != "all" or selected_role or selected_alerts != "all"
+        query
+        or selected_status != "all"
+        or selected_role
+        or selected_alerts != "all"
+        or selected_preset
     )
     active_filter_count = sum(
         [
@@ -237,8 +271,80 @@ def staff_page(request):
             selected_status != "all",
             bool(selected_role),
             selected_alerts != "all",
+            bool(selected_preset),
         ]
     )
+    preset_choices = {
+        "inactive": "Inactive",
+        "alerts_off": "Alerts Off",
+        "management": "Management",
+    }
+    filter_presets = [
+        {"key": "inactive", "label": "Inactive", "query": "preset=inactive"},
+        {"key": "alerts_off", "label": "Alerts Off", "query": "preset=alerts_off"},
+        {"key": "management", "label": "Management", "query": "preset=management"},
+    ]
+    for preset in filter_presets:
+        preset["active"] = preset["key"] == selected_preset
+
+    attention_items = []
+    if team_inactive:
+        attention_items.append(
+            {
+                "label": "Inactive roster",
+                "value": f"{team_inactive} inactive",
+                "copy": "These profiles are currently excluded from live staffing coverage.",
+                "tone": "warn",
+                "action_label": "Open inactive",
+                "url_name": "staff",
+                "query": "preset=inactive",
+            }
+        )
+    if team_shift_alerts_disabled:
+        attention_items.append(
+            {
+                "label": "Alerts off",
+                "value": f"{team_shift_alerts_disabled} disabled",
+                "copy": "Shift assignment notifications are not reaching every visible team member.",
+                "tone": "warn",
+                "action_label": "Open alerts off",
+                "url_name": "staff",
+                "query": "preset=alerts_off",
+            }
+        )
+    if team_management <= 1 and team_total > 1:
+        attention_items.append(
+            {
+                "label": "Leadership coverage",
+                "value": f"{team_management} manager",
+                "copy": "Only one management-level profile is visible in this roster scope.",
+                "tone": "alert",
+                "action_label": "Review team",
+                "url_name": "staff",
+            }
+        )
+    if recent_joined_count:
+        attention_items.append(
+            {
+                "label": "Recent joiners",
+                "value": f"{recent_joined_count} joined",
+                "copy": "New profiles may still need role checks, notes, and alert setup.",
+                "tone": "neutral",
+                "action_label": "Create staff",
+                "url_name": "staff_add",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Attention rail",
+                "value": "Roster healthy",
+                "copy": "No inactive coverage gaps or alert adoption issues are showing in this view.",
+                "tone": "ok",
+                "action_label": "Open staff",
+                "url_name": "staff",
+            }
+        )
 
     context = {
         "team_profiles": display_rows,
@@ -253,6 +359,8 @@ def staff_page(request):
         "selected_role_label": dict(StaffProfile.Role.choices).get(selected_role, ""),
         "selected_alerts": selected_alerts,
         "selected_alerts_label": dict(alert_choices).get(selected_alerts, ""),
+        "selected_preset": selected_preset,
+        "selected_preset_label": preset_choices.get(selected_preset, ""),
         "status_choices": status_choices,
         "alert_choices": alert_choices,
         "role_choices": StaffProfile.Role.choices,
@@ -269,7 +377,13 @@ def staff_page(request):
         "join_trend": join_trend,
         "filters_active": filters_active,
         "active_filter_count": active_filter_count,
+        "filter_presets": filter_presets,
+        "attention_items": attention_items,
         "hero_signals": [coverage_signal, alert_signal, leadership_signal],
+        "joined_chart": _build_chart_points(joined_series),
+        "coverage_chart": _build_chart_points([team_active, team_inactive]),
+        "leadership_chart": _build_chart_points([team_management, max(team_total - team_management, 0)]),
+        "alerts_chart": _build_chart_points([team_shift_alerts_enabled, team_shift_alerts_disabled]),
     }
     return render(request, "accounts/staff.html", context)
 

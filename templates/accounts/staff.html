@@ -13,6 +13,7 @@
     <p class="portal-hero-copy">
         Manage active users, role permissions, and alert readiness from one operational view.
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
         {% for signal in hero_signals %}
         <article class="hero-signal hero-signal-{{ signal.tone }}">
@@ -39,8 +40,20 @@
         <div class="metric-card-body">
             <p>{{ team_total }}</p>
             <span class="metric-summary">{{ recent_joined_count }} joined in the last 7 days within this view.</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in joined_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">7d team growth</span>
+            </div>
             <span class="metric-delta metric-delta-{{ join_trend.direction }}">{{ join_trend.label }}</span>
             <span class="metric-note">Profiles shown here already reflect your current filters.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="{% url 'staff_add' %}">Create staff</a>
+                <a class="table-action metric-action-link" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
+            </div>
         </div>
     </article>
     <article class="metric-card ok">
@@ -53,7 +66,18 @@
         <div class="metric-card-body">
             <p>{{ team_active_rate }}%</p>
             <span class="metric-summary">{{ team_active }} active and {{ team_inactive }} inactive profile(s).</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in coverage_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">Active vs inactive</span>
+            </div>
             <span class="metric-note">Coverage is based on the currently filtered roster.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?preset=inactive">Inactive preset</a>
+            </div>
         </div>
     </article>
     <article class="metric-card warn">
@@ -64,7 +88,19 @@
         <div class="metric-card-body">
             <p>{{ team_management }}</p>
             <span class="metric-summary">Landlord and manager accounts currently visible in this scope.</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in leadership_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">Leadership mix</span>
+            </div>
             <span class="metric-note">Use this to spot whether the roster still has enough coverage at the top level.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?preset=management">Management preset</a>
+                <a class="table-action metric-action-link" href="{% url 'staff_add' %}">Create staff</a>
+            </div>
         </div>
     </article>
     <article class="metric-card alert">
@@ -77,7 +113,18 @@
         <div class="metric-card-body">
             <p>{{ team_shift_alert_rate }}%</p>
             <span class="metric-summary">{{ team_shift_alerts_enabled }} enabled and {{ team_shift_alerts_disabled }} disabled profile(s).</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in alerts_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">Alerts on vs off</span>
+            </div>
             <span class="metric-note">Push readiness matters most for shift assignment speed and acknowledgement.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?preset=alerts_off">Alerts off</a>
+            </div>
         </div>
     </article>
 </section>
@@ -91,10 +138,16 @@
     </div>
 
     <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
         <div class="filter-summary-bar">
             <div class="filter-chip-row">
                 {% if filters_active %}
                 <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
                 {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
                 {% if selected_status_label and selected_status != 'all' %}<span class="filter-chip">{{ selected_status_label }}</span>{% endif %}
                 {% if selected_role_label %}<span class="filter-chip">{{ selected_role_label }}</span>{% endif %}

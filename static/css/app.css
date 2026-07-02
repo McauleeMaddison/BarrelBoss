@@ -704,6 +704,51 @@ body.nav-open .shell-bg {
     color: var(--gold);
 }
 
+.metric-chart-block {
+    display: grid;
+    gap: 0.28rem;
+    margin-top: 0.08rem;
+}
+
+.metric-chart {
+    display: grid;
+    grid-auto-flow: column;
+    align-items: end;
+    gap: 0.24rem;
+    min-height: 42px;
+}
+
+.metric-chart-bar {
+    display: block;
+    min-width: 0;
+    border-radius: 999px 999px 0.3rem 0.3rem;
+    background: linear-gradient(180deg, rgba(212, 161, 70, 0.52), rgba(183, 40, 73, 0.9));
+    opacity: 0.46;
+}
+
+.metric-chart-bar.is-latest {
+    opacity: 1;
+}
+
+.metric-chart-label {
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+}
+
+.metric-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+    margin-top: 0.08rem;
+}
+
+.metric-action-link {
+    min-height: 34px;
+    padding: 0.34rem 0.58rem;
+}
+
 .report-delta {
     margin-top: 0.42rem;
     padding-top: 0.45rem;
@@ -832,9 +877,102 @@ body.nav-open .shell-bg {
     border-color: rgba(49, 157, 120, 0.22);
 }
 
+.attention-rail {
+    margin-top: 0.95rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.62rem;
+}
+
+.attention-card {
+    display: grid;
+    gap: 0.42rem;
+    padding: 0.78rem 0.82rem;
+    border: 1px solid rgba(212, 161, 70, 0.18);
+    border-radius: 0.82rem;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.attention-card-head {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.attention-card-label {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.attention-card-head strong {
+    line-height: 1.18;
+    letter-spacing: 0.01em;
+}
+
+.attention-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.attention-card-link {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    text-decoration: none;
+    color: var(--gold);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.attention-card-alert {
+    border-color: rgba(212, 72, 85, 0.26);
+}
+
+.attention-card-warn {
+    border-color: rgba(212, 161, 70, 0.28);
+}
+
+.attention-card-ok {
+    border-color: rgba(49, 157, 120, 0.26);
+}
+
 .filter-shell {
     display: grid;
     gap: 0.72rem;
+}
+
+.filter-preset-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.preset-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.3rem 0.68rem;
+    border-radius: 999px;
+    border: 1px solid rgba(212, 161, 70, 0.18);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.preset-chip.active {
+    border-color: rgba(212, 161, 70, 0.46);
+    background: rgba(123, 31, 51, 0.3);
+    color: var(--text);
 }
 
 .filter-summary-bar {
@@ -1647,6 +1785,30 @@ body.nav-open .shell-bg {
     background: rgba(49, 157, 120, 0.2);
 }
 
+.badge-due-overdue {
+    border-color: rgba(212, 72, 85, 0.56);
+    color: #ffb0b8;
+    background: rgba(212, 72, 85, 0.2);
+}
+
+.badge-due-today {
+    border-color: rgba(212, 161, 70, 0.58);
+    color: #f8d48e;
+    background: rgba(212, 161, 70, 0.18);
+}
+
+.badge-due-upcoming {
+    border-color: rgba(88, 129, 255, 0.42);
+    color: #aac8ff;
+    background: rgba(88, 129, 255, 0.14);
+}
+
+.badge-due-completed {
+    border-color: rgba(49, 157, 120, 0.54);
+    color: #82dfb8;
+    background: rgba(49, 157, 120, 0.18);
+}
+
 .badge-stock-critical {
     border-color: rgba(212, 72, 85, 0.62);
     color: #ffb0b8;
@@ -1981,6 +2143,48 @@ th {
 
 .data-table td[data-label] {
     position: relative;
+}
+
+.task-primary-block {
+    display: grid;
+    gap: 0.28rem;
+}
+
+.task-primary-block strong {
+    display: block;
+    line-height: 1.32;
+}
+
+.task-inline-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.38rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.task-inline-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.task-due-cell {
+    display: grid;
+    gap: 0.34rem;
+}
+
+.task-row-alert {
+    background: linear-gradient(120deg, rgba(212, 72, 85, 0.08), rgba(255, 255, 255, 0.01));
+}
+
+.task-row-warn {
+    background: linear-gradient(120deg, rgba(212, 161, 70, 0.08), rgba(255, 255, 255, 0.01));
+}
+
+.task-row-ok {
+    background: linear-gradient(120deg, rgba(49, 157, 120, 0.07), rgba(255, 255, 255, 0.01));
 }
 
 tbody tr {
@@ -3447,6 +3651,14 @@ h4 {
     color: var(--accent-strong);
 }
 
+.app-shell .metric-chart-bar {
+    background: linear-gradient(180deg, rgba(213, 167, 104, 0.78), rgba(183, 115, 74, 0.94));
+}
+
+.app-shell .metric-chart-label {
+    font-weight: 700;
+}
+
 .app-shell .metric-card.alert {
     border-top-color: var(--danger);
 }
@@ -3497,6 +3709,45 @@ h4 {
     border-color: rgba(103, 175, 149, 0.28);
 }
 
+.app-shell .attention-card {
+    border: 1px solid var(--panel-border);
+    border-radius: 0.96rem;
+    background: var(--surface-1);
+}
+
+.app-shell .attention-card-head strong {
+    font-size: 0.98rem;
+    letter-spacing: -0.02em;
+}
+
+.app-shell .attention-card-link {
+    color: var(--accent-strong);
+}
+
+.app-shell .attention-card-alert {
+    border-color: rgba(214, 98, 119, 0.24);
+}
+
+.app-shell .attention-card-warn {
+    border-color: rgba(213, 167, 104, 0.28);
+}
+
+.app-shell .attention-card-ok {
+    border-color: rgba(103, 175, 149, 0.28);
+}
+
+.app-shell .preset-chip {
+    border: 1px solid var(--panel-border);
+    background: var(--surface-1);
+    color: var(--muted);
+}
+
+.app-shell .preset-chip.active {
+    border-color: var(--accent);
+    background: var(--surface-2);
+    color: var(--accent-strong);
+}
+
 .app-shell .filter-chip {
     border: 1px solid var(--panel-border);
     background: var(--surface-1);
@@ -3506,6 +3757,10 @@ h4 {
 
 .app-shell .filter-chip-muted {
     color: var(--muted);
+}
+
+.app-shell .task-inline-meta {
+    font-weight: 700;
 }
 
 .app-shell .action-grid {
@@ -3848,6 +4103,18 @@ h4 {
     background: var(--surface-1);
 }
 
+.app-shell table.data-table tbody tr.task-row-alert {
+    background: linear-gradient(120deg, rgba(214, 98, 119, 0.08), rgba(255, 255, 255, 0.01));
+}
+
+.app-shell table.data-table tbody tr.task-row-warn {
+    background: linear-gradient(120deg, rgba(213, 167, 104, 0.09), rgba(255, 255, 255, 0.01));
+}
+
+.app-shell table.data-table tbody tr.task-row-ok {
+    background: linear-gradient(120deg, rgba(103, 175, 149, 0.08), rgba(255, 255, 255, 0.01));
+}
+
 .app-shell .pagination-bar {
     margin-top: 0.9rem;
     padding: 0.78rem 0.86rem;
@@ -4096,6 +4363,20 @@ h4 {
         display: flex;
     }
 
+    .app-shell .attention-rail {
+        grid-template-columns: 1fr;
+    }
+
+    .app-shell .filter-preset-row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.16rem;
+    }
+
+    .app-shell .preset-chip {
+        white-space: nowrap;
+    }
+
     .app-shell .filter-shell .stock-filter-form {
         display: none;
     }
@@ -4212,6 +4493,10 @@ h4 {
         display: none;
     }
 
+    .app-shell table.data-table .task-primary-block strong {
+        font-size: 1rem;
+    }
+
     .app-shell table.data-table .stock-actions-cell {
         display: grid;
         grid-template-columns: 1fr;
@@ -4230,6 +4515,18 @@ h4 {
     .app-shell table.data-table .table-action {
         width: 100%;
         justify-content: center;
+    }
+
+    .app-shell table.data-table td.mobile-action-cell {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        padding-top: 0.58rem;
+        background: linear-gradient(180deg, rgba(244, 241, 234, 0), rgba(244, 241, 234, 0.98) 30%);
+    }
+
+    .app-shell[data-theme="dark"] table.data-table td.mobile-action-cell {
+        background: linear-gradient(180deg, rgba(16, 25, 39, 0), rgba(16, 25, 39, 0.98) 30%);
     }
 
     .app-shell .activity-chip {

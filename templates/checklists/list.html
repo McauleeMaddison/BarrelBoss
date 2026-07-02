@@ -17,6 +17,7 @@
         Track assigned tasks, close them on time, and keep handover quality high.
         {% endif %}
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
         {% for signal in hero_signals %}
         <article class="hero-signal hero-signal-{{ signal.tone }}">
@@ -42,8 +43,22 @@
         <div class="metric-card-body">
             <p>{{ task_count }}</p>
             <span class="metric-summary">{{ completion_rate }}% of visible tasks are currently complete.</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in created_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">7d queue intake</span>
+            </div>
             <span class="metric-delta metric-delta-{{ completion_trend.direction }}">{{ completion_trend.label }}</span>
             <span class="metric-note">Use this as the live working queue for the selected scope.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="#checklistTasks">Open queue</a>
+                {% if is_management %}
+                <a class="table-action metric-action-link" href="{% url 'checklists:add' %}">Assign task</a>
+                {% endif %}
+            </div>
         </div>
     </article>
     <article class="metric-card warn">
@@ -54,7 +69,18 @@
         <div class="metric-card-body">
             <p>{{ due_today_count }}</p>
             <span class="metric-summary">Tasks that should close before the end of today’s shift cycle.</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in due_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">7d due-today pattern</span>
+            </div>
             <span class="metric-note">Keep these items moving before they roll into tomorrow’s queue.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?preset=today">Today preset</a>
+            </div>
         </div>
     </article>
     <article class="metric-card alert">
@@ -73,7 +99,18 @@
                 No tasks are sitting overdue in the current queue.
                 {% endif %}
             </span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in overdue_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">7d overdue pressure</span>
+            </div>
             <span class="metric-note">Use this as the quickest signal for operational slippage.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?preset=overdue">Open overdue</a>
+            </div>
         </div>
     </article>
     <article class="metric-card ok">
@@ -84,13 +121,28 @@
         <div class="metric-card-body">
             <p>{{ completion_rate }}%</p>
             <span class="metric-summary">{{ completed_week_count }} task(s) completed in the last 7 days.</span>
+            <div class="metric-chart-block">
+                <div class="metric-chart" aria-hidden="true">
+                    {% for point in completion_chart %}
+                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                    {% endfor %}
+                </div>
+                <span class="metric-chart-label">7d completions</span>
+            </div>
             <span class="metric-delta metric-delta-{{ completion_trend.direction }}">{{ completion_trend.label }}</span>
             <span class="metric-note">Completion rate reflects the full visible set, not just today’s queue.</span>
+            <div class="metric-actions">
+                {% if is_management %}
+                <a class="table-action metric-action-link" href="{% url 'checklists:add' %}">Assign task</a>
+                {% else %}
+                <a class="table-action metric-action-link" href="#checklistTasks">Open queue</a>
+                {% endif %}
+            </div>
         </div>
     </article>
 </section>
 
-<section class="panel">
+<section class="panel" id="checklistTasks">
     <div class="panel-header">
         <h3>Checklist Tasks</h3>
         {% if is_management %}
@@ -99,10 +151,16 @@
     </div>
 
     <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
         <div class="filter-summary-bar">
             <div class="filter-chip-row">
                 {% if filters_active %}
                 <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
                 {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
                 {% if selected_type_label %}<span class="filter-chip">{{ selected_type_label }}</span>{% endif %}
                 {% if selected_status_label %}<span class="filter-chip">{{ selected_status_label }}</span>{% endif %}
@@ -167,19 +225,28 @@
         </thead>
         <tbody>
             {% for task in tasks %}
-            <tr>
-                <td>{{ task.title }}</td>
+            <tr class="task-row task-row-{{ task.row_tone }}">
+                <td class="task-primary-cell">
+                    <div class="task-primary-block">
+                        <strong>{{ task.title }}</strong>
+                        <div class="task-inline-meta">
+                            <span>{{ task.get_checklist_type_display }}</span>
+                            <span>{{ task.assignee_label }}</span>
+                        </div>
+                    </div>
+                </td>
                 <td>{{ task.get_checklist_type_display }}</td>
-                <td>{{ task.assigned_to.username|default:'-' }}</td>
-                <td>{{ task.due_date }}</td>
+                <td>{{ task.assignee_label }}</td>
                 <td>
-                    {% if task.completed %}
-                    <span class="badge stock-badge-ok">Completed</span>
-                    {% else %}
-                    <span class="badge stock-badge-low">Pending</span>
-                    {% endif %}
+                    <div class="task-due-cell">
+                        <strong>{{ task.due_date|date:"d M Y" }}</strong>
+                        <span class="badge {{ task.due_badge_class }}">{{ task.due_state_label }}</span>
+                    </div>
                 </td>
                 <td>
+                    <span class="badge {{ task.status_badge_class }}">{{ task.status_label }}</span>
+                </td>
+                <td class="task-toggle-cell mobile-action-cell">
                     {% if is_management or task.assigned_to_id == request.user.id %}
                     <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-toggle-form">
                         {% csrf_token %}

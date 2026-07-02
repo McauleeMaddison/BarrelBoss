@@ -46,6 +46,13 @@ class ChecklistViewTests(TestCase):
             created_by=self.manager_user,
             due_date=timezone.localdate() + timedelta(days=1),
         )
+        self.overdue_task = Checklist.objects.create(
+            title="Deep clean line",
+            checklist_type=Checklist.ChecklistType.CLEANING,
+            assigned_to=self.staff_user,
+            created_by=self.manager_user,
+            due_date=timezone.localdate() - timedelta(days=1),
+        )
 
     def test_checklists_list_requires_login(self):
         response = self.client.get(reverse("checklists:list"))
@@ -83,6 +90,18 @@ class ChecklistViewTests(TestCase):
         self.assertEqual(response.context["selected_type_label"], "Opening")
         self.assertEqual(response.context["selected_status_label"], "Pending")
         self.assertIn("label", response.context["completion_trend"])
+        self.assertTrue(response.context["attention_items"])
+        self.assertEqual(len(response.context["created_chart"]), 7)
+
+    def test_checklist_overdue_preset_filters_queue(self):
+        self.client.login(username="task_manager", password="strong-pass-123")
+        response = self.client.get(reverse("checklists:list"), {"preset": "overdue"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Deep clean line")
+        self.assertNotContains(response, "Count till")
+        self.assertEqual(response.context["selected_preset_label"], "Overdue")
+        self.assertTrue(response.context["filter_presets"][0]["active"])
 
     def test_manager_can_create_task(self):
         self.client.login(username="task_manager", password="strong-pass-123")

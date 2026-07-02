@@ -1,0 +1,22 @@
+{% if attention_items %}
+<div class="attention-rail">
+    {% for item in attention_items %}
+    <article class="attention-card attention-card-{{ item.tone|default:'neutral' }}">
+        <div class="attention-card-head">
+            <span class="attention-card-label">{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+        </div>
+        <p>{{ item.copy }}</p>
+        {% if item.action_label %}
+            {% if item.href %}
+            <a class="attention-card-link" href="{{ item.href }}">{{ item.action_label }}</a>
+            {% else %}
+            <a class="attention-card-link" href="{% url item.url_name %}{% if item.query %}?{{ item.query }}{% endif %}">
+                {{ item.action_label }}
+            </a>
+            {% endif %}
+        {% endif %}
+    </article>
+    {% endfor %}
+</div>
+{% endif %}

@@ -286,6 +286,28 @@ class StaffManagementTests(TestCase):
         self.assertEqual(response.context["selected_status_label"], "Active")
         self.assertEqual(response.context["selected_alerts_label"], "Alerts Enabled")
         self.assertIn("label", response.context["join_trend"])
+        self.assertTrue(response.context["attention_items"])
+        self.assertEqual(len(response.context["joined_chart"]), 7)
+
+    def test_staff_preset_filters_inactive_profiles(self):
+        inactive_user = User.objects.create_user(
+            username="inactive_member",
+            password="strong-pass-123",
+        )
+        inactive_user.staff_profile.is_active = False
+        inactive_user.staff_profile.notify_on_shift_assignment = False
+        inactive_user.staff_profile.save(
+            update_fields=["is_active", "notify_on_shift_assignment"]
+        )
+
+        self.client.login(username="team_manager", password="strong-pass-123")
+        response = self.client.get(reverse("staff"), {"preset": "inactive"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "inactive_member")
+        self.assertNotContains(response, "team_staff")
+        self.assertEqual(response.context["selected_preset_label"], "Inactive")
+        self.assertTrue(response.context["filter_presets"][0]["active"])
 
     def test_staff_cannot_access_staff_management(self):
         self.client.login(username="team_staff", password="strong-pass-123")

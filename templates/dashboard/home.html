@@ -20,6 +20,7 @@
             </div>
             <h3 class="portal-hero-title">{{ overview_heading }}</h3>
             <p class="portal-hero-copy">{{ overview_copy }}</p>
+            {% include 'partials/attention_rail.html' with attention_items=attention_items %}
             <div class="dashboard-controls dashboard-panel-controls" data-dashboard-panel-controls>
                 <button class="segment-btn active" type="button" data-dashboard-panel-target="overview">Overview</button>
                 <button class="segment-btn" type="button" data-dashboard-panel-target="focus">Priorities</button>
@@ -78,10 +79,35 @@
                 {% if card.summary %}
                 <span class="metric-summary">{{ card.summary }}</span>
                 {% endif %}
+                {% if card.chart_points %}
+                <div class="metric-chart-block">
+                    <div class="metric-chart" aria-hidden="true">
+                        {% for point in card.chart_points %}
+                        <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                        {% endfor %}
+                    </div>
+                    {% if card.chart_label %}
+                    <span class="metric-chart-label">{{ card.chart_label }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
                 {% if card.trend %}
                 <span class="metric-delta metric-delta-{{ card.trend.direction }}">{{ card.trend.label }}</span>
                 {% endif %}
                 <span class="metric-note">{{ card.note }}</span>
+                {% if card.actions %}
+                <div class="metric-actions">
+                    {% for action in card.actions %}
+                    {% if action.href %}
+                    <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                    {% else %}
+                    <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
+                        {{ action.label }}
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </article>
         {% endfor %}
