@@ -4,6 +4,23 @@
 {% block page_title %}Suppliers{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero suppliers-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Procurement</p>
+        <span class="badge portal-badge">Supplier Directory</span>
+    </div>
+    <h3 class="portal-hero-title">Supplier Contacts and Category Coverage</h3>
+    <p class="portal-hero-copy">
+        Keep contact details current, reduce ordering friction, and make sourcing easier on every shift.
+    </p>
+    <div class="report-toolbar">
+        <a class="action-btn action-link" href="{% url 'suppliers:add' %}">Create Supplier</a>
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">In view: {{ supplier_count }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card neutral">
         <h3>Suppliers in View</h3>
@@ -14,7 +31,6 @@
 <section class="panel">
     <div class="panel-header">
         <h3>Supplier Directory</h3>
-        <a class="action-btn action-link" href="{% url 'suppliers:add' %}">Create Supplier</a>
     </div>
 
     <form method="get" class="stock-filter-form">

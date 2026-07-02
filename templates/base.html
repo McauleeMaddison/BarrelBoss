@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260702-ui2">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
@@ -19,6 +19,7 @@
 <button class="nav-overlay" type="button" aria-label="Close navigation" aria-hidden="true"></button>
 <div class="shell-bg"></div>
 <div class="layout">
+    {% with current=request.resolver_match.view_name %}
     <aside class="sidebar" id="main-navigation">
         <div class="brand-wrap">
             <a class="brand" href="{% url role_home_url_name %}">
@@ -28,7 +29,6 @@
             <button type="button" class="sidebar-close" aria-label="Close navigation">✕</button>
         </div>
 
-        {% with current=request.resolver_match.view_name %}
         <nav class="nav-links">
             <div class="nav-section nav-section-operations">
                 <p class="nav-section-title">Operations</p>
@@ -53,7 +53,6 @@
                 <a class="nav-link{% if current == 'settings' %} active{% endif %}" href="{% url 'settings' %}" data-nav-icon="SE">Settings</a>
             </div>
         </nav>
-        {% endwith %}
 
         <form action="{% url 'logout' %}" method="post" class="logout-form">
             {% csrf_token %}
@@ -64,7 +63,14 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-start">
-                <button type="button" class="menu-btn" aria-label="Open navigation" aria-controls="main-navigation" aria-expanded="false">
+                <button
+                    type="button"
+                    class="menu-btn"
+                    data-nav-toggle
+                    aria-label="Open navigation"
+                    aria-controls="main-navigation"
+                    aria-expanded="false"
+                >
                     <img
                         class="menu-btn-logo"
                         src="{% static 'images/barrelboss-logo.png' %}"
@@ -92,7 +98,7 @@
                     <input type="hidden" name="next" value="{% url 'login' %}">
                     <button type="submit" class="topbar-switch-btn">Switch Account</button>
                 </form>
-                <div class="user-pill">{{ request.user.get_username|default:'Guest' }} ({{ user_role_label }})</div>
+                <div class="user-pill">{{ request.user.get_username|default:'Guest' }}</div>
             </div>
         </header>
         <div class="topbar-utility" role="region" aria-label="System status">
@@ -115,6 +121,73 @@
             {% block content %}{% endblock %}
         </div>
     </main>
+
+    <nav class="mobile-dock" aria-label="Quick navigation">
+        <a
+            class="mobile-dock-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}"
+            href="{% url role_home_url_name %}"
+            data-dock-icon="DB"
+        >
+            <span class="mobile-dock-label">Home</span>
+        </a>
+        {% if is_management %}
+        <a
+            class="mobile-dock-link{% if current == 'stock:list' %} active{% endif %}"
+            href="{% url 'stock:list' %}"
+            data-dock-icon="ST"
+        >
+            <span class="mobile-dock-label">Stock</span>
+        </a>
+        <a
+            class="mobile-dock-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
+            href="{% url 'orders:list' %}"
+            data-dock-icon="OR"
+        >
+            <span class="mobile-dock-label">Orders</span>
+        </a>
+        <a
+            class="mobile-dock-link{% if current == 'staff' %} active{% endif %}"
+            href="{% url 'staff' %}"
+            data-dock-icon="SF"
+        >
+            <span class="mobile-dock-label">Team</span>
+        </a>
+        {% else %}
+        <a
+            class="mobile-dock-link{% if current == 'checklists:list' %} active{% endif %}"
+            href="{% url 'checklists:list' %}"
+            data-dock-icon="CL"
+        >
+            <span class="mobile-dock-label">Tasks</span>
+        </a>
+        <a
+            class="mobile-dock-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
+            href="{% url 'orders:list' %}"
+            data-dock-icon="OR"
+        >
+            <span class="mobile-dock-label">Orders</span>
+        </a>
+        <a
+            class="mobile-dock-link{% if current == 'shifts:list' %} active{% endif %}"
+            href="{% url 'shifts:list' %}"
+            data-dock-icon="SH"
+        >
+            <span class="mobile-dock-label">Shifts</span>
+        </a>
+        {% endif %}
+        <button
+            type="button"
+            class="mobile-dock-link mobile-dock-button"
+            data-nav-toggle
+            aria-label="Open navigation"
+            aria-controls="main-navigation"
+            aria-expanded="false"
+            data-dock-icon="ME"
+        >
+            <span class="mobile-dock-label">Menu</span>
+        </button>
+    </nav>
+    {% endwith %}
 </div>
 <script src="{% static 'js/pwa.js' %}" defer></script>
 <script src="{% static 'js/app.js' %}" defer></script>

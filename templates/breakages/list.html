@@ -4,6 +4,24 @@
 {% block page_title %}Breakages{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero breakages-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Loss Tracking</p>
+        <span class="badge portal-badge">Incident Log</span>
+    </div>
+    <h3 class="portal-hero-title">Breakages and Waste Visibility</h3>
+    <p class="portal-hero-copy">
+        Record incidents quickly, review patterns, and keep avoidable loss visible across the floor.
+    </p>
+    <div class="report-toolbar">
+        <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">Records: {{ record_count }}</span>
+            <span class="panel-header-meta">Reported 7d: {{ week_count }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card neutral">
         <h3>Total Records</h3>
@@ -18,7 +36,6 @@
 <section class="panel">
     <div class="panel-header">
         <h3>Breakage Log</h3>
-        <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
     </div>
 
     <form method="get" class="stock-filter-form">

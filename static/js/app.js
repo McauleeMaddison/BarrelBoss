@@ -1,7 +1,7 @@
 (() => {
     const body = document.body;
     const themeStorageKey = "barrelboss-theme";
-    const menuButton = document.querySelector(".menu-btn");
+    const navToggleButtons = document.querySelectorAll("[data-nav-toggle]");
     const closeButton = document.querySelector(".sidebar-close");
     const overlay = document.querySelector(".nav-overlay");
     const navLinks = document.querySelectorAll(".nav-links .nav-link");
@@ -51,7 +51,7 @@
         if (themeColorMeta) {
             themeColorMeta.setAttribute(
                 "content",
-                normalizedTheme === "dark" ? "#101317" : "#f5f6f8",
+                normalizedTheme === "dark" ? "#101927" : "#f4f1ea",
             );
         }
 
@@ -115,36 +115,47 @@
     };
 
     const setNavState = (isOpen) => {
-        body.classList.toggle("nav-open", isOpen);
-        if (menuButton) {
-            menuButton.setAttribute("aria-expanded", String(isOpen));
+        const shouldOpen = isMobileNav.matches ? isOpen : false;
+        body.classList.toggle("nav-open", shouldOpen);
+
+        if (navToggleButtons.length) {
+            navToggleButtons.forEach((button) => {
+                button.setAttribute("aria-expanded", String(shouldOpen));
+            });
         }
 
         if (overlay) {
-            overlay.setAttribute("aria-hidden", String(!isOpen));
+            overlay.setAttribute("aria-hidden", String(!shouldOpen));
         }
 
-        if (isMobileNav.matches) {
-            if (isOpen) {
-                lockBodyScroll();
-            } else {
-                unlockBodyScroll();
-            }
+        if (shouldOpen) {
+            lockBodyScroll();
         } else {
             unlockBodyScroll();
         }
     };
     const openNav = () => setNavState(true);
     const closeNav = () => setNavState(false);
-    if (menuButton) {
-        menuButton.addEventListener("click", () => {
-            if (body.classList.contains("nav-open")) {
-                closeNav();
-                return;
-            }
 
-            openNav();
+    if (navToggleButtons.length) {
+        navToggleButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                if (!isMobileNav.matches) {
+                    return;
+                }
+
+                if (body.classList.contains("nav-open")) {
+                    closeNav();
+                    return;
+                }
+
+                openNav();
+            });
         });
+    }
+
+    if (isMobileNav.matches) {
+        closeNav();
     }
 
     if (closeButton) {
@@ -162,7 +173,16 @@
         });
     }
 
-    window.addEventListener("resize", closeNav);
+    window.addEventListener("resize", () => {
+        if (!isMobileNav.matches) {
+            closeNav();
+            return;
+        }
+
+        if (body.classList.contains("nav-open")) {
+            lockBodyScroll();
+        }
+    });
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
