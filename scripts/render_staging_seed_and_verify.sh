@@ -65,17 +65,40 @@ log_step() {
   printf "\n==> %s\n" "$1"
 }
 
-db_url_trimmed="$(printf '%s' "${DATABASE_URL:-}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-if [[ -n "$db_url_trimmed" && "$db_url_trimmed" != *"://"* ]]; then
-  echo "Invalid DATABASE_URL detected (missing URL scheme)." >&2
-  echo "Set DATABASE_URL to a valid value like postgresql://USER:PASSWORD@HOST:5432/DBNAME" >&2
+mapfile -t DB_SELECTION < <("$PYTHON_BIN" - <<'PY'
+from taptrack.database_config import postgres_config_present, select_database_url
+
+selection = select_database_url()
+print(selection.source if selection else "")
+print(selection.reason if selection else "")
+print(selection.url if selection else "")
+print("true" if postgres_config_present() else "false")
+PY
+)
+
+selected_db_source="${DB_SELECTION[0]}"
+selected_db_reason="${DB_SELECTION[1]}"
+selected_db_url="${DB_SELECTION[2]}"
+postgres_config_ready="${DB_SELECTION[3]}"
+
+if [[ -n "$selected_db_url" && "$selected_db_url" != *"://"* ]]; then
+  echo "Invalid database URL detected in ${selected_db_source:-DATABASE_URL} (missing URL scheme)." >&2
+  echo "Set it to a valid value like postgresql://USER:PASSWORD@HOST:5432/DBNAME" >&2
   exit 1
 fi
 
-if [[ "${RENDER:-}" == "true" && -z "$db_url_trimmed" ]]; then
-  echo "DATABASE_URL is empty in Render runtime." >&2
-  echo "Open Render Dashboard -> Service -> Environment and set DATABASE_URL to your Postgres connection URL." >&2
+if [[ "${RENDER:-}" == "true" && -z "$selected_db_url" && "$postgres_config_ready" != "true" ]]; then
+  echo "No database URL is configured in Render runtime." >&2
+  echo "Open Render Dashboard -> Service -> Environment and set DATABASE_URL, DATABASE_FALLBACK_URL, or RENDER_EXTERNAL_DATABASE_URL." >&2
   exit 1
+fi
+
+if [[ "$selected_db_reason" == "render_private_hostname" ]]; then
+  echo "Using external database fallback because DATABASE_URL points to a Render private hostname." >&2
+fi
+
+if [[ "$selected_db_reason" == "invalid_primary_database_url" ]]; then
+  echo "DATABASE_URL is malformed, so the configured fallback database URL will be used instead." >&2
 fi
 
 log_step "Applying database migrations"

@@ -6,17 +6,9 @@ import os
 import sys
 from pathlib import Path
 
-import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
+from taptrack.database_config import build_database_settings, env_flag
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-def env_flag(name, default=False):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
@@ -88,59 +80,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "taptrack.wsgi.application"
 
-POSTGRES_CONFIG_PRESENT = all(
-    os.getenv(env_key)
-    for env_key in (
-        "POSTGRES_DB",
-        "POSTGRES_USER",
-        "POSTGRES_PASSWORD",
-        "POSTGRES_HOST",
-        "POSTGRES_PORT",
-    )
-)
-
-DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip()
 DATABASE_SSL_REQUIRE = env_flag("DATABASE_SSL_REQUIRE", True)
 DATABASE_CONNECT_TIMEOUT = int(os.getenv("DATABASE_CONNECT_TIMEOUT", "15"))
-
-if DATABASE_URL:
-    try:
-        DATABASES = {
-            "default": dj_database_url.parse(
-                DATABASE_URL,
-                conn_max_age=600,
-                ssl_require=DATABASE_SSL_REQUIRE,
-            )
-        }
-    except ValueError as exc:
-        scheme = DATABASE_URL.split("://", 1)[0] if "://" in DATABASE_URL else "<none>"
-        raise ImproperlyConfigured(
-            "Invalid DATABASE_URL environment variable. "
-            f"Detected scheme: {scheme}. "
-            "Expected a valid URL such as postgresql://USER:PASSWORD@HOST:5432/DBNAME."
-        ) from exc
-elif POSTGRES_CONFIG_PRESENT:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DB"),
-            "USER": os.getenv("POSTGRES_USER"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-            "HOST": os.getenv("POSTGRES_HOST"),
-            "PORT": os.getenv("POSTGRES_PORT"),
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
-
-if DATABASES["default"].get("ENGINE") == "django.db.backends.postgresql":
-    default_options = DATABASES["default"].setdefault("OPTIONS", {})
-    default_options.setdefault("connect_timeout", DATABASE_CONNECT_TIMEOUT)
+DATABASES, _ = build_database_settings(
+    BASE_DIR,
+    ssl_require=DATABASE_SSL_REQUIRE,
+    connect_timeout=DATABASE_CONNECT_TIMEOUT,
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {

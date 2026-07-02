@@ -99,6 +99,8 @@ Copy `.env.example` values into your environment (or `.env` with your preferred 
 - `DJANGO_CSRF_TRUSTED_ORIGINS`
 - `DJANGO_TIME_ZONE`
 - `DATABASE_URL`
+- `DATABASE_FALLBACK_URL`
+- `RENDER_EXTERNAL_DATABASE_URL`
 - `DATABASE_SSL_REQUIRE`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
@@ -189,8 +191,11 @@ GitHub Actions workflow: `.github/workflows/ci.yml`
 - `DJANGO_ALLOWED_HOSTS=<your-render-domain>`
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-render-domain>`
 - `DATABASE_URL=<railway-postgres-url>`
+- `DATABASE_FALLBACK_URL=<optional-public-postgres-url>`
 - `DATABASE_SSL_REQUIRE=true`
 - `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`
+
+If `DATABASE_URL` points to a private Render Postgres hostname such as `dpg-...-a`, set `DATABASE_FALLBACK_URL` (or `RENDER_EXTERNAL_DATABASE_URL`) to the database's external connection string. The app will automatically prefer that fallback during deploys.
 
 ### 3. First production release
 
@@ -231,10 +236,13 @@ export DJANGO_SUPERUSER_PASSWORD='Strong-Admin-Pass-123!'
 Troubleshooting:
 - If you see `Invalid DATABASE_URL` / `No support for ''`, your `DATABASE_URL` env var is empty or malformed.
 - Set it to a full connection URL (for example `postgresql://USER:PASSWORD@HOST:5432/DBNAME`) in Render Environment, then re-run the script.
+- If Render fails with `could not translate host name "dpg-..." to address`, your service is trying to use a private Render Postgres hostname that does not resolve from this deploy environment.
+- Keep the web service and Postgres in the same Render workspace and region, or set `DATABASE_FALLBACK_URL` / `RENDER_EXTERNAL_DATABASE_URL` to the database's external connection string.
 
 ### 4. Notes
 
 - `DATABASE_URL` is preferred and fully supported.
+- `DATABASE_FALLBACK_URL` and `RENDER_EXTERNAL_DATABASE_URL` are supported for Render deploys that need to fall back from a private/internal database hostname to a public/external one.
 - If `DATABASE_URL` is missing, project can still use `POSTGRES_*` fallback or local SQLite.
 - Static files are served via WhiteNoise in production.
 
