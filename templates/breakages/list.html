@@ -13,6 +13,7 @@
     <p class="portal-hero-copy">
         Record incidents quickly, review patterns, and keep avoidable loss visible across the floor.
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
         <article class="hero-signal hero-signal-neutral">
             <span class="hero-signal-label">Total Records</span>
@@ -135,7 +136,7 @@
                     <th>Issue</th>
                     <th>Reported By</th>
                     <th>Date</th>
-                    {% if is_management %}<th>Actions</th>{% endif %}
+                    <th data-sort="off">Review</th>
                 </tr>
             </thead>
             <tbody>
@@ -146,11 +147,50 @@
                     <td>{{ row.get_issue_type_display }}</td>
                     <td>{{ row.reported_by.username|default:'-' }}</td>
                     <td>{{ row.created_at|date:'Y-m-d H:i' }}</td>
-                    {% if is_management %}
-                    <td class="stock-actions-cell">
-                        <a class="table-action table-action-danger" href="{% url 'breakages:delete' row.pk %}">Delete</a>
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <button
+                            class="table-action"
+                            type="button"
+                            data-detail-trigger
+                            data-detail-template="breakage-detail-{{ row.pk }}"
+                            data-detail-kicker="Incident"
+                            data-detail-title="{{ row.item_name }}"
+                            data-detail-meta="{{ row.get_issue_type_display }} · {{ row.created_at|date:'d M Y H:i' }}"
+                        >
+                            Review
+                        </button>
+                        <template id="breakage-detail-{{ row.pk }}">
+                            <section class="detail-drawer-card">
+                                <div class="detail-drawer-card-head">
+                                    <p class="detail-drawer-label">Incident details</p>
+                                    <span class="badge">{{ row.get_issue_type_display }}</span>
+                                </div>
+                                <div class="detail-drawer-grid">
+                                    <div class="detail-drawer-row">
+                                        <strong>Quantity</strong>
+                                        <span>{{ row.quantity }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Reported by</strong>
+                                        <span>{{ row.reported_by.username|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Logged at</strong>
+                                        <span>{{ row.created_at|date:"Y-m-d H:i" }}</span>
+                                    </div>
+                                </div>
+                                <p class="detail-drawer-copy">{{ row.notes|default:"No extra incident notes were recorded." }}</p>
+                            </section>
+                            {% if is_management %}
+                            <section class="detail-drawer-section">
+                                <p class="detail-drawer-label">Actions</p>
+                                <div class="detail-drawer-actions">
+                                    <a class="table-action table-action-danger" href="{% url 'breakages:delete' row.pk %}">Delete incident</a>
+                                </div>
+                            </section>
+                            {% endif %}
+                        </template>
                     </td>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

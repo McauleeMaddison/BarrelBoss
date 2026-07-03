@@ -140,6 +140,55 @@ def list_items(request):
         {"label": "Watch List", "query": "urgency=watch", "active": selected_urgency == "watch" and not query and not selected_category},
         {"label": "Healthy", "query": "urgency=healthy", "active": selected_urgency == "healthy" and not query and not selected_category},
     ]
+    attention_items = []
+    if urgency_counts["critical"]:
+        attention_items.append(
+            {
+                "label": "Critical risk",
+                "value": f"{urgency_counts['critical']} line(s)",
+                "copy": "These items are out of stock or severely below minimum and should be cleared first.",
+                "tone": "alert",
+                "action_label": "Open critical",
+                "url_name": "stock:list",
+                "query": "urgency=critical",
+            }
+        )
+    if restock_gap_units:
+        attention_items.append(
+            {
+                "label": "Restock gap",
+                "value": f"{restock_gap_units} units",
+                "copy": "This is the quantity needed to bring low and critical lines back to minimum.",
+                "tone": "warn",
+                "action_label": "Open low stock",
+                "url_name": "stock:list",
+                "query": "urgency=low",
+            }
+        )
+    if urgency_counts["watch"]:
+        attention_items.append(
+            {
+                "label": "Watch list",
+                "value": f"{urgency_counts['watch']} line(s)",
+                "copy": "These buffers are thinning and can become tomorrow’s urgent queue if left untouched.",
+                "tone": "neutral",
+                "action_label": "Open watch list",
+                "url_name": "stock:list",
+                "query": "urgency=watch",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Inventory attention",
+                "value": "Stable board",
+                "copy": "No critical or low-stock issues are showing in the current inventory view.",
+                "tone": "ok",
+                "action_label": "Review healthy",
+                "url_name": "stock:list",
+                "query": "urgency=healthy",
+            }
+        )
 
     context = {
         "items": list(page_obj.object_list),
@@ -176,6 +225,7 @@ def list_items(request):
             "",
         ),
         "filter_presets": filter_presets,
+        "attention_items": attention_items,
     }
     return render(request, "stock/list.html", context)
 

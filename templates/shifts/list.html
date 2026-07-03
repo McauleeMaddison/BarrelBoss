@@ -17,6 +17,7 @@
         Track your upcoming shifts, worked-hour totals, and this week’s schedule at a glance.
         {% endif %}
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
         <article class="hero-signal hero-signal-ok">
             <span class="hero-signal-label">Hours This Week</span>
@@ -221,7 +222,7 @@
                     <th>Break</th>
                     <th>Hours</th>
                     <th>Notes</th>
-                    {% if is_management %}<th>Actions</th>{% endif %}
+                    <th data-sort="off">Review</th>
                 </tr>
             </thead>
             <tbody>
@@ -243,12 +244,67 @@
                     <td>{{ shift.break_minutes }} min</td>
                     <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
                     <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
-                    {% if is_management %}
-                    <td class="stock-actions-cell">
-                        <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit</a>
-                        <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete</a>
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <button
+                            class="table-action"
+                            type="button"
+                            data-detail-trigger
+                            data-detail-template="shift-detail-{{ shift.pk }}"
+                            data-detail-kicker="Shift"
+                            data-detail-title="{{ shift.shift_date|date:'D j M Y' }}"
+                            data-detail-meta="{% if is_management %}{{ shift.staff.username }} · {% endif %}{{ shift.start_time|time:'H:i' }} - {{ shift.end_time|time:'H:i' }}"
+                        >
+                            Review
+                        </button>
+                        <template id="shift-detail-{{ shift.pk }}">
+                            <section class="detail-drawer-card">
+                                <div class="detail-drawer-card-head">
+                                    <p class="detail-drawer-label">Shift timeline</p>
+                                    {% if shift.shift_date == today %}
+                                    <span class="shift-timeline-pill shift-timeline-today">Today</span>
+                                    {% elif shift.shift_date < today %}
+                                    <span class="shift-timeline-pill shift-timeline-past">Past</span>
+                                    {% else %}
+                                    <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-drawer-grid">
+                                    {% if is_management %}
+                                    <div class="detail-drawer-row">
+                                        <strong>Staff</strong>
+                                        <span>{{ shift.staff.username }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="detail-drawer-row">
+                                        <strong>Start</strong>
+                                        <span>{{ shift.start_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>End</strong>
+                                        <span>{{ shift.end_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Break</strong>
+                                        <span>{{ shift.break_minutes }} min</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Hours</strong>
+                                        <span>{{ shift.duration_hours|floatformat:2 }}h</span>
+                                    </div>
+                                </div>
+                                <p class="detail-drawer-copy">{{ shift.notes|default:"No notes recorded for this shift." }}</p>
+                            </section>
+                            {% if is_management %}
+                            <section class="detail-drawer-section">
+                                <p class="detail-drawer-label">Actions</p>
+                                <div class="detail-drawer-actions">
+                                    <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit shift</a>
+                                    <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete shift</a>
+                                </div>
+                            </section>
+                            {% endif %}
+                        </template>
                     </td>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

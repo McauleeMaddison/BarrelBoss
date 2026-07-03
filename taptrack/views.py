@@ -863,6 +863,53 @@ def reports_page(request):
         },
     ]
 
+    attention_items = []
+    if kpi_low_stock_count:
+        attention_items.append(
+            {
+                "label": "Low stock pressure",
+                "value": f"{kpi_low_stock_count} line(s)",
+                "copy": "Stock below minimum is still visible and may affect service continuity or supplier urgency.",
+                "tone": "alert",
+                "action_label": "Open stock",
+                "url_name": "stock:list",
+                "query": "urgency=critical",
+            }
+        )
+    if backlog_order_count:
+        attention_items.append(
+            {
+                "label": "Order backlog",
+                "value": f"{backlog_order_count} open",
+                "copy": "Draft, ordered, and pending delivery orders remain active in the wider pipeline.",
+                "tone": "warn",
+                "action_label": "Open orders",
+                "url_name": "orders:list",
+            }
+        )
+    if checklist_completion_rate < 80:
+        attention_items.append(
+            {
+                "label": "Checklist completion",
+                "value": f"{checklist_completion_rate}%",
+                "copy": "Checklist completion is below the stronger operating threshold for this report window.",
+                "tone": "warn",
+                "action_label": "Open checklists",
+                "url_name": "checklists:list",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Operational pulse",
+                "value": "Board steady",
+                "copy": "No major report-level risk is standing out across stock, orders, breakages, and checklists.",
+                "tone": "ok",
+                "action_label": "Open dashboard",
+                "url_name": "dashboard:management_portal",
+            }
+        )
+
     if request.GET.get("export") == "csv":
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = (
@@ -933,6 +980,27 @@ def reports_page(request):
         "report_kpi_cards": report_kpi_cards,
         "executive_highlights": executive_highlights,
         "backlog_order_count": backlog_order_count,
+        "attention_items": attention_items,
+        "hero_signals": [
+            {
+                "label": "Delivered orders",
+                "value": kpi_delivered_orders,
+                "copy": "Completed supplier orders within the selected reporting window.",
+                "tone": "ok",
+            },
+            {
+                "label": "Supplier spend",
+                "value": _format_currency(kpi_supplier_spend),
+                "copy": "Estimated delivered spend tied to the reporting range.",
+                "tone": "neutral",
+            },
+            {
+                "label": "Checklist completion",
+                "value": f"{checklist_completion_rate}%",
+                "copy": "Operational completion rate across checklist activity in the selected range.",
+                "tone": "warn" if checklist_completion_rate < 80 else "ok",
+            },
+        ],
     }
     return render(request, "reports/index.html", context)
 
@@ -979,13 +1047,74 @@ def settings_page(request):
         messages.error(request, "Unknown settings action.")
         return redirect("settings")
 
+    push_subscription_count = request.user.push_subscriptions.filter(is_active=True).count()
+    web_push_ready = push_notifications_configured()
+    alerts_enabled_count = team_profiles.filter(notify_on_shift_assignment=True).count()
+    alerts_disabled_count = team_profiles.count() - alerts_enabled_count
+    attention_items = []
+    if not web_push_ready:
+        attention_items.append(
+            {
+                "label": "Push configuration",
+                "value": "Server not ready",
+                "copy": "VAPID keys are missing, so device subscriptions cannot be fully enabled yet.",
+                "tone": "alert",
+            }
+        )
+    if not push_subscription_count:
+        attention_items.append(
+            {
+                "label": "This device",
+                "value": "Alerts off",
+                "copy": "The current device is not subscribed to shift push notifications yet.",
+                "tone": "warn",
+            }
+        )
+    if is_management(request.user) and alerts_disabled_count:
+        attention_items.append(
+            {
+                "label": "Team alerts",
+                "value": f"{alerts_disabled_count} disabled",
+                "copy": "Some active staff profiles still do not receive shift assignment push alerts.",
+                "tone": "warn",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Notification center",
+                "value": "Configured",
+                "copy": "Push delivery and team alert coverage are healthy in the current settings view.",
+                "tone": "ok",
+            }
+        )
+
     context = {
         "team_profiles": team_profiles,
-        "push_subscription_count": request.user.push_subscriptions.filter(
-            is_active=True
-        ).count(),
+        "push_subscription_count": push_subscription_count,
         "web_push_public_key": settings.WEB_PUSH_PUBLIC_KEY,
-        "web_push_configured": push_notifications_configured(),
+        "web_push_configured": web_push_ready,
+        "attention_items": attention_items,
+        "hero_signals": [
+            {
+                "label": "This device",
+                "value": "Subscribed" if push_subscription_count else "Not subscribed",
+                "copy": "Current browser push status for shift assignment and update alerts.",
+                "tone": "ok" if push_subscription_count else "warn",
+            },
+            {
+                "label": "Team alerts on",
+                "value": alerts_enabled_count,
+                "copy": "Active staff profiles currently configured to receive shift assignment alerts.",
+                "tone": "neutral",
+            },
+            {
+                "label": "Server push",
+                "value": "Configured" if web_push_ready else "Missing keys",
+                "copy": "Whether the server is ready to issue real web push subscriptions and sends.",
+                "tone": "ok" if web_push_ready else "alert",
+            },
+        ],
     }
     return render(request, "settings/index.html", context)
 

@@ -13,6 +13,16 @@
     <p class="portal-hero-copy">
         Keep contact details current, reduce ordering friction, and make sourcing easier on every shift.
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
     <div class="report-toolbar">
         <a class="action-btn action-link" href="{% url 'suppliers:add' %}">Create Supplier</a>
         <div class="dashboard-controls">
@@ -23,8 +33,15 @@
 
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Suppliers in View</h3>
-        <p>{{ supplier_count }}</p>
+        <div class="metric-card-head">
+            <h3>Suppliers in View</h3>
+            <span class="metric-state metric-state-neutral">Directory scope</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ supplier_count }}</p>
+            <span class="metric-summary">Supplier records inside the current search and category filter scope.</span>
+            <span class="metric-note">Use this to confirm whether the directory slice is broad or tightly targeted.</span>
+        </div>
     </article>
 </section>
 
@@ -33,25 +50,53 @@
         <h3>Supplier Directory</h3>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="q">Search</label>
-            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Name, contact, email or phone">
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'suppliers:list' %}{% endif %}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% if selected_category_label %}<span class="filter-chip">{{ selected_category_label }}</span>{% endif %}
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">Full supplier directory in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <div class="filter-field">
-            <label for="category">Category</label>
-            <select id="category" name="category">
-                <option value="">All Categories</option>
-                {% for value, label in category_choices %}
-                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Name, contact, email or phone">
+            </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'suppliers:list' %}">Reset</a>
-    </form>
+            <div class="filter-field">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                    <option value="">All Categories</option>
+                    {% for value, label in category_choices %}
+                    <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'suppliers:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if suppliers %}
     <div class="report-table-wrap">
@@ -63,7 +108,7 @@
                     <th>Phone</th>
                     <th>Email</th>
                     <th>Category</th>
-                    <th>Actions</th>
+                    <th data-sort="off">Review</th>
                 </tr>
             </thead>
             <tbody>
@@ -74,9 +119,48 @@
                     <td>{{ supplier.phone|default:'-' }}</td>
                     <td>{{ supplier.email|default:'-' }}</td>
                     <td>{{ supplier.get_category_supplied_display }}</td>
-                    <td class="stock-actions-cell">
-                        <a class="table-action" href="{% url 'suppliers:edit' supplier.pk %}">Edit</a>
-                        <a class="table-action table-action-danger" href="{% url 'suppliers:delete' supplier.pk %}">Delete</a>
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <button
+                            class="table-action"
+                            type="button"
+                            data-detail-trigger
+                            data-detail-template="supplier-detail-{{ supplier.pk }}"
+                            data-detail-kicker="Supplier"
+                            data-detail-title="{{ supplier.name }}"
+                            data-detail-meta="{{ supplier.get_category_supplied_display }}"
+                        >
+                            Review
+                        </button>
+                        <template id="supplier-detail-{{ supplier.pk }}">
+                            <section class="detail-drawer-card">
+                                <div class="detail-drawer-card-head">
+                                    <p class="detail-drawer-label">Contact details</p>
+                                    <span class="badge">{{ supplier.get_category_supplied_display }}</span>
+                                </div>
+                                <div class="detail-drawer-grid">
+                                    <div class="detail-drawer-row">
+                                        <strong>Contact name</strong>
+                                        <span>{{ supplier.contact_name|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Phone</strong>
+                                        <span>{{ supplier.phone|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Email</strong>
+                                        <span>{{ supplier.email|default:"-" }}</span>
+                                    </div>
+                                </div>
+                                <p class="detail-drawer-copy">{{ supplier.notes|default:"No supplier notes recorded." }}</p>
+                            </section>
+                            <section class="detail-drawer-section">
+                                <p class="detail-drawer-label">Actions</p>
+                                <div class="detail-drawer-actions">
+                                    <a class="table-action" href="{% url 'suppliers:edit' supplier.pk %}">Edit supplier</a>
+                                    <a class="table-action table-action-danger" href="{% url 'suppliers:delete' supplier.pk %}">Delete supplier</a>
+                                </div>
+                            </section>
+                        </template>
                     </td>
                 </tr>
                 {% endfor %}

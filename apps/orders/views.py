@@ -150,6 +150,54 @@ def list_orders(request):
         {"label": "Pending Delivery", "query": f"status={Order.Status.PENDING_DELIVERY}", "active": selected_status == Order.Status.PENDING_DELIVERY and not selected_supplier},
         {"label": "Delivered", "query": f"status={Order.Status.DELIVERED}", "active": selected_status == Order.Status.DELIVERED and not selected_supplier},
     ]
+    attention_items = []
+    if context["overdue_delivery_count"]:
+        attention_items.append(
+            {
+                "label": "Overdue deliveries",
+                "value": f"{context['overdue_delivery_count']} order(s)",
+                "copy": "Expected delivery dates have passed and should be chased or updated.",
+                "tone": "alert",
+                "action_label": "Open ordered",
+                "url_name": "orders:list",
+                "query": f"status={Order.Status.ORDERED}",
+            }
+        )
+    if context["stale_draft_count"]:
+        attention_items.append(
+            {
+                "label": "Stale drafts",
+                "value": f"{context['stale_draft_count']} request(s)",
+                "copy": "Draft requests have been waiting more than 48 hours and need a decision.",
+                "tone": "warn",
+                "action_label": "Open drafts",
+                "url_name": "orders:list",
+                "query": f"status={Order.Status.DRAFT}",
+            }
+        )
+    if context["pending_count"]:
+        attention_items.append(
+            {
+                "label": "Pending delivery",
+                "value": f"{context['pending_count']} in transit",
+                "copy": "Placed orders are on the way and should stay visible until they land in stock.",
+                "tone": "neutral",
+                "action_label": "Track pending",
+                "url_name": "orders:list",
+                "query": f"status={Order.Status.PENDING_DELIVERY}",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Order pipeline",
+                "value": "Queue clear",
+                "copy": "No stale drafts or overdue deliveries are currently showing in this view.",
+                "tone": "ok",
+                "action_label": "Open orders",
+                "url_name": "orders:list",
+            }
+        )
     context.update(
         {
             "filters_active": filters_active,
@@ -161,6 +209,7 @@ def list_orders(request):
                 "",
             ),
             "filter_presets": filter_presets,
+            "attention_items": attention_items,
         }
     )
     return render(request, "orders/list.html", context)

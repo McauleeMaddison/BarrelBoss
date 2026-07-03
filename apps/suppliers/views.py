@@ -31,6 +31,63 @@ def list_suppliers(request):
 
     page_obj = paginate_collection(request, suppliers_qs.order_by("name"), per_page=12)
     suppliers = list(page_obj.object_list)
+    category_labels = dict(Supplier.CategorySupplied.choices)
+    missing_contact_count = suppliers_qs.filter(contact_name="").count()
+    missing_phone_count = suppliers_qs.filter(phone="").count()
+    missing_email_count = suppliers_qs.filter(email="").count()
+    filters_active = bool(query or selected_category)
+    filter_presets = [
+        {"label": "All Suppliers", "query": "", "active": not filters_active},
+        {
+            "label": "Beer Barrels",
+            "query": "category=BEER_BARRELS",
+            "active": selected_category == Supplier.CategorySupplied.BEER_BARRELS and not query,
+        },
+        {
+            "label": "Spirits",
+            "query": "category=SPIRITS",
+            "active": selected_category == Supplier.CategorySupplied.SPIRITS and not query,
+        },
+        {
+            "label": "Cleaning",
+            "query": "category=CLEANING",
+            "active": selected_category == Supplier.CategorySupplied.CLEANING and not query,
+        },
+    ]
+    attention_items = []
+    if missing_contact_count:
+        attention_items.append(
+            {
+                "label": "Missing contact names",
+                "value": f"{missing_contact_count} supplier(s)",
+                "copy": "Primary contact names are missing and can slow down call-backs or escalation.",
+                "tone": "warn",
+                "action_label": "Review directory",
+                "url_name": "suppliers:list",
+            }
+        )
+    if missing_phone_count or missing_email_count:
+        attention_items.append(
+            {
+                "label": "Contact gaps",
+                "value": f"{missing_phone_count + missing_email_count} missing fields",
+                "copy": "Phone and email gaps make ordering fallback and delivery chasing harder.",
+                "tone": "alert" if missing_phone_count and missing_email_count else "warn",
+                "action_label": "Open suppliers",
+                "url_name": "suppliers:list",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Supplier directory",
+                "value": "Contact base healthy",
+                "copy": "No obvious supplier contact gaps are visible in the current view.",
+                "tone": "ok",
+                "action_label": "Create supplier",
+                "url_name": "suppliers:add",
+            }
+        )
 
     context = {
         "suppliers": suppliers,
@@ -41,6 +98,35 @@ def list_suppliers(request):
         "query": query,
         "category_choices": Supplier.CategorySupplied.choices,
         "selected_category": selected_category,
+        "selected_category_label": category_labels.get(selected_category, ""),
+        "filters_active": filters_active,
+        "active_filter_count": sum([bool(query), bool(selected_category)]),
+        "selected_preset_label": next(
+            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+            "",
+        ),
+        "filter_presets": filter_presets,
+        "attention_items": attention_items,
+        "hero_signals": [
+            {
+                "label": "Suppliers in view",
+                "value": suppliers_qs.count(),
+                "copy": "Live supplier records after applying the current search and category scope.",
+                "tone": "neutral",
+            },
+            {
+                "label": "Missing contacts",
+                "value": missing_contact_count,
+                "copy": "Suppliers without a named contact person in the current directory view.",
+                "tone": "warn" if missing_contact_count else "ok",
+            },
+            {
+                "label": "Missing phone or email",
+                "value": missing_phone_count + missing_email_count,
+                "copy": "Communication gaps still worth cleaning up before the next ordering cycle.",
+                "tone": "warn" if missing_phone_count or missing_email_count else "ok",
+            },
+        ],
     }
     return render(request, "suppliers/list.html", context)
 

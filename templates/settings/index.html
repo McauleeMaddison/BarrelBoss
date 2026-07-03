@@ -4,10 +4,23 @@
 {% block page_title %}Settings{% endblock %}
 
 {% block content %}
-<section class="panel settings-hero">
-    <p class="kicker">Configuration</p>
-    <h3>Notification Center</h3>
-    <p>Control device notifications and manage which staff receive shift assignment alerts.</p>
+<section class="panel portal-hero settings-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Configuration</p>
+        <span class="badge portal-badge">Notification Center</span>
+    </div>
+    <h3 class="portal-hero-title">Device Alerts and Team Push Rules</h3>
+    <p class="portal-hero-copy">Control device notifications and manage which staff receive shift assignment alerts.</p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
 </section>
 
 <section class="settings-grid">

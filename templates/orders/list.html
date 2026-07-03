@@ -17,6 +17,7 @@
         Submit requests, monitor status changes, and track incoming deliveries.
         {% endif %}
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
         <article class="hero-signal hero-signal-warn">
             <span class="hero-signal-label">{% if management_view %}Awaiting Approval{% else %}Draft Requests{% endif %}</span>
@@ -196,7 +197,7 @@
                     <th>Items</th>
                     <th>Status</th>
                     <th>Created By</th>
-                    <th>{% if management_view %}Actions / Approval{% else %}Actions{% endif %}</th>
+                    <th data-sort="off">Review</th>
                 </tr>
             </thead>
             <tbody>
@@ -211,23 +212,72 @@
                         <span class="badge {{ order.status_badge_class }}">{{ order.get_status_display }}</span>
                     </td>
                     <td>{{ order.created_by_display }}</td>
-                    <td class="stock-actions-cell">
-                        {% if management_view %}
-                        <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit</a>
-                        <form method="post" action="{% url 'orders:status' order.pk %}" class="inline-status-form">
-                            {% csrf_token %}
-                            <select name="status">
-                                {% for value, label in status_choices %}
-                                <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                            <button class="table-action" type="submit">Update</button>
-                        </form>
-                        {% elif order.can_staff_edit %}
-                        <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit Draft</a>
-                        {% else %}
-                        <span class="table-action">View Only</span>
-                        {% endif %}
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <button
+                            class="table-action"
+                            type="button"
+                            data-detail-trigger
+                            data-detail-template="order-detail-{{ order.pk }}"
+                            data-detail-kicker="Order"
+                            data-detail-title="{{ order.reference }}"
+                            data-detail-meta="{{ order.supplier.name }} · {{ order.get_status_display }}"
+                        >
+                            Review
+                        </button>
+                        <template id="order-detail-{{ order.pk }}">
+                            <section class="detail-drawer-card">
+                                <div class="detail-drawer-card-head">
+                                    <p class="detail-drawer-label">Pipeline status</p>
+                                    <span class="badge {{ order.status_badge_class }}">{{ order.get_status_display }}</span>
+                                </div>
+                                <div class="detail-drawer-grid">
+                                    <div class="detail-drawer-row">
+                                        <strong>Supplier</strong>
+                                        <span>{{ order.supplier.name }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Order date</strong>
+                                        <span>{{ order.order_date }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Delivery date</strong>
+                                        <span>{{ order.delivery_date|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Units</strong>
+                                        <span>{{ order.total_units_display }} units</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Created by</strong>
+                                        <span>{{ order.created_by_display }}</span>
+                                    </div>
+                                </div>
+                                <p class="detail-drawer-copy">{{ order.notes|default:"No notes recorded for this order." }}</p>
+                            </section>
+                            <section class="detail-drawer-section">
+                                <p class="detail-drawer-label">Actions</p>
+                                <div class="detail-drawer-form-stack">
+                                    {% if management_view %}
+                                    <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit order</a>
+                                    <form method="post" action="{% url 'orders:status' order.pk %}" class="detail-drawer-inline-form">
+                                        {% csrf_token %}
+                                        <div class="detail-drawer-actions">
+                                            <select name="status">
+                                                {% for value, label in status_choices %}
+                                                <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button class="action-btn" type="submit">Update status</button>
+                                        </div>
+                                    </form>
+                                    {% elif order.can_staff_edit %}
+                                    <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit draft</a>
+                                    {% else %}
+                                    <span class="filter-chip filter-chip-muted">View only</span>
+                                    {% endif %}
+                                </div>
+                            </section>
+                        </template>
                     </td>
                 </tr>
                 {% endfor %}

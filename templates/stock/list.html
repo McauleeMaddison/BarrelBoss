@@ -13,6 +13,7 @@
     <p class="portal-hero-copy">
         Prioritize low lines, close quantity gaps, and keep replenishment cycles reliable.
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
         <article class="hero-signal hero-signal-alert">
             <span class="hero-signal-label">Critical Risk</span>
@@ -217,7 +218,7 @@
                     <th>Unit Cost</th>
                     <th>Est. Value</th>
                     <th>Urgency</th>
-                    {% if is_management %}<th>Actions</th>{% endif %}
+                    <th data-sort="off">Review</th>
                 </tr>
             </thead>
             <tbody>
@@ -238,12 +239,59 @@
                     <td>
                         <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
                     </td>
-                    {% if is_management %}
-                    <td class="stock-actions-cell">
-                        <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit</a>
-                        <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete</a>
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <button
+                            class="table-action"
+                            type="button"
+                            data-detail-trigger
+                            data-detail-template="stock-detail-{{ item.pk }}"
+                            data-detail-kicker="Inventory item"
+                            data-detail-title="{{ item.name }}"
+                            data-detail-meta="{{ item.get_category_display }} · {{ item.stock_band_label }}"
+                        >
+                            Review
+                        </button>
+                        <template id="stock-detail-{{ item.pk }}">
+                            <section class="detail-drawer-card">
+                                <div class="detail-drawer-card-head">
+                                    <p class="detail-drawer-label">Stock status</p>
+                                    <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
+                                </div>
+                                <p class="detail-drawer-copy">{{ item.stock_note }}</p>
+                                <div class="detail-drawer-grid">
+                                    <div class="detail-drawer-row">
+                                        <strong>Supplier</strong>
+                                        <span>{{ item.supplier.name|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Quantity</strong>
+                                        <span>{{ item.quantity }} {{ item.get_unit_display }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Minimum</strong>
+                                        <span>{{ item.minimum_display }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Restock gap</strong>
+                                        <span>{{ item.stock_gap }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Estimated value</strong>
+                                        <span>£{{ item.value_estimate|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                            </section>
+                            {% if is_management %}
+                            <section class="detail-drawer-section">
+                                <p class="detail-drawer-label">Actions</p>
+                                <div class="detail-drawer-actions">
+                                    <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit item</a>
+                                    <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete item</a>
+                                </div>
+                            </section>
+                            {% endif %}
+                        </template>
                     </td>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

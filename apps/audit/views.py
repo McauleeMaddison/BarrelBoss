@@ -47,6 +47,59 @@ def list_events(request):
 
     page_obj = paginate_collection(request, events_qs, per_page=25)
     events = list(page_obj.object_list)
+    action_labels = dict(AuditEvent.Action.choices)
+    filters_active = bool(
+        query
+        or selected_action
+        or selected_target
+        or selected_range != "7"
+    )
+    filter_presets = [
+        {"label": "Last 7 days", "query": "range=7", "active": selected_range == "7" and not query and not selected_action and not selected_target},
+        {"label": "Today", "query": "range=1", "active": selected_range == "1" and not query and not selected_action and not selected_target},
+        {"label": "Last 30 days", "query": "range=30", "active": selected_range == "30" and not query and not selected_action and not selected_target},
+        {"label": "Deletes", "query": "action=DELETE", "active": selected_action == AuditEvent.Action.DELETE and not query and not selected_target and selected_range == "7"},
+        {"label": "Status Updates", "query": "action=STATUS", "active": selected_action == AuditEvent.Action.STATUS and not query and not selected_target and selected_range == "7"},
+    ]
+    critical_count = events_qs.filter(
+        action__in=[AuditEvent.Action.DELETE, AuditEvent.Action.STATUS]
+    ).count()
+    today_count = events_qs.filter(created_at__date=timezone.localdate()).count()
+    attention_items = []
+    if critical_count:
+        attention_items.append(
+            {
+                "label": "Critical changes",
+                "value": f"{critical_count} events",
+                "copy": "Delete and status update events should be the first set reviewed during incident tracing.",
+                "tone": "warn",
+                "action_label": "Open critical",
+                "url_name": "audit:list",
+                "query": "action=STATUS",
+            }
+        )
+    if selected_target:
+        attention_items.append(
+            {
+                "label": "Target model focus",
+                "value": selected_target,
+                "copy": "The log is narrowed to one target model so change tracing stays tight.",
+                "tone": "neutral",
+                "action_label": "Clear target",
+                "url_name": "audit:list",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Audit attention",
+                "value": "Trail active",
+                "copy": "Use the search and range controls to isolate a sequence of operational changes quickly.",
+                "tone": "ok",
+                "action_label": "Open trail",
+                "url_name": "audit:list",
+            }
+        )
 
     context = {
         "events": events,
@@ -67,9 +120,43 @@ def list_events(request):
             ("all", "All time"),
         ],
         "event_count": events_qs.count(),
-        "today_count": AuditEvent.objects.filter(created_at__date=timezone.localdate()).count(),
-        "critical_count": AuditEvent.objects.filter(
-            action__in=[AuditEvent.Action.DELETE, AuditEvent.Action.STATUS]
-        ).count(),
+        "today_count": today_count,
+        "critical_count": critical_count,
+        "selected_action_label": action_labels.get(selected_action, ""),
+        "filters_active": filters_active,
+        "active_filter_count": sum(
+            [
+                bool(query),
+                bool(selected_action),
+                bool(selected_target),
+                selected_range != "7",
+            ]
+        ),
+        "selected_preset_label": next(
+            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+            "",
+        ),
+        "filter_presets": filter_presets,
+        "attention_items": attention_items,
+        "hero_signals": [
+            {
+                "label": "Visible events",
+                "value": events_qs.count(),
+                "copy": "Audit entries after applying the active search, range, target, and action filters.",
+                "tone": "neutral",
+            },
+            {
+                "label": "Events today",
+                "value": today_count,
+                "copy": "Fresh accountability activity logged in the current calendar day.",
+                "tone": "ok",
+            },
+            {
+                "label": "Critical changes",
+                "value": critical_count,
+                "copy": "Delete and status events are the quickest path into sensitive operational changes.",
+                "tone": "warn" if critical_count else "ok",
+            },
+        ],
     }
     return render(request, "audit/list.html", context)

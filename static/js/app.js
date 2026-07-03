@@ -509,6 +509,92 @@
 
     setupDataTables();
 
+    const detailDrawer = document.querySelector("[data-detail-drawer]");
+    const detailBackdrop = document.querySelector("[data-detail-backdrop]");
+    const detailTitle = document.querySelector("[data-detail-title]");
+    const detailMeta = document.querySelector("[data-detail-meta]");
+    const detailKicker = document.querySelector("[data-detail-kicker]");
+    const detailBody = document.querySelector("[data-detail-body]");
+    const detailCloseButtons = document.querySelectorAll("[data-detail-close]");
+
+    if (detailDrawer && detailBackdrop && detailTitle && detailMeta && detailKicker && detailBody) {
+        const closeDetailDrawer = () => {
+            body.classList.remove("detail-drawer-open");
+            detailDrawer.setAttribute("aria-hidden", "true");
+            detailBackdrop.hidden = true;
+            detailBody.replaceChildren();
+        };
+
+        const openDetailDrawer = (trigger) => {
+            const templateId = trigger.dataset.detailTemplate;
+            if (!templateId) {
+                return;
+            }
+
+            const template = document.getElementById(templateId);
+            if (!(template instanceof HTMLTemplateElement)) {
+                return;
+            }
+
+            detailTitle.textContent = trigger.dataset.detailTitle || "Details";
+
+            const metaText = trigger.dataset.detailMeta || "";
+            if (metaText) {
+                detailMeta.hidden = false;
+                detailMeta.textContent = metaText;
+            } else {
+                detailMeta.hidden = true;
+                detailMeta.textContent = "";
+            }
+
+            const kickerText = trigger.dataset.detailKicker || "";
+            if (kickerText) {
+                detailKicker.hidden = false;
+                detailKicker.textContent = kickerText;
+            } else {
+                detailKicker.hidden = true;
+                detailKicker.textContent = "";
+            }
+
+            detailBody.replaceChildren(document.importNode(template.content, true));
+            detailBackdrop.hidden = false;
+            detailDrawer.setAttribute("aria-hidden", "false");
+            body.classList.add("detail-drawer-open");
+
+            const focusTarget = detailDrawer.querySelector("[data-detail-close]") || detailDrawer;
+            window.requestAnimationFrame(() => {
+                if (focusTarget instanceof HTMLElement) {
+                    focusTarget.focus();
+                }
+            });
+        };
+
+        document.addEventListener("click", (event) => {
+            const trigger = event.target.closest("[data-detail-trigger]");
+            if (trigger) {
+                openDetailDrawer(trigger);
+                return;
+            }
+
+            if (
+                event.target.closest("[data-detail-close]")
+                || event.target === detailBackdrop
+            ) {
+                closeDetailDrawer();
+            }
+        });
+
+        detailCloseButtons.forEach((button) => {
+            button.addEventListener("click", closeDetailDrawer);
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && body.classList.contains("detail-drawer-open")) {
+                closeDetailDrawer();
+            }
+        });
+    }
+
     const pushSettingsNode = document.querySelector("[data-push-settings]");
     const pushStatus = document.getElementById("pushStatus");
 

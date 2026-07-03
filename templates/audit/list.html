@@ -4,19 +4,60 @@
 {% block page_title %}Audit Log{% endblock %}
 
 {% block content %}
+<section class="panel portal-hero audit-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Governance</p>
+        <span class="badge portal-badge">Audit Trail</span>
+    </div>
+    <h3 class="portal-hero-title">Business Accountability and Change Trace</h3>
+    <p class="portal-hero-copy">
+        Track who changed what, when, and where across the operational system without hunting through multiple screens.
+    </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Visible Events</h3>
-        <p>{{ event_count }}</p>
+        <div class="metric-card-head">
+            <h3>Visible Events</h3>
+            <span class="metric-state metric-state-neutral">Filtered trail</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ event_count }}</p>
+            <span class="metric-summary">Audit entries after applying the active search, action, model, and range scope.</span>
+            <span class="metric-note">This gives the working trace size before you drill into individual events.</span>
+        </div>
     </article>
     <article class="metric-card ok">
-        <h3>Events Today</h3>
-        <p>{{ today_count }}</p>
+        <div class="metric-card-head">
+            <h3>Events Today</h3>
+            <span class="metric-state metric-state-ok">Current day</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ today_count }}</p>
+            <span class="metric-summary">Fresh accountability events logged during the current calendar day.</span>
+            <span class="metric-note">Useful when you need a tight view of same-day actions and reversals.</span>
+        </div>
     </article>
     <article class="metric-card warn">
-        <h3>Critical Changes</h3>
-        <p>{{ critical_count }}</p>
-        <span class="metric-note">Delete and status update actions</span>
+        <div class="metric-card-head">
+            <h3>Critical Changes</h3>
+            <span class="metric-state metric-state-warn">Sensitive events</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ critical_count }}</p>
+            <span class="metric-summary">Delete and status update actions that usually deserve first review during investigations.</span>
+            <span class="metric-note">These are the highest-signal changes when tracing accountability or state drift.</span>
+        </div>
     </article>
 </section>
 
@@ -28,44 +69,73 @@
         </div>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="q">Search</label>
-            <input id="q" type="text" name="q" value="{{ query }}" placeholder="User, summary, model, target ID">
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% if selected_action_label %}<span class="filter-chip">{{ selected_action_label }}</span>{% endif %}
+                {% if selected_target %}<span class="filter-chip">{{ selected_target }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">Last 7 days of audit activity in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <div class="filter-field">
-            <label for="action">Action</label>
-            <select id="action" name="action">
-                <option value="">All Actions</option>
-                {% for value, label in action_choices %}
-                <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="User, summary, model, target ID">
+            </div>
 
-        <div class="filter-field">
-            <label for="target">Target Model</label>
-            <select id="target" name="target">
-                <option value="">All Models</option>
-                {% for target in target_choices %}
-                <option value="{{ target }}" {% if selected_target == target %}selected{% endif %}>{{ target }}</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="filter-field">
+                <label for="action">Action</label>
+                <select id="action" name="action">
+                    <option value="">All Actions</option>
+                    {% for value, label in action_choices %}
+                    <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <div class="filter-field">
-            <label for="range">Range</label>
-            <select id="range" name="range">
-                {% for value, label in range_choices %}
-                <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="filter-field">
+                <label for="target">Target Model</label>
+                <select id="target" name="target">
+                    <option value="">All Models</option>
+                    {% for target in target_choices %}
+                    <option value="{{ target }}" {% if selected_target == target %}selected{% endif %}>{{ target }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'audit:list' %}">Reset</a>
-    </form>
+            <div class="filter-field">
+                <label for="range">Range</label>
+                <select id="range" name="range">
+                    {% for value, label in range_choices %}
+                    <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'audit:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if events %}
     <div class="report-table-wrap">
@@ -79,6 +149,7 @@
                     <th>Target</th>
                     <th>Summary</th>
                     <th>Path</th>
+                    <th data-sort="off">Review</th>
                 </tr>
             </thead>
             <tbody>
@@ -91,6 +162,62 @@
                     <td>{{ event.target_model|default:'-' }}{% if event.target_id %}#{{ event.target_id }}{% endif %}</td>
                     <td>{{ event.summary }}</td>
                     <td><small class="panel-subtitle">{{ event.request_path|default:'-' }}</small></td>
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <button
+                            class="table-action"
+                            type="button"
+                            data-detail-trigger
+                            data-detail-template="audit-detail-{{ event.pk }}"
+                            data-detail-kicker="Audit event"
+                            data-detail-title="{{ event.summary }}"
+                            data-detail-meta="{{ event.created_at|date:'Y-m-d H:i:s' }} · {{ event.get_action_display }}"
+                        >
+                            Review
+                        </button>
+                        <template id="audit-detail-{{ event.pk }}">
+                            <section class="detail-drawer-card">
+                                <div class="detail-drawer-card-head">
+                                    <p class="detail-drawer-label">Event summary</p>
+                                    <span class="badge">{{ event.get_action_display }}</span>
+                                </div>
+                                <div class="detail-drawer-grid">
+                                    <div class="detail-drawer-row">
+                                        <strong>User</strong>
+                                        <span>{{ event.actor_username|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Role</strong>
+                                        <span>{{ event.actor_role|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Target</strong>
+                                        <span>{{ event.target_model|default:"-" }}{% if event.target_id %}#{{ event.target_id }}{% endif %}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>Path</strong>
+                                        <span>{{ event.request_path|default:"-" }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
+                                        <strong>IP address</strong>
+                                        <span>{{ event.ip_address|default:"-" }}</span>
+                                    </div>
+                                </div>
+                                <p class="detail-drawer-copy">{{ event.summary }}</p>
+                            </section>
+                            <section class="detail-drawer-section">
+                                <p class="detail-drawer-label">Structured details</p>
+                                {% if event.details %}
+                                <ul class="detail-drawer-list">
+                                    {% for key, value in event.details.items %}
+                                    <li><strong>{{ key }}:</strong> {{ value }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="detail-drawer-copy">No structured detail payload was stored for this event.</p>
+                                {% endif %}
+                            </section>
+                        </template>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

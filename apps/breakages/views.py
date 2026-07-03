@@ -35,6 +35,7 @@ def list_breakages(request):
     page_obj = paginate_collection(request, records_qs.order_by("-created_at"), per_page=12)
     records = list(page_obj.object_list)
     week_start = timezone.now() - timedelta(days=7)
+    week_count = Breakage.objects.filter(created_at__gte=week_start).count()
     issue_labels = dict(Breakage.IssueType.choices)
     filters_active = bool(query or selected_issue)
     filter_presets = [
@@ -48,6 +49,40 @@ def list_breakages(request):
             for value, label in Breakage.IssueType.choices
         ],
     ]
+    attention_items = []
+    if week_count:
+        attention_items.append(
+            {
+                "label": "Recent incidents",
+                "value": f"{week_count} in 7d",
+                "copy": "Fresh incidents are the quickest signal that a live floor issue may still be repeating.",
+                "tone": "alert" if week_count >= 5 else "warn",
+                "action_label": "Open log",
+                "url_name": "breakages:list",
+            }
+        )
+    if selected_issue:
+        attention_items.append(
+            {
+                "label": "Issue focus",
+                "value": issue_labels.get(selected_issue, selected_issue),
+                "copy": "The log is narrowed to one issue type so patterns can be inspected more quickly.",
+                "tone": "neutral",
+                "action_label": "Clear filter",
+                "url_name": "breakages:list",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Incident board",
+                "value": "Quiet",
+                "copy": "No recent breakage pressure is standing out in the current log view.",
+                "tone": "ok",
+                "action_label": "Log incident",
+                "url_name": "breakages:add",
+            }
+        )
 
     context = {
         "records": records,
@@ -55,7 +90,7 @@ def list_breakages(request):
         "is_paginated": page_obj.has_other_pages(),
         "pagination_query": build_query_string(request),
         "record_count": records_qs.count(),
-        "week_count": Breakage.objects.filter(created_at__gte=week_start).count(),
+        "week_count": week_count,
         "issue_choices": Breakage.IssueType.choices,
         "selected_issue": selected_issue,
         "query": query,
@@ -67,6 +102,7 @@ def list_breakages(request):
             "",
         ),
         "filter_presets": filter_presets,
+        "attention_items": attention_items,
     }
     return render(request, "breakages/list.html", context)
 

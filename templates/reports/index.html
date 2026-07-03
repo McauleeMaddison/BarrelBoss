@@ -13,6 +13,16 @@
     <p class="portal-hero-copy">
         Review stock risk, supplier spend, breakage loss, and checklist completion in one management summary.
     </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
     <div class="report-toolbar">
         <form method="get" class="report-range-form">
             {% for value, label in range_choices %}

@@ -181,6 +181,55 @@ def list_shifts(request):
         ),
         "",
     )
+    attention_items = []
+    if context["upcoming_shift_count"] == 0:
+        attention_items.append(
+            {
+                "label": "Upcoming coverage",
+                "value": "No future shifts",
+                "copy": "Nothing is currently scheduled ahead, which may be intentional or may need rota review.",
+                "tone": "warn",
+                "action_label": "Open planner",
+                "url_name": "shifts:list",
+                "query": "range=all",
+            }
+        )
+    if context["hours_this_week"] == 0:
+        attention_items.append(
+            {
+                "label": "This week",
+                "value": "0h booked",
+                "copy": "The current week has no scheduled hours in the selected staff or range scope.",
+                "tone": "alert",
+                "action_label": "View week",
+                "url_name": "shifts:list",
+                "query": "range=this_week",
+            }
+        )
+    if next_shift:
+        attention_items.append(
+            {
+                "label": "Next shift",
+                "value": next_shift.shift_date.strftime("%a %d %b"),
+                "copy": f"Starts at {next_shift.start_time.strftime('%H:%M')} and remains the next active service window in view.",
+                "tone": "ok",
+                "action_label": "Open upcoming",
+                "url_name": "shifts:list",
+                "query": "range=upcoming",
+            }
+        )
+    if not attention_items:
+        attention_items.append(
+            {
+                "label": "Shift board",
+                "value": "Balanced",
+                "copy": "No immediate rota gaps are showing in the selected view.",
+                "tone": "ok",
+                "action_label": "Open shifts",
+                "url_name": "shifts:list",
+            }
+        )
+    context["attention_items"] = attention_items
     return render(request, "shifts/list.html", context)
 
 
