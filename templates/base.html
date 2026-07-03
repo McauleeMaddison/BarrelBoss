@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260702-ui5">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260703-ui6">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
@@ -61,7 +61,7 @@
     </aside>
 
     <main class="main-content">
-        <header class="topbar">
+        <header class="topbar" data-topbar>
             <div class="topbar-primary">
                 <div class="topbar-start">
                     <button
@@ -79,8 +79,10 @@
                         >
                     </button>
                     <div class="topbar-title-block">
-                        <h2>{% block page_title %}Dashboard{% endblock %}</h2>
-                        <p>{% now "l, j F Y" %}</p>
+                        <div class="topbar-title-row">
+                            <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+                        </div>
+                        <p class="topbar-date">{% now "l, j F Y" %}</p>
                     </div>
                 </div>
                 <div class="topbar-end">
@@ -97,16 +99,18 @@
                     <form action="{% url 'logout' %}" method="post" class="switch-account-form">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{% url 'login' %}">
-                        <button type="submit" class="topbar-switch-btn">Switch Account</button>
+                        <button type="submit" class="topbar-switch-btn" aria-label="Switch account">Switch</button>
                     </form>
-                    <div class="user-pill">{{ request.user.get_username|default:'Guest' }}</div>
                 </div>
             </div>
             <div class="topbar-utility" role="region" aria-label="System status">
                 <div class="topbar-status-row">
                     <span class="status-chip status-chip-live">System Online</span>
-                    <span class="status-chip">{% now "H:i" %} UK</span>
-                    <span class="status-chip status-chip-role">{{ user_role_label }}</span>
+                    <span class="status-chip status-chip-time">{% now "H:i" %} UK</span>
+                    <span class="status-chip status-chip-user">
+                        <strong>{{ request.user.get_username|default:'Guest' }}</strong>
+                        <small>{{ user_role_label }}</small>
+                    </span>
                 </div>
             </div>
         </header>
@@ -192,6 +196,6 @@
     {% endwith %}
 </div>
 <script src="{% static 'js/pwa.js' %}" defer></script>
-<script src="{% static 'js/app.js' %}?v=20260702-ui5" defer></script>
+<script src="{% static 'js/app.js' %}?v=20260703-ui6" defer></script>
 </body>
 </html>

@@ -359,6 +359,7 @@ body.nav-open .shell-bg {
     padding: 0.52rem 0.76rem;
     backdrop-filter: blur(6px);
     box-shadow: var(--shadow-soft);
+    transition: padding 0.18s ease, gap 0.18s ease, transform 0.18s ease;
 }
 
 .topbar-primary {
@@ -367,6 +368,7 @@ body.nav-open .shell-bg {
     justify-content: space-between;
     gap: 0.72rem;
     flex-wrap: wrap;
+    transition: gap 0.18s ease;
 }
 
 .topbar-start {
@@ -379,6 +381,13 @@ body.nav-open .shell-bg {
 
 .topbar-title-block {
     min-width: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.topbar-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.56rem;
 }
 
 .topbar-end {
@@ -387,6 +396,7 @@ body.nav-open .shell-bg {
     gap: 0.45rem;
     flex-wrap: wrap;
     justify-content: flex-end;
+    transition: opacity 0.18s ease, max-height 0.18s ease, transform 0.18s ease;
 }
 
 .topbar-utility {
@@ -395,6 +405,7 @@ body.nav-open .shell-bg {
     flex-wrap: wrap;
     gap: 0.4rem 0.62rem;
     margin: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .topbar-status-row,
@@ -428,6 +439,28 @@ body.nav-open .shell-bg {
     color: #f8d48e;
     border-color: rgba(212, 161, 70, 0.5);
     background: rgba(212, 161, 70, 0.15);
+}
+
+.status-chip-user {
+    gap: 0.34rem;
+}
+
+.status-chip-user strong,
+.status-chip-user small {
+    display: inline-block;
+    font-size: inherit;
+    line-height: 1;
+}
+
+.status-chip-user strong {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.status-chip-user small {
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .quick-action-link {
@@ -470,6 +503,7 @@ body.nav-open .shell-bg {
     font-size: 0.78rem;
     line-height: 1;
     cursor: pointer;
+    white-space: nowrap;
     transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
 }
 
@@ -554,16 +588,6 @@ body.nav-open .shell-bg {
 .message-info {
     border-left-color: rgba(88, 129, 255, 0.82);
     background: rgba(88, 129, 255, 0.14);
-}
-
-.user-pill {
-    border: 1px solid rgba(212, 161, 70, 0.26);
-    border-radius: 999px;
-    padding: 0.42rem 0.76rem;
-    background: rgba(123, 31, 51, 0.26);
-    font-size: 0.79rem;
-    font-weight: 500;
-    letter-spacing: 0.015em;
 }
 
 .metric-grid {
@@ -2778,11 +2802,6 @@ tbody tr:hover {
         padding: 0.45rem 0.52rem;
     }
 
-    .user-pill {
-        align-self: stretch;
-        text-align: center;
-    }
-
     .topbar-end {
         width: 100%;
         justify-content: flex-start;
@@ -3138,7 +3157,6 @@ h4 {
 .app-shell .menu-btn,
 .app-shell .theme-toggle-btn,
 .app-shell .topbar-switch-btn,
-.app-shell .user-pill,
 .app-shell .logout-btn,
 .app-shell .table-action,
 .app-shell .pagination-link,
@@ -3222,14 +3240,14 @@ h4 {
     margin-bottom: 0.68rem;
     padding: 0.92rem 1rem;
     border-radius: 1.15rem;
+    transition: padding 0.2s ease, gap 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .app-shell .topbar-primary {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
     gap: 0.9rem;
-    flex-wrap: wrap;
 }
 
 .app-shell .topbar-start {
@@ -3242,9 +3260,19 @@ h4 {
     gap: 0.12rem;
 }
 
+.app-shell .topbar-title-row {
+    align-items: center;
+}
+
 .app-shell .topbar h2 {
     font-size: clamp(1.18rem, 2vw, 1.45rem);
     letter-spacing: -0.03em;
+}
+
+.app-shell .topbar-date {
+    display: block;
+    max-height: 24px;
+    overflow: hidden;
 }
 
 .app-shell .topbar p {
@@ -3269,27 +3297,29 @@ h4 {
 }
 
 .app-shell .topbar-end {
-    display: flex;
+    display: grid;
+    grid-auto-flow: column;
     align-items: center;
     gap: 0.56rem;
-    flex-wrap: wrap;
+    justify-content: end;
+    max-height: 48px;
+    overflow: hidden;
 }
 
 .app-shell .theme-toggle-btn,
-.app-shell .topbar-switch-btn,
-.app-shell .user-pill {
+.app-shell .topbar-switch-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 40px;
-    padding: 0.45rem 0.84rem;
+    padding: 0.45rem 0.78rem;
     border-radius: 999px;
-    font-size: 0.84rem;
+    font-size: 0.78rem;
+    font-weight: 700;
 }
 
 .app-shell .theme-toggle-btn {
     gap: 0.46rem;
-    font-weight: 700;
     cursor: pointer;
 }
 
@@ -3309,8 +3339,9 @@ h4 {
 .app-shell .topbar-utility {
     position: relative;
     z-index: 1;
-    display: inline-flex;
-    align-items: center;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
     margin: 0;
     padding: 0;
     border: 0;
@@ -3324,14 +3355,15 @@ h4 {
 .app-shell .topbar-status-row {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
     flex-wrap: wrap;
+    gap: 0.45rem;
 }
 
 .app-shell .status-chip {
     position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     min-height: 36px;
     padding: 0.36rem 0.72rem 0.36rem 1.55rem;
     border: 1px solid var(--panel-border);
@@ -3366,6 +3398,64 @@ h4 {
 
 .app-shell .status-chip-role::before {
     background: var(--accent-strong);
+}
+
+.app-shell .status-chip-user {
+    display: grid;
+    gap: 0.16rem;
+    padding-left: 0.72rem;
+}
+
+.app-shell .status-chip-user::before {
+    display: none;
+}
+
+.app-shell .status-chip-user strong {
+    color: var(--text);
+    font-size: 0.74rem;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+    text-transform: none;
+}
+
+.app-shell .status-chip-user small {
+    font-size: 0.58rem;
+}
+
+.app-shell .topbar-date,
+.app-shell .topbar-end {
+    transition: max-height 0.18s ease, opacity 0.18s ease, transform 0.18s ease, margin 0.18s ease;
+}
+
+.app-shell.topbar-collapsed .topbar {
+    gap: 0.56rem;
+    padding: 0.72rem 0.9rem;
+    box-shadow: 0 14px 26px rgba(6, 10, 18, 0.18);
+}
+
+.app-shell.topbar-collapsed .topbar-primary {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.app-shell.topbar-collapsed .topbar-end {
+    max-width: 0;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateX(10px);
+}
+
+.app-shell.topbar-collapsed .topbar-date {
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(-4px);
+}
+
+.app-shell.topbar-collapsed .topbar-status-row {
+    gap: 0.34rem;
 }
 
 .app-shell .panel {
@@ -4262,7 +4352,9 @@ h4 {
     .app-shell .topbar-primary {
         width: 100%;
         display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 0.72rem;
+        align-items: start;
     }
 
     .app-shell .topbar-start {
@@ -4270,18 +4362,7 @@ h4 {
     }
 
     .app-shell .topbar-end {
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.56rem;
-    }
-
-    .app-shell .theme-toggle-btn,
-    .app-shell .switch-account-form,
-    .app-shell .user-pill {
-        width: 100%;
-        justify-content: center;
-        text-align: center;
+        width: auto;
     }
 
     .app-shell .topbar-utility {
@@ -4318,8 +4399,15 @@ h4 {
         padding: 0.82rem;
     }
 
-    .app-shell .topbar-end {
+    .app-shell .topbar-primary {
         grid-template-columns: 1fr;
+        gap: 0.68rem;
+    }
+
+    .app-shell .topbar-end {
+        width: 100%;
+        grid-auto-flow: row;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .app-shell .topbar-utility {
@@ -4328,16 +4416,18 @@ h4 {
     }
 
     .app-shell .topbar-status-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.42rem;
     }
 
-    .app-shell .status-chip-live {
-        grid-column: 1 / -1;
+    .app-shell .theme-toggle-btn,
+    .app-shell .switch-account-form,
+    .app-shell .topbar-switch-btn {
+        width: 100%;
     }
 
     .app-shell .status-chip {
-        justify-content: center;
         min-width: 0;
         padding: 0.38rem 0.52rem 0.38rem 1.32rem;
         font-size: 0.66rem;
@@ -4346,6 +4436,10 @@ h4 {
 
     .app-shell .status-chip::before {
         left: 0.52rem;
+    }
+
+    .app-shell .status-chip-user {
+        padding-left: 0.52rem;
     }
 
     .app-shell .panel {
@@ -4357,6 +4451,12 @@ h4 {
     .app-shell .report-toolbar {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .app-shell.topbar-collapsed .topbar {
+        gap: 0.52rem;
+        padding: 0.62rem 0.76rem;
+        box-shadow: 0 12px 24px rgba(6, 10, 18, 0.18);
     }
 
     .app-shell .filter-summary-bar {
