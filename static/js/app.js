@@ -21,8 +21,7 @@
             return;
         }
 
-        const collapseThreshold = window.innerWidth <= 760 ? 36 : 72;
-        body.classList.toggle("topbar-collapsed", window.scrollY > collapseThreshold);
+        body.classList.toggle("topbar-collapsed", window.scrollY > 0);
     };
 
     const getStoredTheme = () => {
