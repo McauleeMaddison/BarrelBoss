@@ -248,5 +248,62 @@
 {% include 'partials/detail_drawer.html' %}
 <script src="{% static 'js/pwa.js' %}" defer></script>
 <script src="{% static 'js/app.js' %}?v=20260703-ui11" defer></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const appShell = document.querySelector(".app-shell");
+    const themeButton = document.querySelector("#theme-toggle");
+
+    if (!appShell || !themeButton) {
+        return;
+    }
+
+    const themeLabel = themeButton.querySelector(".theme-toggle-label");
+    const storageKey = "barrelboss-theme";
+
+    function getSavedTheme() {
+        try {
+            return localStorage.getItem(storageKey);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function saveTheme(theme) {
+        try {
+            localStorage.setItem(storageKey, theme);
+        } catch (error) {
+            /* Theme still works if browser storage is unavailable. */
+        }
+    }
+
+    function setTheme(theme) {
+        const isDark = theme === "dark";
+
+        document.documentElement.dataset.theme = theme;
+        appShell.dataset.theme = theme;
+
+        themeButton.setAttribute("aria-pressed", String(isDark));
+        themeButton.setAttribute(
+            "aria-label",
+            isDark ? "Switch to light mode" : "Switch to dark mode"
+        );
+
+        if (themeLabel) {
+            themeLabel.textContent = isDark ? "Dark" : "Light";
+        }
+
+        saveTheme(theme);
+    }
+
+    const savedTheme = getSavedTheme();
+    setTheme(savedTheme === "light" ? "light" : "dark");
+
+    themeButton.addEventListener("click", () => {
+        const currentTheme = document.documentElement.dataset.theme;
+        setTheme(currentTheme === "dark" ? "light" : "dark");
+    });
+});
+</script>
 </body>
 </html>
