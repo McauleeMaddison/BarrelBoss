@@ -19,6 +19,11 @@
     </p>
     {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
+        <article class="hero-signal hero-signal-neutral">
+            <span class="hero-signal-label">Pending Delivery</span>
+            <strong>{{ pending_count }} in transit</strong>
+            <small>Placed orders are on the way and should stay visible until they land in stock.</small>
+        </article>
         <article class="hero-signal hero-signal-warn">
             <span class="hero-signal-label">{% if management_view %}Awaiting Approval{% else %}Draft Requests{% endif %}</span>
             <strong>{{ awaiting_approval_count }} in queue</strong>
@@ -38,9 +43,9 @@
     <div class="report-toolbar">
         <a class="action-btn action-link" href="{% url 'orders:add' %}">{% if management_view %}Create Order{% else %}Create Request{% endif %}</a>
         <div class="dashboard-controls">
-            <span class="panel-header-meta">Open: {{ open_order_count }}</span>
-            <span class="panel-header-meta">Overdue: {{ overdue_delivery_count }}</span>
-            <span class="panel-header-meta">Delivered 7d: {{ delivered_recent_count }}</span>
+            <span class="panel-header-meta">Open {{ open_order_count }}</span>
+            <span class="panel-header-meta">Pending {{ pending_count }}</span>
+            <span class="panel-header-meta">Overdue {{ overdue_delivery_count }}</span>
         </div>
     </div>
 </section>

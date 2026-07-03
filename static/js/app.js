@@ -9,20 +9,10 @@
     const themeToggleLabel = document.querySelector("[data-theme-toggle-label]");
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     const isMobileNav = window.matchMedia("(max-width: 900px)");
-    const topbar = document.querySelector("[data-topbar]");
     const prefersDarkScheme = window.matchMedia
         ? window.matchMedia("(prefers-color-scheme: dark)")
         : null;
     let lockedScrollY = 0;
-
-    const syncTopbarCollapse = () => {
-        if (!topbar || body.classList.contains("nav-open")) {
-            body.classList.remove("topbar-collapsed");
-            return;
-        }
-
-        body.classList.toggle("topbar-collapsed", window.scrollY > 0);
-    };
 
     const getStoredTheme = () => {
         try {
@@ -144,7 +134,6 @@
             unlockBodyScroll();
         }
 
-        syncTopbarCollapse();
     };
     const openNav = () => setNavState(true);
     const closeNav = () => setNavState(false);
@@ -191,14 +180,7 @@
         } else if (body.classList.contains("nav-open")) {
             lockBodyScroll();
         }
-
-        syncTopbarCollapse();
     });
-
-    if (topbar) {
-        syncTopbarCollapse();
-        window.addEventListener("scroll", syncTopbarCollapse, { passive: true });
-    }
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
