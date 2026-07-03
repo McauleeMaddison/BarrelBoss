@@ -133,6 +133,36 @@ def list_orders(request):
         management_view=management_view,
     )
     context["pagination_query"] = build_query_string(request)
+    status_labels = dict(Order.Status.choices)
+    selected_supplier_label = ""
+    if selected_supplier.isdigit():
+        selected_supplier_label = (
+            Supplier.objects.filter(pk=int(selected_supplier))
+            .values_list("name", flat=True)
+            .first()
+            or ""
+        )
+    filters_active = bool(selected_status or selected_supplier)
+    filter_presets = [
+        {"label": "All Orders", "query": "", "active": not filters_active},
+        {"label": "Drafts", "query": f"status={Order.Status.DRAFT}", "active": selected_status == Order.Status.DRAFT and not selected_supplier},
+        {"label": "Ordered", "query": f"status={Order.Status.ORDERED}", "active": selected_status == Order.Status.ORDERED and not selected_supplier},
+        {"label": "Pending Delivery", "query": f"status={Order.Status.PENDING_DELIVERY}", "active": selected_status == Order.Status.PENDING_DELIVERY and not selected_supplier},
+        {"label": "Delivered", "query": f"status={Order.Status.DELIVERED}", "active": selected_status == Order.Status.DELIVERED and not selected_supplier},
+    ]
+    context.update(
+        {
+            "filters_active": filters_active,
+            "active_filter_count": sum([bool(selected_status), bool(selected_supplier)]),
+            "selected_status_label": status_labels.get(selected_status, ""),
+            "selected_supplier_label": selected_supplier_label,
+            "selected_preset_label": next(
+                (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+                "",
+            ),
+            "filter_presets": filter_presets,
+        }
+    )
     return render(request, "orders/list.html", context)
 
 

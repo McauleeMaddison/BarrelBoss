@@ -35,6 +35,19 @@ def list_breakages(request):
     page_obj = paginate_collection(request, records_qs.order_by("-created_at"), per_page=12)
     records = list(page_obj.object_list)
     week_start = timezone.now() - timedelta(days=7)
+    issue_labels = dict(Breakage.IssueType.choices)
+    filters_active = bool(query or selected_issue)
+    filter_presets = [
+        {"label": "All Incidents", "query": "", "active": not filters_active},
+        *[
+            {
+                "label": label,
+                "query": f"issue={value}",
+                "active": selected_issue == value and not query,
+            }
+            for value, label in Breakage.IssueType.choices
+        ],
+    ]
 
     context = {
         "records": records,
@@ -46,6 +59,14 @@ def list_breakages(request):
         "issue_choices": Breakage.IssueType.choices,
         "selected_issue": selected_issue,
         "query": query,
+        "filters_active": filters_active,
+        "active_filter_count": sum([bool(query), bool(selected_issue)]),
+        "selected_issue_label": issue_labels.get(selected_issue, ""),
+        "selected_preset_label": next(
+            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+            "",
+        ),
+        "filter_presets": filter_presets,
     }
     return render(request, "breakages/list.html", context)
 

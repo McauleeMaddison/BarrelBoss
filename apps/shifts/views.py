@@ -48,6 +48,12 @@ def list_shifts(request):
 
     selected_staff = request.GET.get("staff", "")
     selected_range = request.GET.get("range", "upcoming")
+    range_choices = [
+        ("upcoming", "Upcoming"),
+        ("this_week", "This Week"),
+        ("all", "All"),
+        ("past", "Past"),
+    ]
 
     visible_qs = Shift.objects.select_related("staff", "created_by")
     if not is_management(request.user):
@@ -111,12 +117,7 @@ def list_shifts(request):
         "pagination_query": build_query_string(request),
         "selected_staff": selected_staff,
         "selected_range": selected_range,
-        "range_choices": [
-            ("upcoming", "Upcoming"),
-            ("this_week", "This Week"),
-            ("all", "All"),
-            ("past", "Past"),
-        ],
+        "range_choices": range_choices,
         "team_members": User.objects.filter(staff_profile__is_active=True).order_by("username"),
         "total_shifts": visible_qs.count(),
         "hours_this_week": _sum_hours(
@@ -131,7 +132,55 @@ def list_shifts(request):
         "upcoming_shift_count": visible_qs.filter(shift_date__gte=today).count(),
         "today": today,
         "next_shift": next_shift,
+        "filters_active": bool(
+            (is_management(request.user) and selected_staff)
+            or selected_range != "upcoming"
+        ),
+        "active_filter_count": sum(
+            [
+                bool(selected_staff) if is_management(request.user) else 0,
+                selected_range != "upcoming",
+            ]
+        ),
+        "selected_staff_label": (
+            User.objects.filter(pk=int(selected_staff)).values_list("username", flat=True).first()
+            if selected_staff.isdigit()
+            else ""
+        ),
+        "selected_range_label": dict(range_choices).get(selected_range, "Upcoming")
+        if selected_range != "upcoming"
+        else "",
+        "filter_presets": [
+            {
+                "label": "Upcoming",
+                "query": "range=upcoming",
+                "active": selected_range == "upcoming" and not selected_staff,
+            },
+            {
+                "label": "This Week",
+                "query": "range=this_week",
+                "active": selected_range == "this_week" and not selected_staff,
+            },
+            {
+                "label": "All Shifts",
+                "query": "range=all",
+                "active": selected_range == "all" and not selected_staff,
+            },
+            {
+                "label": "Past",
+                "query": "range=past",
+                "active": selected_range == "past" and not selected_staff,
+            },
+        ],
     }
+    context["selected_preset_label"] = next(
+        (
+            preset["label"]
+            for preset in context["filter_presets"]
+            if preset["active"] and preset["query"] != "range=upcoming"
+        ),
+        "",
+    )
     return render(request, "shifts/list.html", context)
 
 

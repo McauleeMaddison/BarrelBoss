@@ -3063,6 +3063,7 @@ h4 {
     position: relative;
     min-height: 100dvh;
     overflow-x: clip;
+    scroll-padding-top: 1rem;
 }
 
 .app-shell[data-theme="dark"] {
@@ -3224,11 +3225,26 @@ h4 {
 }
 
 .app-shell .page-shell {
+    position: relative;
     display: grid;
     gap: 1rem;
 }
 
+.app-shell .page-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 13rem;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 12% 12%, rgba(152, 99, 29, 0.08), transparent 42%),
+        radial-gradient(circle at 88% 8%, rgba(28, 124, 110, 0.06), transparent 34%);
+    opacity: 0.8;
+}
+
 .app-shell .page-shell > section {
+    position: relative;
+    z-index: 1;
     margin: 0;
 }
 
@@ -3603,6 +3619,10 @@ h4 {
     gap: 0.55rem;
 }
 
+.app-shell .report-toolbar {
+    align-items: flex-end;
+}
+
 .app-shell .dashboard-panel-select-label {
     position: absolute;
     width: 1px;
@@ -3657,11 +3677,37 @@ h4 {
 }
 
 .app-shell .metric-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
     min-height: 0;
     padding: 0.98rem 1rem;
     border: 1px solid var(--panel-border);
     border-top: 4px solid var(--panel-border);
     border-radius: 1rem;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.app-shell .metric-card::after {
+    content: "";
+    position: absolute;
+    right: -2.4rem;
+    bottom: -3.2rem;
+    width: 9rem;
+    height: 9rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(123, 136, 153, 0.12), rgba(123, 136, 153, 0));
+    pointer-events: none;
+}
+
+.app-shell .metric-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.app-shell .metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-strong);
 }
 
 .app-shell .metric-card-head {
@@ -3747,16 +3793,49 @@ h4 {
     border-top-color: var(--danger);
 }
 
+.app-shell .metric-card.alert::after {
+    background: radial-gradient(circle, rgba(214, 98, 119, 0.16), rgba(214, 98, 119, 0));
+}
+
 .app-shell .metric-card.warn {
     border-top-color: var(--accent);
+}
+
+.app-shell .metric-card.warn::after {
+    background: radial-gradient(circle, rgba(213, 167, 104, 0.18), rgba(213, 167, 104, 0));
 }
 
 .app-shell .metric-card.ok {
     border-top-color: var(--ok);
 }
 
+.app-shell .metric-card.ok::after {
+    background: radial-gradient(circle, rgba(103, 175, 149, 0.16), rgba(103, 175, 149, 0));
+}
+
 .app-shell .metric-card.neutral {
     border-top-color: #7b8899;
+}
+
+.app-shell .metric-card.neutral::after {
+    background: radial-gradient(circle, rgba(123, 136, 153, 0.14), rgba(123, 136, 153, 0));
+}
+
+.app-shell .metric-chart-block {
+    padding: 0.55rem 0.62rem;
+    border: 1px solid var(--panel-border);
+    border-radius: 0.92rem;
+    background: linear-gradient(180deg, var(--surface-1), rgba(255, 255, 255, 0));
+}
+
+.app-shell[data-theme="dark"] .metric-chart-block {
+    background: linear-gradient(180deg, var(--surface-1), rgba(19, 28, 40, 0));
+}
+
+.app-shell .metric-actions {
+    margin-top: 0.18rem;
+    padding-top: 0.68rem;
+    border-top: 1px solid rgba(123, 136, 153, 0.16);
 }
 
 .app-shell .hero-signal-bar {
@@ -3766,10 +3845,35 @@ h4 {
 }
 
 .app-shell .hero-signal {
+    position: relative;
+    overflow: hidden;
     border: 1px solid var(--panel-border);
     border-radius: 0.96rem;
     background: var(--surface-1);
     padding: 0.82rem 0.88rem;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.app-shell .hero-signal::after {
+    content: "";
+    position: absolute;
+    inset: auto -20% -55%;
+    height: 70%;
+    background: radial-gradient(circle, rgba(123, 136, 153, 0.16), rgba(123, 136, 153, 0));
+    pointer-events: none;
+}
+
+.app-shell .hero-signal > * {
+    position: relative;
+    z-index: 1;
+}
+
+.app-shell .hero-signal:hover,
+.app-shell .attention-card:hover,
+.app-shell .action-tile:hover,
+.dashboard-page .dashboard-hero-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
 }
 
 .app-shell .hero-signal strong {
@@ -3793,10 +3897,29 @@ h4 {
     border-color: rgba(103, 175, 149, 0.28);
 }
 
+.app-shell .hero-signal-neutral {
+    border-color: rgba(123, 136, 153, 0.24);
+}
+
+.app-shell .hero-signal-alert::after {
+    background: radial-gradient(circle, rgba(214, 98, 119, 0.16), rgba(214, 98, 119, 0));
+}
+
+.app-shell .hero-signal-warn::after {
+    background: radial-gradient(circle, rgba(213, 167, 104, 0.18), rgba(213, 167, 104, 0));
+}
+
+.app-shell .hero-signal-ok::after {
+    background: radial-gradient(circle, rgba(103, 175, 149, 0.16), rgba(103, 175, 149, 0));
+}
+
 .app-shell .attention-card {
+    position: relative;
+    overflow: hidden;
     border: 1px solid var(--panel-border);
     border-radius: 0.96rem;
     background: var(--surface-1);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .app-shell .attention-card-head strong {
@@ -3839,6 +3962,17 @@ h4 {
     font-weight: 700;
 }
 
+.app-shell .filter-summary-bar {
+    border: 1px solid var(--panel-border);
+    border-radius: 0.96rem;
+    padding: 0.7rem 0.78rem;
+    background: linear-gradient(180deg, var(--surface-1), rgba(255, 255, 255, 0));
+}
+
+.app-shell[data-theme="dark"] .filter-summary-bar {
+    background: linear-gradient(180deg, var(--surface-1), rgba(19, 28, 40, 0));
+}
+
 .app-shell .filter-chip-muted {
     color: var(--muted);
 }
@@ -3866,6 +4000,7 @@ h4 {
     background: var(--panel);
     text-decoration: none;
     color: var(--text);
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .app-shell .action-tile:hover {
@@ -4001,6 +4136,7 @@ h4 {
     border: 1px solid var(--panel-border);
     border-radius: 1rem;
     background: rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .app-shell[data-theme="dark"] .stock-filter-form,
@@ -4009,6 +4145,7 @@ h4 {
 .app-shell[data-theme="dark"] .detail-panel,
 .app-shell[data-theme="dark"] .stock-form-panel {
     background: rgba(19, 28, 40, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .app-shell .stock-filter-form,

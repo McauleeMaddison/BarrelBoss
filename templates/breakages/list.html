@@ -13,6 +13,23 @@
     <p class="portal-hero-copy">
         Record incidents quickly, review patterns, and keep avoidable loss visible across the floor.
     </p>
+    <div class="hero-signal-bar">
+        <article class="hero-signal hero-signal-neutral">
+            <span class="hero-signal-label">Total Records</span>
+            <strong>{{ record_count }} incident{{ record_count|pluralize }}</strong>
+            <small>Full visible incident history inside the current search and issue-type scope.</small>
+        </article>
+        <article class="hero-signal hero-signal-alert">
+            <span class="hero-signal-label">Reported 7 Days</span>
+            <strong>{{ week_count }} recent</strong>
+            <small>Fresh incident flow from the last 7 days that may indicate an active floor issue.</small>
+        </article>
+        <article class="hero-signal hero-signal-warn">
+            <span class="hero-signal-label">Search Mode</span>
+            <strong>{% if filters_active %}Focused view{% else %}Full log{% endif %}</strong>
+            <small>{% if filters_active %}Filters are narrowing the incident queue for faster review.{% else %}Use presets or filters to isolate a specific incident pattern quickly.{% endif %}</small>
+        </article>
+    </div>
     <div class="report-toolbar">
         <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
         <div class="dashboard-controls">
@@ -24,39 +41,89 @@
 
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Total Records</h3>
-        <p>{{ record_count }}</p>
+        <div class="metric-card-head">
+            <h3>Total Records</h3>
+            <span class="metric-state metric-state-neutral">Log size</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ record_count }}</p>
+            <span class="metric-summary">Every breakage or waste entry in the currently visible incident history.</span>
+            <span class="metric-note">Useful for understanding review volume before diving into issue type patterns.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="#breakageTable">Open log</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card alert">
-        <h3>Reported (7 Days)</h3>
-        <p>{{ week_count }}</p>
+        <div class="metric-card-head">
+            <h3>Reported (7 Days)</h3>
+            <span class="metric-state metric-state-{% if week_count %}alert{% else %}ok{% endif %}">
+                {% if week_count %}Active flow{% else %}Quiet week{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ week_count }}</p>
+            <span class="metric-summary">Incidents logged in the last 7 days across the entire record set.</span>
+            <span class="metric-note">Best for spotting whether loss activity is building into a current operational problem.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="{% url 'breakages:add' %}">Log incident</a>
+            </div>
+        </div>
     </article>
 </section>
 
-<section class="panel">
+<section class="panel" id="breakageTable">
     <div class="panel-header">
         <h3>Breakage Log</h3>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="q">Search</label>
-            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'breakages:list' %}{% endif %}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% if selected_issue_label %}<span class="filter-chip">{{ selected_issue_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">All incident records in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <div class="filter-field">
-            <label for="issue">Issue Type</label>
-            <select id="issue" name="issue">
-                <option value="">All Types</option>
-                {% for value, label in issue_choices %}
-                <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+            </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'breakages:list' %}">Reset</a>
-    </form>
+            <div class="filter-field">
+                <label for="issue">Issue Type</label>
+                <select id="issue" name="issue">
+                    <option value="">All Types</option>
+                    {% for value, label in issue_choices %}
+                    <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'breakages:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if records %}
     <div class="report-table-wrap">

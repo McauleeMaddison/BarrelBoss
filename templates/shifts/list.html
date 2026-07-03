@@ -17,6 +17,23 @@
         Track your upcoming shifts, worked-hour totals, and this week’s schedule at a glance.
         {% endif %}
     </p>
+    <div class="hero-signal-bar">
+        <article class="hero-signal hero-signal-ok">
+            <span class="hero-signal-label">Hours This Week</span>
+            <strong>{{ hours_this_week|floatformat:2 }} hours</strong>
+            <small>Scheduled coverage for the current Monday to Sunday operating window.</small>
+        </article>
+        <article class="hero-signal hero-signal-warn">
+            <span class="hero-signal-label">Upcoming Shifts</span>
+            <strong>{{ upcoming_shift_count }} scheduled</strong>
+            <small>Visible future shifts still coming up from today onward in this current scope.</small>
+        </article>
+        <article class="hero-signal hero-signal-neutral">
+            <span class="hero-signal-label">Week Window</span>
+            <strong>{{ week_window_label }}</strong>
+            <small>Use the weekly chart and planner below to inspect load and handover balance.</small>
+        </article>
+    </div>
     <div class="report-toolbar">
         {% if is_management %}
         <a class="action-btn action-link" href="{% url 'shifts:add' %}">Schedule Shift</a>
@@ -31,29 +48,56 @@
 
 <section class="metric-grid">
     <article class="metric-card ok shift-metric-card">
-        <h3>Hours This Week</h3>
-        <p>{{ hours_this_week|floatformat:2 }}</p>
-        <span class="metric-note">Mon-Sun scheduled hours</span>
+        <div class="metric-card-head">
+            <h3>Hours This Week</h3>
+            <span class="metric-state metric-state-ok">Current week</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ hours_this_week|floatformat:2 }}</p>
+            <span class="metric-summary">Monday to Sunday scheduled hours across the currently visible shift scope.</span>
+            <span class="metric-note">Best for seeing immediate labor commitment rather than full month accumulation.</span>
+        </div>
     </article>
     <article class="metric-card warn shift-metric-card">
-        <h3>Hours This Month</h3>
-        <p>{{ hours_this_month|floatformat:2 }}</p>
-        <span class="metric-note">Current calendar month</span>
+        <div class="metric-card-head">
+            <h3>Hours This Month</h3>
+            <span class="metric-state metric-state-warn">Monthly load</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ hours_this_month|floatformat:2 }}</p>
+            <span class="metric-summary">Scheduled hours already booked in the current calendar month.</span>
+            <span class="metric-note">Useful for spotting whether the rota is front-loaded or still light later in the period.</span>
+        </div>
     </article>
     <article class="metric-card neutral shift-metric-card">
-        <h3>Upcoming Shifts</h3>
-        <p>{{ upcoming_shift_count }}</p>
-        <span class="metric-note">Total shifts on or after today</span>
+        <div class="metric-card-head">
+            <h3>Upcoming Shifts</h3>
+            <span class="metric-state metric-state-neutral">Forward view</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ upcoming_shift_count }}</p>
+            <span class="metric-summary">Total shifts on or after today in the current visible team or personal range.</span>
+            <span class="metric-note">This is the best quick count for remaining schedule pressure still ahead.</span>
+        </div>
     </article>
     <article class="metric-card alert shift-metric-card">
-        <h3>Next Shift</h3>
-        {% if next_shift %}
-        <p>{{ next_shift.shift_date|date:"D j M" }}</p>
-        <span class="metric-note">{{ next_shift.start_time|time:"H:i" }} - {{ next_shift.end_time|time:"H:i" }}</span>
-        {% else %}
-        <p>-</p>
-        <span class="metric-note">No upcoming shifts</span>
-        {% endif %}
+        <div class="metric-card-head">
+            <h3>Next Shift</h3>
+            <span class="metric-state metric-state-{% if next_shift %}alert{% else %}neutral{% endif %}">
+                {% if next_shift %}Next up{% else %}Unscheduled{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            {% if next_shift %}
+            <p>{{ next_shift.shift_date|date:"D j M" }}</p>
+            <span class="metric-summary">{{ next_shift.start_time|time:"H:i" }} - {{ next_shift.end_time|time:"H:i" }}</span>
+            <span class="metric-note">Keep task and handover work clear ahead of this next service window.</span>
+            {% else %}
+            <p>-</p>
+            <span class="metric-summary">No upcoming shifts are scheduled in this current view.</span>
+            <span class="metric-note">If this is unexpected, open the planner and widen the selected date range.</span>
+            {% endif %}
+        </div>
     </article>
 </section>
 
@@ -110,31 +154,59 @@
         </div>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        {% if is_management %}
-        <div class="filter-field">
-            <label for="staff">Staff</label>
-            <select id="staff" name="staff">
-                <option value="">All Staff</option>
-                {% for team_member in team_members %}
-                <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
-                {% endfor %}
-            </select>
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+            {% endfor %}
         </div>
-        {% endif %}
-
-        <div class="filter-field">
-            <label for="range">Range</label>
-            <select id="range" name="range">
-                {% for value, label in range_choices %}
-                <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% if selected_staff_label %}<span class="filter-chip">{{ selected_staff_label }}</span>{% endif %}
+                {% if selected_range_label %}<span class="filter-chip">{{ selected_range_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">Upcoming shifts in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>
-    </form>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            {% if is_management %}
+            <div class="filter-field">
+                <label for="staff">Staff</label>
+                <select id="staff" name="staff">
+                    <option value="">All Staff</option>
+                    {% for team_member in team_members %}
+                    <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="filter-field">
+                <label for="range">Range</label>
+                <select id="range" name="range">
+                    {% for value, label in range_choices %}
+                    <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if shifts %}
     <div class="report-table-wrap">

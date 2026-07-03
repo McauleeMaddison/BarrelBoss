@@ -130,6 +130,16 @@ def list_items(request):
         return response
 
     page_obj = paginate_collection(request, items, per_page=12)
+    category_labels = dict(StockItem.Category.choices)
+    urgency_label_map = dict(urgency_choices)
+    filters_active = bool(query or selected_category or selected_urgency != "all")
+    filter_presets = [
+        {"label": "All Stock", "query": "", "active": not filters_active},
+        {"label": "Critical Risk", "query": "urgency=critical", "active": selected_urgency == "critical" and not query and not selected_category},
+        {"label": "Low Stock", "query": "urgency=low", "active": selected_urgency == "low" and not query and not selected_category},
+        {"label": "Watch List", "query": "urgency=watch", "active": selected_urgency == "watch" and not query and not selected_category},
+        {"label": "Healthy", "query": "urgency=healthy", "active": selected_urgency == "healthy" and not query and not selected_category},
+    ]
 
     context = {
         "items": list(page_obj.object_list),
@@ -151,6 +161,21 @@ def list_items(request):
         "selected_urgency": selected_urgency,
         "urgency_choices": urgency_choices,
         "query": query,
+        "filters_active": filters_active,
+        "active_filter_count": sum(
+            [
+                bool(query),
+                bool(selected_category),
+                selected_urgency != "all",
+            ]
+        ),
+        "selected_category_label": category_labels.get(selected_category, ""),
+        "selected_urgency_label": urgency_label_map.get(selected_urgency, "") if selected_urgency != "all" else "",
+        "selected_preset_label": next(
+            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+            "",
+        ),
+        "filter_presets": filter_presets,
     }
     return render(request, "stock/list.html", context)
 

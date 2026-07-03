@@ -13,6 +13,23 @@
     <p class="portal-hero-copy">
         Prioritize low lines, close quantity gaps, and keep replenishment cycles reliable.
     </p>
+    <div class="hero-signal-bar">
+        <article class="hero-signal hero-signal-alert">
+            <span class="hero-signal-label">Critical Risk</span>
+            <strong>{{ critical_stock_count }} line{{ critical_stock_count|pluralize }}</strong>
+            <small>Out of stock or severely below minimum and likely to block service first.</small>
+        </article>
+        <article class="hero-signal hero-signal-warn">
+            <span class="hero-signal-label">Restock Gap</span>
+            <strong>{{ restock_gap_units }} unit{{ restock_gap_units|pluralize }}</strong>
+            <small>Quantity still needed to bring low and critical lines back to minimum levels.</small>
+        </article>
+        <article class="hero-signal hero-signal-ok">
+            <span class="hero-signal-label">Healthy Buffer</span>
+            <strong>{{ healthy_stock_count }} stable line{{ healthy_stock_count|pluralize }}</strong>
+            <small>Items already sitting above warning bands and not needing immediate review.</small>
+        </article>
+    </div>
     <div class="report-toolbar">
         {% if is_management %}
         <div class="settings-actions">
@@ -33,38 +50,97 @@
 
 <section class="metric-grid">
     <article class="metric-card neutral">
-        <h3>Total Active Items</h3>
-        <p>{{ total_items }}</p>
-        <span class="metric-note">{{ display_item_count }} shown in current filter</span>
+        <div class="metric-card-head">
+            <h3>Total Active Items</h3>
+            <span class="metric-state metric-state-neutral">Catalog scope</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ total_items }}</p>
+            <span class="metric-summary">{{ display_item_count }} item(s) shown in the current working filter.</span>
+            <span class="metric-note">Use this to confirm how wide or narrow the visible inventory scope is.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="#inventoryTable">Open inventory</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card alert">
-        <h3>Low Stock Items</h3>
-        <p>{{ low_stock_count }}</p>
-        <span class="metric-note">Critical + low urgency lines</span>
+        <div class="metric-card-head">
+            <h3>Low Stock Items</h3>
+            <span class="metric-state metric-state-{% if low_stock_count %}alert{% else %}ok{% endif %}">
+                {% if low_stock_count %}Action now{% else %}Clear{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ low_stock_count }}</p>
+            <span class="metric-summary">Critical and low urgency lines combined into one live replenishment queue.</span>
+            <span class="metric-note">Review these before quieter watch-list items so service gaps do not compound.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?urgency=critical">Critical</a>
+                <a class="table-action metric-action-link" href="?urgency=low">Low stock</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card alert">
-        <h3>Critical Risk</h3>
-        <p>{{ critical_stock_count }}</p>
-        <span class="metric-note">Out of stock or severely below minimum</span>
+        <div class="metric-card-head">
+            <h3>Critical Risk</h3>
+            <span class="metric-state metric-state-{% if critical_stock_count %}alert{% else %}ok{% endif %}">
+                {% if critical_stock_count %}Immediate{% else %}Stable{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ critical_stock_count }}</p>
+            <span class="metric-summary">Lines that are already empty or deeply below their minimum threshold.</span>
+            <span class="metric-note">This is the first queue to clear when you are prioritizing urgent replenishment work.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?urgency=critical">Open critical</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card warn">
-        <h3>Watch List</h3>
-        <p>{{ watch_stock_count }}</p>
-        <span class="metric-note">Buffer dropping near minimum threshold</span>
+        <div class="metric-card-head">
+            <h3>Watch List</h3>
+            <span class="metric-state metric-state-warn">Monitor</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ watch_stock_count }}</p>
+            <span class="metric-summary">Lines with shrinking buffers that are moving toward low-stock territory.</span>
+            <span class="metric-note">This is the preventative queue that keeps tomorrow’s risk from becoming today’s emergency.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?urgency=watch">Open watch list</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card ok">
-        <h3>Healthy Items</h3>
-        <p>{{ healthy_stock_count }}</p>
-        <span class="metric-note">Stock levels above warning bands</span>
+        <div class="metric-card-head">
+            <h3>Healthy Items</h3>
+            <span class="metric-state metric-state-ok">In buffer</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ healthy_stock_count }}</p>
+            <span class="metric-summary">Inventory lines sitting above warning bands and not requiring immediate attention.</span>
+            <span class="metric-note">A strong healthy set keeps the urgent queues narrow and easier to manage.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?urgency=healthy">Review healthy</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card neutral">
-        <h3>Estimated Stock Value</h3>
-        <p>£{{ stock_value_estimate|floatformat:2 }}</p>
-        <span class="metric-note">Quantity × cost (active filtered inventory)</span>
+        <div class="metric-card-head">
+            <h3>Estimated Stock Value</h3>
+            <span class="metric-state metric-state-neutral">Filtered view</span>
+        </div>
+        <div class="metric-card-body">
+            <p>£{{ stock_value_estimate|floatformat:2 }}</p>
+            <span class="metric-summary">Quantity multiplied by unit cost across the active filtered inventory view.</span>
+            <span class="metric-note">Useful for sensing how much working capital is tied up in the visible stock position.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
+            </div>
+        </div>
     </article>
 </section>
 
-<section class="panel">
+<section class="panel" id="inventoryTable">
     <div class="panel-header">
         <div>
             <h3>Current Inventory</h3>
@@ -72,31 +148,60 @@
         </div>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="q">Search</label>
-            <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'stock:list' %}{% endif %}">{{ preset.label }}</a>
+            {% endfor %}
         </div>
-        <div class="filter-field">
-            <label for="category">Category</label>
-            <select id="category" name="category">
-                <option value="">All Categories</option>
-                {% for value, label in category_choices %}
-                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% if selected_category_label %}<span class="filter-chip">{{ selected_category_label }}</span>{% endif %}
+                {% if selected_urgency_label %}<span class="filter-chip">{{ selected_urgency_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">All active inventory in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
-        <div class="filter-field">
-            <label for="urgency">Urgency</label>
-            <select id="urgency" name="urgency">
-                {% for value, label in urgency_choices %}
-                <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button class="action-btn" type="submit">Apply Filters</button>
-        <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
-    </form>
+
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
+            </div>
+            <div class="filter-field">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                    <option value="">All Categories</option>
+                    {% for value, label in category_choices %}
+                    <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="urgency">Urgency</label>
+                <select id="urgency" name="urgency">
+                    {% for value, label in urgency_choices %}
+                    <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="action-btn" type="submit">Apply Filters</button>
+            <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if items %}
     <div class="report-table-wrap">

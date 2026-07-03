@@ -17,6 +17,23 @@
         Submit requests, monitor status changes, and track incoming deliveries.
         {% endif %}
     </p>
+    <div class="hero-signal-bar">
+        <article class="hero-signal hero-signal-warn">
+            <span class="hero-signal-label">{% if management_view %}Awaiting Approval{% else %}Draft Requests{% endif %}</span>
+            <strong>{{ awaiting_approval_count }} in queue</strong>
+            <small>{{ stale_draft_count }} stale draft(s) have been sitting for more than 48 hours.</small>
+        </article>
+        <article class="hero-signal hero-signal-alert">
+            <span class="hero-signal-label">Overdue Deliveries</span>
+            <strong>{{ overdue_delivery_count }} delayed order{{ overdue_delivery_count|pluralize }}</strong>
+            <small>Expected delivery dates have passed without the order reaching delivered status.</small>
+        </article>
+        <article class="hero-signal hero-signal-ok">
+            <span class="hero-signal-label">Delivered 7 Days</span>
+            <strong>{{ delivered_recent_count }} closed out</strong>
+            <small>Completed deliveries provide the best signal that the ordering pipeline is moving cleanly.</small>
+        </article>
+    </div>
     <div class="report-toolbar">
         <a class="action-btn action-link" href="{% url 'orders:add' %}">{% if management_view %}Create Order{% else %}Create Request{% endif %}</a>
         <div class="dashboard-controls">
@@ -29,33 +46,84 @@
 
 <section class="metric-grid">
     <article class="metric-card warn">
-        <h3>{% if management_view %}Awaiting Approval{% else %}My Draft Requests{% endif %}</h3>
-        <p>{{ awaiting_approval_count }}</p>
-        <span class="metric-note">{{ stale_draft_count }} stale draft(s) over 48h</span>
+        <div class="metric-card-head">
+            <h3>{% if management_view %}Awaiting Approval{% else %}My Draft Requests{% endif %}</h3>
+            <span class="metric-state metric-state-{% if awaiting_approval_count %}warn{% else %}ok{% endif %}">
+                {% if awaiting_approval_count %}Review queue{% else %}Clear{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ awaiting_approval_count }}</p>
+            <span class="metric-summary">{{ stale_draft_count }} stale draft(s) over 48 hours need a decision or a cleanup.</span>
+            <span class="metric-note">This is the fastest way to see whether requests are sticking before they become delivery delays.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?status=DRAFT">Open drafts</a>
+                <a class="table-action metric-action-link" href="#ordersTable">Review queue</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card ok">
-        <h3>Open Orders</h3>
-        <p>{{ open_order_count }}</p>
-        <span class="metric-note">Draft + ordered + pending delivery</span>
+        <div class="metric-card-head">
+            <h3>Open Orders</h3>
+            <span class="metric-state metric-state-ok">Operational</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ open_order_count }}</p>
+            <span class="metric-summary">Draft, ordered, and pending delivery records combined into one live queue.</span>
+            <span class="metric-note">Use this as the main workload signal for procurement activity still moving through the system.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="#ordersTable">Open pipeline</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card neutral">
-        <h3>Pending Delivery</h3>
-        <p>{{ pending_count }}</p>
-        <span class="metric-note">Orders currently in transit</span>
+        <div class="metric-card-head">
+            <h3>Pending Delivery</h3>
+            <span class="metric-state metric-state-neutral">In transit</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ pending_count }}</p>
+            <span class="metric-summary">Orders that have been placed and are now expected to land into stock.</span>
+            <span class="metric-note">This is the queue to watch when shelves are tight but replenishment has already been committed.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?status=PENDING_DELIVERY">Track deliveries</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card alert">
-        <h3>Overdue Deliveries</h3>
-        <p>{{ overdue_delivery_count }}</p>
-        <span class="metric-note">Expected date passed without delivery</span>
+        <div class="metric-card-head">
+            <h3>Overdue Deliveries</h3>
+            <span class="metric-state metric-state-{% if overdue_delivery_count %}alert{% else %}ok{% endif %}">
+                {% if overdue_delivery_count %}Escalate{% else %}Clear{% endif %}
+            </span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ overdue_delivery_count }}</p>
+            <span class="metric-summary">Expected delivery dates have already passed without the order being closed as delivered.</span>
+            <span class="metric-note">These are usually the highest-friction orders because they can block both service and follow-up communication.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="?status=ORDERED">Ordered</a>
+                <a class="table-action metric-action-link" href="?status=PENDING_DELIVERY">Pending</a>
+            </div>
+        </div>
     </article>
     <article class="metric-card ok">
-        <h3>Units In View</h3>
-        <p>{{ total_units_in_view }}</p>
-        <span class="metric-note">{{ order_count }} order(s) in current filter</span>
+        <div class="metric-card-head">
+            <h3>Units In View</h3>
+            <span class="metric-state metric-state-ok">Filtered total</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ total_units_in_view }}</p>
+            <span class="metric-summary">{{ order_count }} order(s) are included in the current visible filter scope.</span>
+            <span class="metric-note">Helpful for understanding volume, not just count, when the queue contains larger supplier requests.</span>
+            <div class="metric-actions">
+                <a class="table-action metric-action-link" href="{% url 'orders:add' %}">{% if management_view %}Create order{% else %}New request{% endif %}</a>
+            </div>
+        </div>
     </article>
 </section>
 
-<section class="panel">
+<section class="panel" id="ordersTable">
     <div class="panel-header">
         <div>
             <h3>{% if management_view %}Management Order Queue{% else %}My Stock Order Requests{% endif %}</h3>
@@ -63,30 +131,58 @@
         </div>
     </div>
 
-    <form method="get" class="stock-filter-form">
-        <div class="filter-field">
-            <label for="status">Status</label>
-            <select id="status" name="status">
-                <option value="">All Statuses</option>
-                {% for value, label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'orders:list' %}{% endif %}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% if selected_status_label %}<span class="filter-chip">{{ selected_status_label }}</span>{% endif %}
+                {% if selected_supplier_label %}<span class="filter-chip">{{ selected_supplier_label }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">All visible order records in view</span>
+                {% endif %}
+            </div>
+            <button
+                class="table-action filter-toggle-btn"
+                type="button"
+                data-filter-toggle
+                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+            >
+                Filters
+            </button>
         </div>
 
-        <div class="filter-field">
-            <label for="supplier">Supplier</label>
-            <select id="supplier" name="supplier">
-                <option value="">All Suppliers</option>
-                {% for supplier in suppliers %}
-                <option value="{{ supplier.id }}" {% if selected_supplier == supplier.id|stringformat:'s' %}selected{% endif %}>{{ supplier.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <form method="get" class="stock-filter-form" data-filter-form>
+            <div class="filter-field">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <button class="action-btn" type="submit">Apply</button>
-        <a class="table-action" href="{% url 'orders:list' %}">Reset</a>
-    </form>
+            <div class="filter-field">
+                <label for="supplier">Supplier</label>
+                <select id="supplier" name="supplier">
+                    <option value="">All Suppliers</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}" {% if selected_supplier == supplier.id|stringformat:'s' %}selected{% endif %}>{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'orders:list' %}">Reset</a>
+        </form>
+    </div>
 
     {% if orders %}
     <div class="report-table-wrap">
