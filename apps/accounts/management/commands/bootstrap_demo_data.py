@@ -10,6 +10,7 @@ from django.utils import timezone
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
+from apps.sales.models import SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -52,6 +53,9 @@ class Command(BaseCommand):
         ).delete()
         deleted["shifts"], _ = Shift.objects.filter(notes__contains=self.demo_tag).delete()
         deleted["breakages"], _ = Breakage.objects.filter(
+            notes__contains=self.demo_tag
+        ).delete()
+        deleted["sales"], _ = SalesSnapshot.objects.filter(
             notes__contains=self.demo_tag
         ).delete()
         deleted["stock"], _ = StockItem.objects.filter(notes__contains=self.demo_tag).delete()
@@ -367,6 +371,174 @@ class Command(BaseCommand):
             )
         return breakages
 
+    def _create_sales_snapshots(self, users, today):
+        manager_user = users["manager"]
+        snapshot_rows = [
+            {
+                "business_date": today - timedelta(days=6),
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "2510.00",
+                "net_sales": "2435.00",
+                "discounts": "35.00",
+                "refunds": "40.00",
+                "tips": "282.00",
+                "transactions": 188,
+                "covers": 152,
+                "cash_sales": "320.00",
+                "card_sales": "1915.00",
+                "digital_sales": "200.00",
+                "beer_sales": "1090.00",
+                "spirits_sales": "520.00",
+                "wine_sales": "240.00",
+                "soft_sales": "210.00",
+                "food_sales": "265.00",
+                "other_sales": "110.00",
+            },
+            {
+                "business_date": today - timedelta(days=5),
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "2310.00",
+                "net_sales": "2255.00",
+                "discounts": "25.00",
+                "refunds": "30.00",
+                "tips": "250.00",
+                "transactions": 176,
+                "covers": 144,
+                "cash_sales": "300.00",
+                "card_sales": "1775.00",
+                "digital_sales": "180.00",
+                "beer_sales": "980.00",
+                "spirits_sales": "460.00",
+                "wine_sales": "225.00",
+                "soft_sales": "205.00",
+                "food_sales": "255.00",
+                "other_sales": "130.00",
+            },
+            {
+                "business_date": today - timedelta(days=4),
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "2765.00",
+                "net_sales": "2680.00",
+                "discounts": "40.00",
+                "refunds": "45.00",
+                "tips": "325.00",
+                "transactions": 204,
+                "covers": 168,
+                "cash_sales": "365.00",
+                "card_sales": "2095.00",
+                "digital_sales": "220.00",
+                "beer_sales": "1215.00",
+                "spirits_sales": "590.00",
+                "wine_sales": "260.00",
+                "soft_sales": "220.00",
+                "food_sales": "285.00",
+                "other_sales": "110.00",
+            },
+            {
+                "business_date": today - timedelta(days=3),
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "2895.00",
+                "net_sales": "2790.00",
+                "discounts": "45.00",
+                "refunds": "60.00",
+                "tips": "338.00",
+                "transactions": 212,
+                "covers": 174,
+                "cash_sales": "380.00",
+                "card_sales": "2170.00",
+                "digital_sales": "240.00",
+                "beer_sales": "1245.00",
+                "spirits_sales": "610.00",
+                "wine_sales": "275.00",
+                "soft_sales": "235.00",
+                "food_sales": "300.00",
+                "other_sales": "125.00",
+            },
+            {
+                "business_date": today - timedelta(days=2),
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "3120.00",
+                "net_sales": "3010.00",
+                "discounts": "55.00",
+                "refunds": "55.00",
+                "tips": "372.00",
+                "transactions": 228,
+                "covers": 186,
+                "cash_sales": "410.00",
+                "card_sales": "2340.00",
+                "digital_sales": "260.00",
+                "beer_sales": "1360.00",
+                "spirits_sales": "655.00",
+                "wine_sales": "290.00",
+                "soft_sales": "245.00",
+                "food_sales": "330.00",
+                "other_sales": "130.00",
+            },
+            {
+                "business_date": today - timedelta(days=1),
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "3285.00",
+                "net_sales": "3185.00",
+                "discounts": "50.00",
+                "refunds": "50.00",
+                "tips": "395.00",
+                "transactions": 236,
+                "covers": 192,
+                "cash_sales": "430.00",
+                "card_sales": "2475.00",
+                "digital_sales": "280.00",
+                "beer_sales": "1430.00",
+                "spirits_sales": "695.00",
+                "wine_sales": "305.00",
+                "soft_sales": "255.00",
+                "food_sales": "355.00",
+                "other_sales": "145.00",
+            },
+            {
+                "business_date": today,
+                "source": SalesSnapshot.Source.TOAST,
+                "sync_mode": SalesSnapshot.SyncMode.LIVE,
+                "gross_sales": "3410.00",
+                "net_sales": "3305.00",
+                "discounts": "45.00",
+                "refunds": "60.00",
+                "tips": "402.00",
+                "transactions": 244,
+                "covers": 198,
+                "cash_sales": "445.00",
+                "card_sales": "2555.00",
+                "digital_sales": "305.00",
+                "beer_sales": "1485.00",
+                "spirits_sales": "710.00",
+                "wine_sales": "320.00",
+                "soft_sales": "270.00",
+                "food_sales": "365.00",
+                "other_sales": "155.00",
+            },
+        ]
+
+        snapshots = []
+        for row in snapshot_rows:
+            snapshot, _ = SalesSnapshot.objects.update_or_create(
+                location_name="Main Bar",
+                source=row["source"],
+                business_date=row["business_date"],
+                defaults={
+                    "external_reference": f"DEMO-{row['business_date']:%Y%m%d}",
+                    "uploaded_by": manager_user,
+                    "notes": f"{self.demo_tag} Live sales sync showcase sample.",
+                    **row,
+                },
+            )
+            snapshots.append(snapshot)
+        return snapshots
+
     def handle(self, *args, **options):
         if not getattr(settings, "ALLOW_DEMO_ACCOUNT_BOOTSTRAP", False):
             raise CommandError(
@@ -387,6 +559,7 @@ class Command(BaseCommand):
                     "checklists": 0,
                     "shifts": 0,
                     "breakages": 0,
+                    "sales": 0,
                     "stock": 0,
                     "suppliers": 0,
                 }
@@ -399,6 +572,7 @@ class Command(BaseCommand):
             checklists = self._create_checklists(users, today)
             shifts = self._create_shifts(users, today)
             breakages = self._create_breakages(users)
+            sales_snapshots = self._create_sales_snapshots(users, today)
 
         self.stdout.write(self.style.SUCCESS("Demo preview dataset ready."))
         self.stdout.write(f" - suppliers: {len(suppliers)}")
@@ -407,6 +581,7 @@ class Command(BaseCommand):
         self.stdout.write(f" - checklists: {len(checklists)}")
         self.stdout.write(f" - shifts: {len(shifts)}")
         self.stdout.write(f" - breakages: {len(breakages)}")
+        self.stdout.write(f" - sales snapshots: {len(sales_snapshots)}")
         if not append_mode:
             self.stdout.write(
                 " - replaced existing demo records: "
@@ -414,6 +589,7 @@ class Command(BaseCommand):
                 f"checklists={deleted['checklists']}, "
                 f"shifts={deleted['shifts']}, "
                 f"breakages={deleted['breakages']}, "
+                f"sales={deleted['sales']}, "
                 f"stock={deleted['stock']}, "
                 f"suppliers={deleted['suppliers']}"
             )

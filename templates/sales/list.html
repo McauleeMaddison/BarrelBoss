@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales | BarrelBoss{% endblock %}
+{% block page_title %}Sales{% endblock %}
+
+{% block content %}
+<section class="panel portal-hero sales-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Sales Operations</p>
+        <span class="badge portal-badge">POS Control</span>
+    </div>
+    <h3 class="portal-hero-title">Live Revenue, Payment Mix, and Sync Health</h3>
+    <p class="portal-hero-copy">
+        Connect trading performance back into staffing, stock pressure, and the management dashboard with daily synced sales snapshots.
+    </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+    <div class="hero-signal-bar">
+        {% for signal in hero_signals %}
+        <article class="hero-signal hero-signal-{{ signal.tone }}">
+            <span class="hero-signal-label">{{ signal.label }}</span>
+            <strong>{{ signal.value }}</strong>
+            <small>{{ signal.copy }}</small>
+        </article>
+        {% endfor %}
+    </div>
+    <div class="report-toolbar">
+        <div class="settings-actions">
+            <a class="action-btn action-link" href="{% url 'sales:add' %}">Log Sales Snapshot</a>
+            <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
+        </div>
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">{{ snapshot_count }} synced day{{ snapshot_count|pluralize }}</span>
+            <span class="panel-header-meta">{{ selected_range_label }}</span>
+            {% if selected_source_label %}<span class="panel-header-meta">{{ selected_source_label }}</span>{% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="metric-grid">
+    {% for card in metric_cards %}
+    <article class="metric-card {{ card.tone }}">
+        <div class="metric-card-head">
+            <h3>{{ card.label }}</h3>
+            <span class="metric-state metric-state-{{ card.state_tone|default:card.tone }}">{{ card.state }}</span>
+        </div>
+        <div class="metric-card-body">
+            <p>{{ card.value }}</p>
+            <span class="metric-summary">{{ card.summary }}</span>
+            <span class="metric-note">{{ card.note }}</span>
+            {% if card.actions %}
+            <div class="metric-actions">
+                {% for action in card.actions %}
+                {% if action.href %}
+                <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                {% else %}
+                <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">{{ action.label }}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</section>
+
+<section class="overview-board">
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Category Revenue Mix</h3>
+                <p class="panel-subtitle">Use the mix to see where revenue is flowing and which service lines are running close to stock pressure.</p>
+            </div>
+            <span class="panel-header-meta">{{ selected_range_label }}</span>
+        </div>
+        <ul class="focus-list">
+            {% for item in category_mix %}
+            <li>
+                <div>
+                    <strong>{{ item.label }}</strong>
+                    <small>{{ item.meta }}</small>
+                </div>
+                <span class="badge">{{ item.value }} · {{ item.share }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </article>
+
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Payment and Sync Review</h3>
+                <p class="panel-subtitle">Reconcile tenders, keep the feed fresh, and watch the latest close-out quality.</p>
+            </div>
+            {% if latest_snapshot %}
+            <a class="table-action" href="{% url 'sales:edit' latest_snapshot.pk %}">Edit Latest</a>
+            {% endif %}
+        </div>
+        <ul class="focus-list">
+            {% for item in payment_breakdown %}
+            <li>
+                <div>
+                    <strong>{{ item.label }}</strong>
+                    <small>{{ item.meta }}</small>
+                </div>
+                <span class="badge">{{ item.value }} · {{ item.share }}</span>
+            </li>
+            {% endfor %}
+            {% for item in latest_snapshot_summary %}
+            <li>
+                <div>
+                    <strong>{{ item.label }}</strong>
+                    <small>{{ item.meta }}</small>
+                </div>
+                <span class="badge">{{ item.value }}</span>
+            </li>
+            {% endfor %}
+            {% if not latest_snapshot %}
+            <li>
+                <div>
+                    <strong>No snapshots yet</strong>
+                    <small>Create the first daily closeout record to activate the sales layer.</small>
+                </div>
+                <a class="table-action" href="{% url 'sales:add' %}">Log Sales Snapshot</a>
+            </li>
+            {% endif %}
+        </ul>
+    </article>
+</section>
+
+<section class="panel" id="salesTable">
+    <div class="panel-header">
+        <div>
+            <h3>Daily Sales Snapshots</h3>
+            <p class="panel-subtitle">Filter by source and trading window, then export clean daily close-out data.</p>
+        </div>
+    </div>
+
+    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+        <div class="filter-preset-row">
+            {% for preset in filter_presets %}
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'sales:list' %}{% endif %}">{{ preset.label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-summary-bar">
+            <div class="filter-chip-row">
+                {% if filters_active %}
+                <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                {% if selected_source_label %}<span class="filter-chip">{{ selected_source_label }}</span>{% endif %}
+                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                {% else %}
+                <span class="filter-chip filter-chip-muted">All synced sales snapshots in view</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="get" class="stock-filter-form">
+            <div class="filter-field">
+                <label for="range">Range</label>
+                <select id="range" name="range">
+                    <option value="7" {% if selected_range == '7' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30" {% if selected_range == '30' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="90" {% if selected_range == '90' %}selected{% endif %}>Last 90 Days</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="source">Source</label>
+                <select id="source" name="source">
+                    <option value="">All Sources</option>
+                    {% for value, label in source_choices %}
+                    <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="q">Search</label>
+                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Location, reference, or notes">
+            </div>
+            <button class="action-btn" type="submit">Apply</button>
+            <a class="table-action" href="{% url 'sales:list' %}">Reset</a>
+        </form>
+    </div>
+
+    {% if snapshots %}
+    <div class="report-table-wrap">
+        <table class="js-sortable data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Location</th>
+                    <th>Source</th>
+                    <th>Sync</th>
+                    <th>Net Sales</th>
+                    <th>Transactions</th>
+                    <th>Covers</th>
+                    <th>Sales / Labor Hr</th>
+                    <th>Payment Gap</th>
+                    <th data-sort="off">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for snapshot in snapshots %}
+                <tr>
+                    <td>{{ snapshot.business_date|date:"d M Y" }}</td>
+                    <td>{{ snapshot.location_name }}</td>
+                    <td>{{ snapshot.get_source_display }}</td>
+                    <td><span class="badge {{ snapshot.sync_badge_class }}">{{ snapshot.get_sync_mode_display }}</span></td>
+                    <td>{{ snapshot.net_sales|floatformat:2 }}</td>
+                    <td>{{ snapshot.transactions }}</td>
+                    <td>{{ snapshot.covers }}</td>
+                    <td>{{ snapshot.sales_per_labor_hour|floatformat:2 }}</td>
+                    <td><span class="badge {{ snapshot.payment_gap_badge_class }}">{{ snapshot.payment_gap_display }}</span></td>
+                    <td class="stock-actions-cell mobile-action-cell">
+                        <a class="table-action" href="{% url 'sales:edit' snapshot.pk %}">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="empty-state">No sales snapshots match this filter yet.</p>
+    {% endif %}
+
+    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
+</section>
+{% endblock %}

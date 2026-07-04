@@ -23,6 +23,7 @@ urlpatterns = [
     path("breakages/", include("apps.breakages.urls")),
     path("checklists/", include("apps.checklists.urls")),
     path("shifts/", include("apps.shifts.urls")),
+    path("sales/", include("apps.sales.urls")),
     path("audit/", include("apps.audit.urls")),
     path("staff/", core_views.staff_page, name="staff"),
     path("staff/add/", core_views.add_staff_page, name="staff_add"),

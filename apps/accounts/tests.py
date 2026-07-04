@@ -14,6 +14,7 @@ from .models import PushSubscription, StaffProfile
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
+from apps.sales.models import SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -65,6 +66,7 @@ class DemoDataBootstrapCommandTests(TestCase):
         self.assertTrue(Checklist.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
         self.assertTrue(Shift.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
         self.assertTrue(Breakage.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
+        self.assertTrue(SalesSnapshot.objects.filter(notes__contains="[DEMO_PREVIEW]").exists())
         self.assertIn("Demo preview dataset ready", stdout.getvalue())
 
     @override_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True)
@@ -73,6 +75,7 @@ class DemoDataBootstrapCommandTests(TestCase):
         supplier_count = Supplier.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
         stock_count = StockItem.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
         order_count = Order.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
+        sales_count = SalesSnapshot.objects.filter(notes__contains="[DEMO_PREVIEW]").count()
 
         call_command("bootstrap_demo_data")
 
@@ -87,6 +90,10 @@ class DemoDataBootstrapCommandTests(TestCase):
         self.assertEqual(
             Order.objects.filter(notes__contains="[DEMO_PREVIEW]").count(),
             order_count,
+        )
+        self.assertEqual(
+            SalesSnapshot.objects.filter(notes__contains="[DEMO_PREVIEW]").count(),
+            sales_count,
         )
 
 

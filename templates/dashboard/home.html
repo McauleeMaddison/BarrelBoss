@@ -182,6 +182,9 @@
             </div>
             <div class="dashboard-controls" data-activity-controls>
                 <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
+                {% if management_view %}
+                <button class="segment-btn" type="button" data-activity-filter="sales">Sales</button>
+                {% endif %}
                 <button class="segment-btn" type="button" data-activity-filter="orders">Orders</button>
                 <button class="segment-btn" type="button" data-activity-filter="shifts">Shifts</button>
                 <button class="segment-btn" type="button" data-activity-filter="checklists">Checklists</button>

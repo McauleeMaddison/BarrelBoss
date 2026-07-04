@@ -65,6 +65,9 @@
             <div class="nav-section nav-section-operations">
                 <p class="nav-section-title">Operations</p>
                 <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}" data-nav-icon="DB">Dashboard</a>
+                {% if is_management %}
+                <a class="nav-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}" href="{% url 'sales:list' %}" data-nav-icon="SA">Sales</a>
+                {% endif %}
                 <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}" data-nav-icon="ST">Stock</a>
                 <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">Breakages</a>
                 <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="CL">Checklists</a>
@@ -120,6 +123,16 @@
                     </div>
                 </div>
                 <nav class="topbar-nav" aria-label="Desktop workspace navigation">
+                    {% if is_management %}
+                    <a
+                        class="topbar-nav-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}"
+                        href="{% url 'sales:list' %}"
+                        data-topbar-icon="SA"
+                        aria-label="Open sales workspace"
+                    >
+                        Sales
+                    </a>
+                    {% endif %}
                     <a
                         class="topbar-nav-link{% if current == 'stock:list' %} active{% endif %}"
                         href="{% url 'stock:list' %}"
@@ -205,6 +218,13 @@
         </a>
         {% if is_management %}
         <a
+            class="mobile-dock-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}"
+            href="{% url 'sales:list' %}"
+            data-dock-icon="SA"
+        >
+            <span class="mobile-dock-label">Sales</span>
+        </a>
+        <a
             class="mobile-dock-link{% if current == 'stock:list' %} active{% endif %}"
             href="{% url 'stock:list' %}"
             data-dock-icon="ST"
@@ -217,13 +237,6 @@
             data-dock-icon="OR"
         >
             <span class="mobile-dock-label">Orders</span>
-        </a>
-        <a
-            class="mobile-dock-link{% if current == 'staff' %} active{% endif %}"
-            href="{% url 'staff' %}"
-            data-dock-icon="SF"
-        >
-            <span class="mobile-dock-label">Team</span>
         </a>
         {% else %}
         <a

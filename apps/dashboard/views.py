@@ -1,7 +1,8 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import F
+from django.db.models import F, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -9,6 +10,7 @@ from apps.accounts.permissions import is_management, management_required, role_h
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order
+from apps.sales.models import SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 
@@ -29,6 +31,15 @@ def _build_trend(current_value, previous_value, suffix):
     if change < 0:
         return {"label": f"{change} {suffix}", "direction": "down"}
     return {"label": f"0 {suffix}", "direction": "flat"}
+
+
+def _build_currency_trend(current_value, previous_value, suffix):
+    change = current_value - previous_value
+    if change > 0:
+        return {"label": f"+£{change:,.0f} {suffix}", "direction": "up"}
+    if change < 0:
+        return {"label": f"-£{abs(change):,.0f} {suffix}", "direction": "down"}
+    return {"label": f"£0 {suffix}", "direction": "flat"}
 
 
 def _format_activity_time(moment):
@@ -97,6 +108,7 @@ def _management_dashboard_payload():
     shift_qs = Shift.objects.select_related("staff")
     checklist_qs = Checklist.objects.select_related("assigned_to")
     breakage_qs = Breakage.objects.select_related("reported_by")
+    sales_qs = SalesSnapshot.objects.all()
 
     low_stock_count = stock_qs.filter(quantity__lte=F("minimum_level")).count()
     pending_order_count = order_qs.filter(status=Order.Status.DRAFT).count()
@@ -118,6 +130,29 @@ def _management_dashboard_payload():
         delivery_date=today + timedelta(days=1),
         status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
     ).count()
+    today_sales_snapshot = sales_qs.filter(business_date=today).order_by("-synced_at").first()
+    latest_sales_snapshot = sales_qs.order_by("-business_date", "-synced_at", "-id").first()
+    net_sales_today = (
+        sales_qs.filter(business_date=today).aggregate(total=Sum("net_sales")).get("total")
+        or 0
+    )
+    net_sales_previous_seven = (
+        sales_qs.filter(
+            business_date__range=(previous_seven_start, previous_seven_end)
+        ).aggregate(total=Sum("net_sales")).get("total")
+        or 0
+    )
+    net_sales_this_seven = (
+        sales_qs.filter(
+            business_date__range=(seven_day_start, today)
+        ).aggregate(total=Sum("net_sales")).get("total")
+        or 0
+    )
+    covers_today = (
+        sales_qs.filter(business_date=today).aggregate(total=Sum("covers")).get("total")
+        or 0
+    )
+    today_labor_hours = _sum_shift_hours(shift_qs.filter(shift_date=today))
 
     breakages_this_week = breakage_qs.filter(created_at__date__gte=seven_day_start).count()
     breakages_last_week = breakage_qs.filter(
@@ -132,6 +167,7 @@ def _management_dashboard_payload():
     delivery_series = []
     breakage_series = []
     task_output_series = []
+    sales_series = []
     for day in last_seven_dates:
         order_request_series.append(order_qs.filter(created_at__date=day).count())
         draft_request_series.append(
@@ -149,8 +185,50 @@ def _management_dashboard_payload():
             checklist_qs.filter(completed=True, completed_at__date=day).count()
             + breakage_qs.filter(created_at__date=day).count()
         )
+        sales_series.append(
+            sales_qs.filter(business_date=day).aggregate(total=Sum("net_sales")).get("total")
+            or 0
+        )
 
     metrics = [
+        {
+            "label": "Net Sales Today",
+            "value": f"£{net_sales_today:,.0f}",
+            "tone": "ok",
+            "state": (
+                "Live sync"
+                if today_sales_snapshot
+                and today_sales_snapshot.sync_mode == SalesSnapshot.SyncMode.LIVE
+                else "Needs sync" if not today_sales_snapshot else "Manual close"
+            ),
+            "state_tone": (
+                "ok"
+                if today_sales_snapshot
+                and today_sales_snapshot.sync_mode == SalesSnapshot.SyncMode.LIVE
+                else "warn"
+            ),
+            "summary": (
+                f"{today_sales_snapshot.transactions} transaction(s) across {covers_today} covers."
+                if today_sales_snapshot
+                else "No daily sales snapshot has landed for today yet."
+            ),
+            "trend": _build_currency_trend(
+                net_sales_this_seven,
+                net_sales_previous_seven,
+                "vs previous 7 days",
+            ),
+            "note": (
+                f"Sales per labor hour is £{(net_sales_today / Decimal(str(today_labor_hours))):,.0f}."
+                if today_labor_hours and net_sales_today
+                else "Connect live trade back into rota and stock decisions."
+            ),
+            "chart_label": "7d sales pulse",
+            "chart_points": _build_chart_points(sales_series),
+            "actions": [
+                {"label": "Open sales", "url_name": "sales:list"},
+                {"label": "Log snapshot", "url_name": "sales:add"},
+            ],
+        },
         {
             "label": "Low Stock Items",
             "value": low_stock_count,
@@ -243,6 +321,11 @@ def _management_dashboard_payload():
             "meta": "Approve requests, update status, and track delivery commitments.",
         },
         {
+            "title": "Review Sales Sync",
+            "url_name": "sales:list",
+            "meta": "Track live revenue, refunds, and payment reconciliation.",
+        },
+        {
             "title": "Manage Shift Allocation",
             "url_name": "shifts:list",
             "meta": "Adjust planned and recorded shift hours.",
@@ -302,6 +385,28 @@ def _management_dashboard_payload():
         )
 
     attention_items = []
+    if latest_sales_snapshot is None or latest_sales_snapshot.business_date < today:
+        attention_items.append(
+            {
+                "label": "Sales sync",
+                "value": "Needs sync",
+                "copy": "No synced daily sales snapshot has landed for today yet.",
+                "tone": "alert",
+                "action_label": "Log sales",
+                "url_name": "sales:add",
+            }
+        )
+    elif today_sales_snapshot and abs(today_sales_snapshot.payment_gap) >= 15:
+        attention_items.append(
+            {
+                "label": "Payment gap",
+                "value": f"£{abs(today_sales_snapshot.payment_gap):,.0f}",
+                "copy": "Payment mix does not reconcile cleanly against today’s net sales.",
+                "tone": "warn",
+                "action_label": "Review sales",
+                "url_name": "sales:list",
+            }
+        )
     if overdue_task_count:
         attention_items.append(
             {
@@ -370,6 +475,18 @@ def _management_dashboard_payload():
                 "text": (
                     f"{order.reference} is now {order.get_status_display().lower()} "
                     f"({order.supplier.name})"
+                ),
+            }
+        )
+
+    for snapshot in sales_qs.order_by("-synced_at")[:5]:
+        activity_events.append(
+            {
+                "moment": snapshot.synced_at,
+                "category": "sales",
+                "text": (
+                    f"{snapshot.get_source_display()} sync captured "
+                    f"£{snapshot.net_sales:,.0f} for {snapshot.business_date:%d %b}"
                 ),
             }
         )

@@ -9,6 +9,7 @@ from apps.accounts.models import StaffProfile
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
+from apps.sales.models import SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -57,7 +58,7 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Management Portal")
-        self.assertEqual(len(response.context["metrics"]), 4)
+        self.assertEqual(len(response.context["metrics"]), 5)
         self.assertIn("state", response.context["metrics"][0])
         self.assertIn("trend", response.context["metrics"][0])
         self.assertIn("chart_points", response.context["metrics"][0])
@@ -146,6 +147,28 @@ class DashboardDataDrivenMetricsTests(TestCase):
             issue_type=Breakage.IssueType.BROKEN,
             reported_by=self.staff_user,
         )
+        SalesSnapshot.objects.create(
+            business_date=timezone.localdate(),
+            source=SalesSnapshot.Source.TOAST,
+            sync_mode=SalesSnapshot.SyncMode.LIVE,
+            net_sales="1680.00",
+            gross_sales="1730.00",
+            discounts="20.00",
+            refunds="30.00",
+            tips="180.00",
+            transactions=126,
+            covers=102,
+            cash_sales="180.00",
+            card_sales="1380.00",
+            digital_sales="120.00",
+            beer_sales="760.00",
+            spirits_sales="340.00",
+            wine_sales="180.00",
+            soft_sales="170.00",
+            food_sales="140.00",
+            other_sales="90.00",
+            uploaded_by=self.manager_user,
+        )
 
     def test_management_portal_uses_live_operational_counts(self):
         self.client.login(username="metric_manager", password="strong-pass-123")
@@ -155,6 +178,7 @@ class DashboardDataDrivenMetricsTests(TestCase):
         metrics_by_label = {
             metric["label"]: metric["value"] for metric in response.context["metrics"]
         }
+        self.assertEqual(metrics_by_label["Net Sales Today"], "£1,680")
         self.assertEqual(metrics_by_label["Low Stock Items"], 1)
         self.assertEqual(metrics_by_label["Order Requests Awaiting Approval"], 1)
         self.assertEqual(metrics_by_label["Breakages This Week"], 1)
