@@ -4,12 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#f4f7fb">
+    <meta name="theme-color" content="#101927">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260703-ui11">
+    <script>
+        (() => {
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            let theme = prefersDark ? "dark" : "light";
+
+            try {
+                const stored = window.localStorage.getItem("barrelboss-theme");
+                if (stored === "dark" || stored === "light") {
+                    theme = stored;
+                }
+            } catch (_error) {
+                // Ignore storage errors during initial paint.
+            }
+
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.style.colorScheme = theme;
+        })();
+    </script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260704-ui13">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
@@ -159,7 +177,6 @@
                     <span class="status-chip status-chip-time">{% now "H:i" %} UK</span>
                     <span class="status-chip status-chip-user">
                         <strong>{{ request.user.get_username|default:'Guest' }}</strong>
-                        <small>{{ user_role_label }}</small>
                     </span>
                 </div>
             </div>
@@ -243,67 +260,10 @@
             <span class="mobile-dock-label">Menu</span>
         </button>
     </nav>
-    {% endwith %}
+{% endwith %}
 </div>
 {% include 'partials/detail_drawer.html' %}
 <script src="{% static 'js/pwa.js' %}" defer></script>
-<script src="{% static 'js/app.js' %}?v=20260703-ui11" defer></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const appShell = document.querySelector(".app-shell");
-    const themeButton = document.querySelector("#theme-toggle");
-
-    if (!appShell || !themeButton) {
-        return;
-    }
-
-    const themeLabel = themeButton.querySelector(".theme-toggle-label");
-    const storageKey = "barrelboss-theme";
-
-    function getSavedTheme() {
-        try {
-            return localStorage.getItem(storageKey);
-        } catch (error) {
-            return null;
-        }
-    }
-
-    function saveTheme(theme) {
-        try {
-            localStorage.setItem(storageKey, theme);
-        } catch (error) {
-            /* Theme still works if browser storage is unavailable. */
-        }
-    }
-
-    function setTheme(theme) {
-        const isDark = theme === "dark";
-
-        document.documentElement.dataset.theme = theme;
-        appShell.dataset.theme = theme;
-
-        themeButton.setAttribute("aria-pressed", String(isDark));
-        themeButton.setAttribute(
-            "aria-label",
-            isDark ? "Switch to light mode" : "Switch to dark mode"
-        );
-
-        if (themeLabel) {
-            themeLabel.textContent = isDark ? "Dark" : "Light";
-        }
-
-        saveTheme(theme);
-    }
-
-    const savedTheme = getSavedTheme();
-    setTheme(savedTheme === "light" ? "light" : "dark");
-
-    themeButton.addEventListener("click", () => {
-        const currentTheme = document.documentElement.dataset.theme;
-        setTheme(currentTheme === "dark" ? "light" : "dark");
-    });
-});
-</script>
+<script src="{% static 'js/app.js' %}?v=20260704-ui13" defer></script>
 </body>
 </html>

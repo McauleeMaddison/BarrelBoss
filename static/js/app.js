@@ -1,4 +1,5 @@
 (() => {
+    const root = document.documentElement;
     const body = document.body;
     const themeStorageKey = "barrelboss-theme";
     const navToggleButtons = document.querySelectorAll("[data-nav-toggle]");
@@ -32,7 +33,9 @@
 
     const applyTheme = (theme, { persist = false } = {}) => {
         const normalizedTheme = theme === "dark" ? "dark" : "light";
+        root.dataset.theme = normalizedTheme;
         body.dataset.theme = normalizedTheme;
+        root.style.colorScheme = normalizedTheme;
         body.classList.toggle("theme-dark", normalizedTheme === "dark");
         body.classList.toggle("theme-light", normalizedTheme === "light");
 
@@ -40,6 +43,12 @@
             themeToggleButton.setAttribute(
                 "aria-pressed",
                 String(normalizedTheme === "dark"),
+            );
+            themeToggleButton.setAttribute(
+                "aria-label",
+                normalizedTheme === "dark"
+                    ? "Switch to light mode"
+                    : "Switch to dark mode",
             );
         }
 
@@ -75,7 +84,7 @@
 
     if (themeToggleButton) {
         themeToggleButton.addEventListener("click", () => {
-            const current = body.dataset.theme === "dark" ? "dark" : "light";
+            const current = root.dataset.theme === "dark" ? "dark" : "light";
             applyTheme(current === "dark" ? "light" : "dark", { persist: true });
         });
     }
