@@ -134,6 +134,14 @@ body.nav-open .sidebar{transform:translateX(0);}
 .throughput-grid,.shift-chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(54px,1fr));gap:0.75rem;align-items:end;}
 .throughput-bar-wrap,.shift-chart-bar{min-height:130px;display:flex;align-items:flex-end;padding:0.45rem;border-radius:1rem;border:1px solid var(--panel-border);background:rgba(255,255,255,0.035);}
 .throughput-bar,.shift-chart-fill,.metric-chart-bar{width:100%;min-height:4px;border-radius:999px 999px 0.35rem 0.35rem;background:linear-gradient(180deg,#f0c777,#a06b24);}
+.metric-chart-block,.sales-panel-stack{display:grid;gap:0.7rem;}
+.metric-chart{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:0.35rem;min-height:78px;padding:0.45rem;border-radius:1rem;border:1px solid var(--panel-border);background:rgba(255,255,255,0.035);}
+.metric-chart-bar.is-latest{background:linear-gradient(180deg,#f6ddb0,#c28831);box-shadow:0 0 0 1px rgba(240,199,119,0.18);}
+.metric-chart-label{color:var(--muted);font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;}
+.sales-brief-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;}
+.inline-action-form{display:inline-flex;margin:0;}
+.inline-action-form button{width:auto;}
+code{padding:0.14rem 0.36rem;border-radius:0.45rem;background:rgba(255,255,255,0.06);border:1px solid rgba(214,167,86,0.14);color:var(--gold-strong);font-size:0.78rem;word-break:break-all;}
 .form-grid,.form-grid,.order-items-grid,.settings-team-list{display:grid;gap:0.85rem;}
 .form-grid,.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 .form-field,.filter-field{display:grid;gap:0.38rem;}
@@ -189,6 +197,7 @@ body.drawer-open .detail-drawer{transform:translateX(0);}
 .topbar,.topbar,.panel,.panel,.portal-hero,.portal-hero{border-radius:1.1rem;}
 .topbar-end,.topbar-end,.form-grid,.form-grid,.metric-grid,.metric-grid{grid-template-columns:1fr;}
 .metric-grid,.action-grid,.attention-rail,.staff-card-grid,.report-highlight-grid{grid-template-columns:1fr;}
+.sales-brief-grid{grid-template-columns:1fr;}
 .panel-header,.portal-hero-head,.report-toolbar{flex-direction:column;align-items:flex-start;}
 .status-chip{white-space:nowrap;}
 table.data-table,table.data-table thead,table.data-table tbody,table.data-table th,table.data-table td,table.data-table tr{display:block;}

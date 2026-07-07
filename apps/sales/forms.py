@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import SalesSnapshot
+from .models import PosIntegration, PosLocationMapping, SalesSnapshot
 
 
 class SalesSnapshotForm(forms.ModelForm):
@@ -48,3 +48,36 @@ class SalesSnapshotForm(forms.ModelForm):
 
         return cleaned_data
 
+
+class PosIntegrationForm(forms.ModelForm):
+    class Meta:
+        model = PosIntegration
+        fields = [
+            "label",
+            "provider",
+            "account_identifier",
+            "api_base_url",
+            "webhook_secret",
+            "sync_interval_minutes",
+            "is_enabled",
+            "auto_sync_enabled",
+            "webhook_enabled",
+            "notes",
+        ]
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class PosLocationMappingForm(forms.ModelForm):
+    class Meta:
+        model = PosLocationMapping
+        fields = [
+            "integration",
+            "external_location_id",
+            "external_location_name",
+            "internal_location_name",
+            "is_primary",
+            "is_active",
+            "auto_import_enabled",
+        ]

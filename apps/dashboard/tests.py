@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -9,7 +9,7 @@ from apps.accounts.models import StaffProfile
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
-from apps.sales.models import SalesSnapshot
+from apps.sales.models import PosIntegration, PosLocationMapping, SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -58,13 +58,14 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Management Portal")
-        self.assertEqual(len(response.context["metrics"]), 5)
+        self.assertEqual(len(response.context["metrics"]), 4)
         self.assertIn("state", response.context["metrics"][0])
         self.assertIn("trend", response.context["metrics"][0])
         self.assertIn("chart_points", response.context["metrics"][0])
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Management Overview")
+        self.assertContains(response, "Premium Workstreams")
 
     def test_staff_portal_context(self):
         self.client.login(username="dash_staff", password="strong-pass-123")
@@ -169,6 +170,28 @@ class DashboardDataDrivenMetricsTests(TestCase):
             other_sales="90.00",
             uploaded_by=self.manager_user,
         )
+        integration = PosIntegration.objects.create(
+            label="Toast Control Feed",
+            provider=PosIntegration.Provider.TOAST,
+            account_identifier="toast-control",
+            webhook_secret="control-secret",
+            sync_interval_minutes=15,
+            is_enabled=True,
+            auto_sync_enabled=True,
+            webhook_enabled=True,
+            last_synced_at=timezone.now() - timedelta(minutes=5),
+            last_success_at=timezone.now() - timedelta(minutes=5),
+            created_by=self.manager_user,
+        )
+        PosLocationMapping.objects.create(
+            integration=integration,
+            external_location_id="toast-main",
+            external_location_name="Toast Main",
+            internal_location_name="Main Bar",
+            is_primary=True,
+            is_active=True,
+            auto_import_enabled=True,
+        )
 
     def test_management_portal_uses_live_operational_counts(self):
         self.client.login(username="metric_manager", password="strong-pass-123")
@@ -181,8 +204,8 @@ class DashboardDataDrivenMetricsTests(TestCase):
         self.assertEqual(metrics_by_label["Net Sales Today"], "£1,680")
         self.assertEqual(metrics_by_label["Low Stock Items"], 1)
         self.assertEqual(metrics_by_label["Order Requests Awaiting Approval"], 1)
-        self.assertEqual(metrics_by_label["Breakages This Week"], 1)
-        self.assertEqual(len(response.context["throughput"]), 7)
+        self.assertEqual(metrics_by_label["Shifts Scheduled This Week"], 1)
+        self.assertEqual(len(response.context["quick_actions"]), 4)
 
     def test_staff_portal_uses_live_personal_counts(self):
         self.client.login(username="metric_staff", password="strong-pass-123")

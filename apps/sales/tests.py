@@ -1,3 +1,4 @@
+import json
 from datetime import time, timedelta
 from decimal import Decimal
 
@@ -10,7 +11,7 @@ from apps.accounts.models import StaffProfile
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 
-from .models import SalesSnapshot
+from .models import PosIntegration, PosLocationMapping, PosSyncRun, PosWebhookEvent, SalesSnapshot
 
 
 class SalesSnapshotModelTests(TestCase):
@@ -64,7 +65,7 @@ class SalesAccessTests(TestCase):
         response = self.client.get(reverse("sales:list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Live Revenue, Payment Mix, and Sync Health")
+        self.assertContains(response, "Live Revenue With Cleaner Sync Control")
 
 
 class SalesListViewTests(TestCase):
@@ -147,6 +148,28 @@ class SalesListViewTests(TestCase):
             uploaded_by=self.manager_user,
             notes="Fallback close",
         )
+        self.integration = PosIntegration.objects.create(
+            label="Toast Main Feed",
+            provider=PosIntegration.Provider.TOAST,
+            account_identifier="toast-main",
+            webhook_secret="test-secret",
+            sync_interval_minutes=15,
+            is_enabled=True,
+            auto_sync_enabled=True,
+            webhook_enabled=True,
+            last_synced_at=timezone.now() - timedelta(minutes=10),
+            last_success_at=timezone.now() - timedelta(minutes=10),
+            created_by=self.manager_user,
+        )
+        PosLocationMapping.objects.create(
+            integration=self.integration,
+            external_location_id="toast-main",
+            external_location_name="Toast Main Bar",
+            internal_location_name="Main Bar",
+            is_primary=True,
+            is_active=True,
+            auto_import_enabled=True,
+        )
 
     def test_sales_list_exposes_premium_metrics(self):
         self.client.login(username="sales_view_manager", password="strong-pass-123")
@@ -156,9 +179,9 @@ class SalesListViewTests(TestCase):
         self.assertEqual(response.context["snapshot_count"], 2)
         self.assertTrue(response.context["attention_items"])
         self.assertEqual(len(response.context["hero_signals"]), 4)
-        self.assertEqual(len(response.context["metric_cards"]), 6)
-        self.assertContains(response, "Category Revenue Mix")
-        self.assertContains(response, "Beer service risk")
+        self.assertEqual(len(response.context["metric_cards"]), 4)
+        self.assertContains(response, "POS Sync Health")
+        self.assertContains(response, "Revenue and Margin Handoff")
 
     def test_sales_list_filters_by_source(self):
         self.client.login(username="sales_view_manager", password="strong-pass-123")
@@ -179,6 +202,100 @@ class SalesListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/csv", response["Content-Type"])
         self.assertIn("BarrelBoss Sales Export", response.content.decode("utf-8"))
+
+
+class SalesSyncCenterTests(TestCase):
+    def setUp(self):
+        self.manager_user = User.objects.create_user(
+            username="sales_sync_manager",
+            password="strong-pass-123",
+        )
+        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
+        self.manager_user.staff_profile.save(update_fields=["role"])
+        self.integration = PosIntegration.objects.create(
+            label="Square Garden Feed",
+            provider=PosIntegration.Provider.SQUARE,
+            account_identifier="square-garden",
+            webhook_secret="secret-123",
+            sync_interval_minutes=30,
+            is_enabled=True,
+            auto_sync_enabled=True,
+            webhook_enabled=True,
+            created_by=self.manager_user,
+        )
+        self.mapping = PosLocationMapping.objects.create(
+            integration=self.integration,
+            external_location_id="garden-pos",
+            external_location_name="Garden POS",
+            internal_location_name="Garden Bar",
+            is_primary=True,
+            is_active=True,
+            auto_import_enabled=True,
+        )
+
+    def test_manager_can_view_sync_center(self):
+        self.client.login(username="sales_sync_manager", password="strong-pass-123")
+        response = self.client.get(reverse("sales:sync_center"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "POS Connectors, Mappings, and Sync Health")
+        self.assertContains(response, "Square Garden Feed")
+
+    def test_manual_sync_run_creates_live_snapshot(self):
+        self.client.login(username="sales_sync_manager", password="strong-pass-123")
+        response = self.client.post(reverse("sales:integration_run", args=[self.integration.pk]))
+
+        self.assertRedirects(
+            response,
+            reverse("sales:sync_center"),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(
+            SalesSnapshot.objects.filter(
+                location_name="Garden Bar",
+                source=SalesSnapshot.Source.SQUARE,
+                business_date=timezone.localdate(),
+                sync_mode=SalesSnapshot.SyncMode.LIVE,
+            ).exists()
+        )
+        self.assertTrue(
+            PosSyncRun.objects.filter(
+                integration=self.integration,
+                trigger_type=PosSyncRun.TriggerType.MANUAL,
+                status=PosSyncRun.Status.SUCCESS,
+            ).exists()
+        )
+
+    def test_webhook_endpoint_processes_live_event(self):
+        response = self.client.post(
+            reverse("sales:webhook", args=[self.integration.pk]),
+            data=json.dumps(
+                {
+                    "event_type": "sales.closed",
+                    "event_id": "evt-1001",
+                    "business_date": timezone.localdate().isoformat(),
+                    "external_location_id": "garden-pos",
+                }
+            ),
+            content_type="application/json",
+            HTTP_X_BARRELBOSS_WEBHOOK_SECRET="secret-123",
+        )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertTrue(
+            PosWebhookEvent.objects.filter(
+                integration=self.integration,
+                external_event_id="evt-1001",
+                status=PosWebhookEvent.Status.PROCESSED,
+            ).exists()
+        )
+        self.assertTrue(
+            SalesSnapshot.objects.filter(
+                location_name="Garden Bar",
+                source=SalesSnapshot.Source.SQUARE,
+                business_date=timezone.localdate(),
+            ).exists()
+        )
 
 
 class SalesCrudViewTests(TestCase):

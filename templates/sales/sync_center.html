@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}POS Sync Center | BarrelBoss{% endblock %}
+{% block page_title %}POS Sync Center{% endblock %}
+
+{% block content %}
+<section class="panel portal-hero sales-hero">
+    <div class="portal-hero-head">
+        <p class="kicker">Live Feed Control</p>
+        <span class="badge portal-badge">Connectors</span>
+    </div>
+    <h3 class="portal-hero-title">POS Connectors, Mappings, and Sync Health</h3>
+    <p class="portal-hero-copy">
+        This is the control room for Toast, Lightspeed, Square, and Clover style feeds: connector setup, per-location mapping, manual sync runs, and webhook intake.
+    </p>
+    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+    <div class="hero-signal-bar">
+        <article class="hero-signal hero-signal-ok">
+            <span class="hero-signal-label">Active connectors</span>
+            <strong>{{ sync_summary.active_connector_count }}</strong>
+            <small>Enabled feeds currently available to sync.</small>
+        </article>
+        <article class="hero-signal hero-signal-neutral">
+            <span class="hero-signal-label">Mapped locations</span>
+            <strong>{{ sync_summary.mapped_location_count }}</strong>
+            <small>Internal locations currently attached to external POS locations.</small>
+        </article>
+        <article class="hero-signal hero-signal-warn">
+            <span class="hero-signal-label">Need attention</span>
+            <strong>{{ sync_summary.connectors_needing_attention }}</strong>
+            <small>Feeds due for sync, missing mapping, or in error.</small>
+        </article>
+        <article class="hero-signal hero-signal-warn">
+            <span class="hero-signal-label">Webhook queue</span>
+            <strong>{{ sync_summary.webhook_queue_count }}</strong>
+            <small>Inbound events waiting to be processed.</small>
+        </article>
+    </div>
+    <div class="report-toolbar">
+        <div class="settings-actions">
+            <a class="action-btn action-link" href="{% url 'sales:integration_add' %}">Add Connector</a>
+            <a class="table-action" href="{% url 'sales:mapping_add' %}">Add Mapping</a>
+            <form action="{% url 'sales:run_due_syncs' %}" method="post" class="inline-action-form">
+                {% csrf_token %}
+                <button class="table-action" type="submit">Run Due Syncs</button>
+            </form>
+        </div>
+        <div class="dashboard-controls">
+            <a class="table-action" href="{% url 'sales:list' %}">Back to Sales</a>
+        </div>
+    </div>
+</section>
+
+<section class="overview-board">
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Connector Health</h3>
+                <p class="panel-subtitle">Each connector owns its sync cadence, webhook secret, and location coverage.</p>
+            </div>
+        </div>
+        {% if connector_rows %}
+        <ul class="focus-list">
+            {% for row in connector_rows %}
+            <li>
+                <div>
+                    <strong>{{ row.integration.label }}</strong>
+                    <small>{{ row.provider }} · {{ row.meta }}</small>
+                    <small>Last success {{ row.last_success }} · Last sync {{ row.last_sync }}</small>
+                    <small>{{ row.detail }}</small>
+                    <small>Webhook: <code>{{ row.webhook_url }}</code></small>
+                </div>
+                <div class="dashboard-controls">
+                    <span class="metric-state metric-state-{{ row.state_tone }}">{{ row.state }}</span>
+                    <a class="table-action" href="{% url 'sales:integration_edit' row.integration.pk %}">Edit</a>
+                    <form action="{% url 'sales:integration_run' row.integration.pk %}" method="post" class="inline-action-form">
+                        {% csrf_token %}
+                        <button class="table-action" type="submit">Sync Now</button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No connectors have been configured yet.</p>
+        {% endif %}
+    </article>
+
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Location Mappings</h3>
+                <p class="panel-subtitle">Per-location mapping keeps external till locations aligned with internal venue names.</p>
+            </div>
+        </div>
+        {% if mappings %}
+        <ul class="focus-list">
+            {% for mapping in mappings %}
+            <li>
+                <div>
+                    <strong>{{ mapping.external_location_name }}</strong>
+                    <small>{{ mapping.integration.label }} → {{ mapping.internal_location_name }}</small>
+                    <small>
+                        {% if mapping.latest_business_date %}
+                        Last import {{ mapping.latest_business_date|date:"d M Y" }} · {{ mapping.latest_net_sales|floatformat:2 }}
+                        {% else %}
+                        No imported snapshot yet
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="dashboard-controls">
+                    {% if mapping.is_primary %}<span class="badge">Primary</span>{% endif %}
+                    {% if mapping.auto_import_enabled %}<span class="metric-state metric-state-ok">Auto Import</span>{% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No location mappings are configured yet.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="overview-board">
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Recent Sync Runs</h3>
+                <p class="panel-subtitle">Track manual, scheduled, and webhook-triggered imports.</p>
+            </div>
+        </div>
+        {% if recent_runs %}
+        <ul class="focus-list">
+            {% for run in recent_runs %}
+            <li>
+                <div>
+                    <strong>{{ run.integration.label }}</strong>
+                    <small>{{ run.get_trigger_type_display }} · {{ run.started_at|date:"d M H:i" }}</small>
+                    <small>{{ run.snapshots_imported }} snapshot(s) · £{{ run.imported_net_sales|floatformat:2 }}</small>
+                    {% if run.error_message %}<small>{{ run.error_message }}</small>{% endif %}
+                </div>
+                <span class="metric-state metric-state-{{ run.status_tone }}">{{ run.get_status_display }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No sync runs have been recorded yet.</p>
+        {% endif %}
+    </article>
+
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Webhook Events</h3>
+                <p class="panel-subtitle">Inbound live events are logged here before or after import processing.</p>
+            </div>
+        </div>
+        {% if recent_events %}
+        <ul class="focus-list">
+            {% for event in recent_events %}
+            <li>
+                <div>
+                    <strong>{{ event.integration.label }}</strong>
+                    <small>{{ event.event_type|default:"sales.sync" }} · {{ event.received_at|date:"d M H:i" }}</small>
+                    <small>{{ event.notes|default:"Awaiting notes." }}</small>
+                </div>
+                <span class="metric-state metric-state-{{ event.status_tone }}">{{ event.get_status_display }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No webhook events have been recorded yet.</p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}

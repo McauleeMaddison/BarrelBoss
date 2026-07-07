@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} | BarrelBoss{% endblock %}
+{% block page_title %}POS Sync Center{% endblock %}
+
+{% block content %}
+<section class="panel detail-panel">
+    <div class="panel-header detail-panel-head">
+        <div>
+            <p class="detail-kicker">Location Mapping</p>
+            <h3 class="detail-title">{{ page_title }}</h3>
+            <p class="panel-subtitle">Map each external POS venue or till location onto the internal BarrelBoss location used for daily snapshots.</p>
+        </div>
+        <a class="table-action" href="{% url 'sales:sync_center' %}">Back to Sync Center</a>
+    </div>
+
+    <form method="post" class="stock-edit-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <span class="field-error">{{ field.errors|join:', ' }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="action-btn">{{ submit_label }}</button>
+            <a class="table-action" href="{% url 'sales:sync_center' %}">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -2,7 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Sum
+from django.db.models import Count, F, Q, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -10,7 +10,7 @@ from apps.accounts.permissions import is_management, management_required, role_h
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order
-from apps.sales.models import SalesSnapshot
+from apps.sales.models import PosIntegration, SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 
@@ -93,6 +93,26 @@ def _sum_shift_hours(shifts):
     return round(sum(shift.duration_hours for shift in shifts), 1)
 
 
+def _connector_health_state(integration):
+    mapped_count = getattr(integration, "active_mapping_count", 0)
+    if not integration.is_enabled:
+        return "neutral"
+    if integration.last_error_at and (
+        not integration.last_success_at or integration.last_error_at >= integration.last_success_at
+    ):
+        return "alert"
+    if mapped_count == 0:
+        return "warn"
+    if not integration.last_success_at:
+        return "warn"
+    next_sync_at = integration.last_success_at + timedelta(
+        minutes=integration.sync_interval_minutes
+    )
+    if integration.auto_sync_enabled and next_sync_at <= timezone.now():
+        return "warn"
+    return "ok"
+
+
 def _management_dashboard_payload():
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
@@ -109,6 +129,15 @@ def _management_dashboard_payload():
     checklist_qs = Checklist.objects.select_related("assigned_to")
     breakage_qs = Breakage.objects.select_related("reported_by")
     sales_qs = SalesSnapshot.objects.all()
+    pos_integrations = list(
+        PosIntegration.objects.annotate(
+            active_mapping_count=Count(
+                "location_mappings",
+                filter=Q(location_mappings__is_active=True),
+                distinct=True,
+            )
+        ).order_by("label")
+    )
 
     low_stock_count = stock_qs.filter(quantity__lte=F("minimum_level")).count()
     pending_order_count = order_qs.filter(status=Order.Status.DRAFT).count()
@@ -153,6 +182,13 @@ def _management_dashboard_payload():
         or 0
     )
     today_labor_hours = _sum_shift_hours(shift_qs.filter(shift_date=today))
+    active_connector_count = sum(1 for integration in pos_integrations if integration.is_enabled)
+    mapped_location_count = sum(
+        getattr(integration, "active_mapping_count", 0) for integration in pos_integrations
+    )
+    connectors_needing_attention = sum(
+        1 for integration in pos_integrations if _connector_health_state(integration) != "ok"
+    )
 
     breakages_this_week = breakage_qs.filter(created_at__date__gte=seven_day_start).count()
     breakages_last_week = breakage_qs.filter(
@@ -226,7 +262,7 @@ def _management_dashboard_payload():
             "chart_points": _build_chart_points(sales_series),
             "actions": [
                 {"label": "Open sales", "url_name": "sales:list"},
-                {"label": "Log snapshot", "url_name": "sales:add"},
+                {"label": "Sync center", "url_name": "sales:sync_center"},
             ],
         },
         {
@@ -289,51 +325,44 @@ def _management_dashboard_payload():
                 {"label": "Open roster", "url_name": "shifts:list"},
             ],
         },
-        {
-            "label": "Breakages This Week",
-            "value": breakages_this_week,
-            "tone": "neutral",
-            "state": "Investigate" if breakages_this_week else "Quiet week",
-            "state_tone": "alert" if breakages_this_week else "ok",
-            "summary": (
-                "Loss patterns need review before replacement orders go out."
-                if breakages_this_week
-                else "No new incident pressure has been recorded this week."
-            ),
-            "trend": _build_trend(
-                breakages_this_week,
-                breakages_last_week,
-                "vs previous 7 days",
-            ),
-            "note": "Track recurring loss patterns and replacement cost exposure",
-            "chart_label": "7d incident flow",
-            "chart_points": _build_chart_points(breakage_series),
-            "actions": [
-                {"label": "Review breakages", "url_name": "breakages:list"},
-            ],
-        },
     ]
 
     quick_actions = [
         {
-            "title": "Review Order Approvals",
-            "url_name": "orders:list",
-            "meta": "Approve requests, update status, and track delivery commitments.",
+            "title": "POS Sync Center",
+            "url_name": "sales:sync_center",
+            "state": (
+                f"{connectors_needing_attention} need attention"
+                if connectors_needing_attention
+                else "Healthy"
+            ),
+            "meta": (
+                f"{active_connector_count} connector(s) across {mapped_location_count} mapped location(s)."
+            ),
         },
         {
-            "title": "Review Sales Sync",
-            "url_name": "sales:list",
-            "meta": "Track live revenue, refunds, and payment reconciliation.",
+            "title": "Cellar and Margin",
+            "url_name": "stock:list",
+            "state": "Restock pressure" if low_stock_count else "Stable",
+            "meta": (
+                f"{low_stock_count} low-stock line(s) against live sales mix and cellar demand."
+            ),
         },
         {
-            "title": "Manage Shift Allocation",
+            "title": "Labor Control",
             "url_name": "shifts:list",
-            "meta": "Adjust planned and recorded shift hours.",
+            "state": f"{today_labor_hours}h today" if today_labor_hours else "Needs coverage",
+            "meta": "Use live trade and rota hours together instead of in separate tools.",
         },
         {
-            "title": "Maintain Supplier Data",
-            "url_name": "suppliers:list",
-            "meta": "Update supplier contacts and procurement categories.",
+            "title": "Daily Close Copilot",
+            "url_name": "sales:list",
+            "state": (
+                "Live close"
+                if today_sales_snapshot and abs(today_sales_snapshot.payment_gap) < 15
+                else "Needs review"
+            ),
+            "meta": "Close quality, payment gaps, and sales freshness in one workflow.",
         },
     ]
 
@@ -385,6 +414,28 @@ def _management_dashboard_payload():
         )
 
     attention_items = []
+    if active_connector_count == 0:
+        attention_items.append(
+            {
+                "label": "POS setup",
+                "value": "No connectors",
+                "copy": "Create the first live sales connector before relying on the premium sales layer.",
+                "tone": "alert",
+                "action_label": "Open sync center",
+                "url_name": "sales:sync_center",
+            }
+        )
+    elif connectors_needing_attention:
+        attention_items.append(
+            {
+                "label": "Connector health",
+                "value": f"{connectors_needing_attention} need review",
+                "copy": "At least one feed is due, errored, or missing location mapping.",
+                "tone": "warn",
+                "action_label": "Review feeds",
+                "url_name": "sales:sync_center",
+            }
+        )
     if latest_sales_snapshot is None or latest_sales_snapshot.business_date < today:
         attention_items.append(
             {
@@ -452,6 +503,17 @@ def _management_dashboard_payload():
                 "tone": "alert",
                 "action_label": "Open stock",
                 "url_name": "stock:list",
+            }
+        )
+    if breakages_this_week:
+        attention_items.append(
+            {
+                "label": "Breakage watch",
+                "value": f"{breakages_this_week} this week",
+                "copy": "Recurring loss patterns should still be reviewed before replacement orders go out.",
+                "tone": "warn",
+                "action_label": "Review breakages",
+                "url_name": "breakages:list",
             }
         )
     if not attention_items:
@@ -554,7 +616,8 @@ def _management_dashboard_payload():
         "overview_heading": "Management Overview",
         "overview_copy": (
             f"{pending_order_count} order request(s) awaiting approval. "
-            f"{deliveries_due_today} delivery(ies) due today and {deliveries_due_tomorrow} due tomorrow."
+            f"{connectors_needing_attention} connector(s) need attention and "
+            f"{deliveries_due_today} delivery(ies) land today."
         ),
         "metrics": metrics,
         "attention_items": attention_items,
@@ -733,16 +796,19 @@ def _staff_dashboard_payload(user):
         {
             "title": "Review My Shift Hours",
             "url_name": "shifts:list",
+            "state": "Next shift booked" if next_shift else "No shift booked",
             "meta": "View upcoming shifts and weekly totals.",
         },
         {
             "title": "Create Order Request",
             "url_name": "orders:add",
+            "state": "Procurement",
             "meta": "Submit a draft order request for manager approval.",
         },
         {
             "title": "Review My Orders",
             "url_name": "orders:list",
+            "state": f"{open_order_count} open",
             "meta": "Track request status and expected delivery dates.",
         },
     ]

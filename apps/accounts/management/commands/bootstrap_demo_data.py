@@ -10,7 +10,7 @@ from django.utils import timezone
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
-from apps.sales.models import SalesSnapshot
+from apps.sales.models import PosIntegration, PosLocationMapping, PosSyncRun, PosWebhookEvent, SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -56,6 +56,9 @@ class Command(BaseCommand):
             notes__contains=self.demo_tag
         ).delete()
         deleted["sales"], _ = SalesSnapshot.objects.filter(
+            notes__contains=self.demo_tag
+        ).delete()
+        deleted["connectors"], _ = PosIntegration.objects.filter(
             notes__contains=self.demo_tag
         ).delete()
         deleted["stock"], _ = StockItem.objects.filter(notes__contains=self.demo_tag).delete()
@@ -539,6 +542,132 @@ class Command(BaseCommand):
             snapshots.append(snapshot)
         return snapshots
 
+    def _create_pos_sync_setup(self, users, today):
+        manager_user = users["manager"]
+        toast = PosIntegration.objects.create(
+            label="Main Venue Toast Feed",
+            provider=PosIntegration.Provider.TOAST,
+            account_identifier="toast-main-venue",
+            api_base_url="https://api.toasttab.com",
+            webhook_secret="toast-demo-secret",
+            sync_interval_minutes=15,
+            is_enabled=True,
+            auto_sync_enabled=True,
+            webhook_enabled=True,
+            last_synced_at=timezone.now() - timedelta(minutes=12),
+            last_success_at=timezone.now() - timedelta(minutes=12),
+            notes=f"{self.demo_tag} Live sync showcase connector.",
+            created_by=manager_user,
+        )
+        square = PosIntegration.objects.create(
+            label="Square Events Feed",
+            provider=PosIntegration.Provider.SQUARE,
+            account_identifier="square-events-bar",
+            api_base_url="https://connect.squareup.com",
+            webhook_secret="square-demo-secret",
+            sync_interval_minutes=30,
+            is_enabled=True,
+            auto_sync_enabled=True,
+            webhook_enabled=True,
+            last_synced_at=timezone.now() - timedelta(hours=2),
+            last_success_at=timezone.now() - timedelta(days=1, minutes=25),
+            last_error_at=timezone.now() - timedelta(hours=2),
+            last_error="External location feed timed out during the last scheduled import.",
+            notes=f"{self.demo_tag} Secondary live sync connector with warning state.",
+            created_by=manager_user,
+        )
+
+        mappings = [
+            PosLocationMapping.objects.create(
+                integration=toast,
+                external_location_id="toast-main",
+                external_location_name="Toast Main Bar",
+                internal_location_name="Main Bar",
+                is_primary=True,
+                is_active=True,
+                auto_import_enabled=True,
+                latest_business_date=today,
+                latest_net_sales="3305.00",
+            ),
+            PosLocationMapping.objects.create(
+                integration=toast,
+                external_location_id="toast-terrace",
+                external_location_name="Toast Terrace",
+                internal_location_name="Terrace Bar",
+                is_primary=False,
+                is_active=True,
+                auto_import_enabled=False,
+            ),
+            PosLocationMapping.objects.create(
+                integration=square,
+                external_location_id="square-events",
+                external_location_name="Square Events Bar",
+                internal_location_name="Events Bar",
+                is_primary=True,
+                is_active=True,
+                auto_import_enabled=True,
+            ),
+        ]
+
+        PosSyncRun.objects.create(
+            integration=toast,
+            business_date=today,
+            trigger_type=PosSyncRun.TriggerType.WEBHOOK,
+            status=PosSyncRun.Status.SUCCESS,
+            triggered_by=manager_user,
+            started_at=timezone.now() - timedelta(minutes=12),
+            completed_at=timezone.now() - timedelta(minutes=11),
+            locations_touched=1,
+            snapshots_imported=1,
+            imported_net_sales="3305.00",
+            payload_summary=f"{self.demo_tag} Toast live import succeeded.",
+        )
+        PosSyncRun.objects.create(
+            integration=toast,
+            business_date=today - timedelta(days=1),
+            trigger_type=PosSyncRun.TriggerType.SCHEDULED,
+            status=PosSyncRun.Status.SUCCESS,
+            started_at=timezone.now() - timedelta(days=1, minutes=14),
+            completed_at=timezone.now() - timedelta(days=1, minutes=13),
+            locations_touched=1,
+            snapshots_imported=1,
+            imported_net_sales="3185.00",
+            payload_summary=f"{self.demo_tag} Scheduled import succeeded.",
+        )
+        PosSyncRun.objects.create(
+            integration=square,
+            business_date=today,
+            trigger_type=PosSyncRun.TriggerType.SCHEDULED,
+            status=PosSyncRun.Status.FAILED,
+            started_at=timezone.now() - timedelta(hours=2),
+            completed_at=timezone.now() - timedelta(hours=2) + timedelta(minutes=2),
+            locations_touched=0,
+            snapshots_imported=0,
+            imported_net_sales="0.00",
+            payload_summary=f"{self.demo_tag} Scheduled import failed.",
+            error_message="Timeout while polling the events register feed.",
+        )
+
+        PosWebhookEvent.objects.create(
+            integration=toast,
+            event_type="sales.closed",
+            external_event_id="toast-demo-20260707-close",
+            status=PosWebhookEvent.Status.PROCESSED,
+            payload={"business_date": today.isoformat(), "external_location_id": "toast-main"},
+            processed_at=timezone.now() - timedelta(minutes=11),
+            notes=f"{self.demo_tag} Sales close webhook processed.",
+        )
+        PosWebhookEvent.objects.create(
+            integration=square,
+            event_type="sales.updated",
+            external_event_id="square-demo-20260707-open",
+            status=PosWebhookEvent.Status.RECEIVED,
+            payload={"business_date": today.isoformat(), "external_location_id": "square-events"},
+            notes=f"{self.demo_tag} Event waiting for retry.",
+        )
+
+        return [toast, square], mappings
+
     def handle(self, *args, **options):
         if not getattr(settings, "ALLOW_DEMO_ACCOUNT_BOOTSTRAP", False):
             raise CommandError(
@@ -560,6 +689,7 @@ class Command(BaseCommand):
                     "shifts": 0,
                     "breakages": 0,
                     "sales": 0,
+                    "connectors": 0,
                     "stock": 0,
                     "suppliers": 0,
                 }
@@ -573,6 +703,7 @@ class Command(BaseCommand):
             shifts = self._create_shifts(users, today)
             breakages = self._create_breakages(users)
             sales_snapshots = self._create_sales_snapshots(users, today)
+            connectors, mappings = self._create_pos_sync_setup(users, today)
 
         self.stdout.write(self.style.SUCCESS("Demo preview dataset ready."))
         self.stdout.write(f" - suppliers: {len(suppliers)}")
@@ -582,6 +713,8 @@ class Command(BaseCommand):
         self.stdout.write(f" - shifts: {len(shifts)}")
         self.stdout.write(f" - breakages: {len(breakages)}")
         self.stdout.write(f" - sales snapshots: {len(sales_snapshots)}")
+        self.stdout.write(f" - live connectors: {len(connectors)}")
+        self.stdout.write(f" - location mappings: {len(mappings)}")
         if not append_mode:
             self.stdout.write(
                 " - replaced existing demo records: "
@@ -590,6 +723,7 @@ class Command(BaseCommand):
                 f"shifts={deleted['shifts']}, "
                 f"breakages={deleted['breakages']}, "
                 f"sales={deleted['sales']}, "
+                f"connectors={deleted['connectors']}, "
                 f"stock={deleted['stock']}, "
                 f"suppliers={deleted['suppliers']}"
             )
