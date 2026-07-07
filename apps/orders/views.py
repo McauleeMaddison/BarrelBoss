@@ -97,7 +97,7 @@ def _order_context_base(
     }
 
 
-@login_required
+@management_required
 def list_orders(request):
     selected_status = request.GET.get("status", "")
     selected_supplier = request.GET.get("supplier", "")
@@ -226,12 +226,15 @@ def add_order(request):
         if form.is_valid() and formset.is_valid():
             order = form.save(commit=False)
             order.created_by = request.user
+
             if not management_view:
                 order.status = Order.Status.DRAFT
+
             order.save()
 
             formset.instance = order
             formset.save()
+
             record_audit_event(
                 request,
                 action=AuditEvent.Action.CREATE,
@@ -244,17 +247,18 @@ def add_order(request):
                 },
             )
 
-            success_message = (
-                f"Order request {order.reference} submitted for manager approval."
-                if not management_view
-                else f"Order {order.reference} created."
-            )
-            messages.success(request, success_message)
-            return redirect("orders:list")
+            if management_view:
+                messages.success(request, f"Order {order.reference} created.")
+                return redirect("orders:list")
+
+            messages.success(request, "Stock request sent to management.")
+            return redirect("orders:add")
     else:
         initial = {}
+
         if not management_view:
             initial["delivery_date"] = ""
+
         form = OrderForm(is_management=management_view, initial=initial)
         formset = OrderItemFormSet()
 
@@ -264,33 +268,33 @@ def add_order(request):
         {
             "form": form,
             "formset": formset,
-            "page_title": "Create Order" if management_view else "Create Stock Order Request",
-            "submit_label": "Create Order" if management_view else "Submit Request",
+            "page_title": (
+                "Create supplier order"
+                if management_view
+                else "Request stock"
+            ),
+            "submit_label": (
+                "Create supplier order"
+                if management_view
+                else "Send to management"
+            ),
             "management_view": management_view,
         },
     )
 
-
-@login_required
+@management_required
 def edit_order(request, pk):
     order = get_object_or_404(Order.objects.prefetch_related("items"), pk=pk)
-    management_view = is_management(request.user)
-
-    if not management_view:
-        if order.created_by_id != request.user.id or order.status != Order.Status.DRAFT:
-            messages.error(request, "You can only edit your own draft order requests.")
-            return redirect("orders:list")
 
     if request.method == "POST":
-        form = OrderForm(request.POST, instance=order, is_management=management_view)
+        form = OrderForm(request.POST, instance=order, is_management=True)
         formset = OrderItemFormSet(request.POST, instance=order)
 
         if form.is_valid() and formset.is_valid():
             updated_order = form.save(commit=False)
-            if not management_view:
-                updated_order.status = order.status
             updated_order.save()
             formset.save()
+
             record_audit_event(
                 request,
                 action=AuditEvent.Action.UPDATE,
@@ -302,10 +306,11 @@ def edit_order(request, pk):
                     "item_count": updated_order.items.count(),
                 },
             )
-            messages.success(request, f"Order {order.reference} updated.")
+
+            messages.success(request, f"Order {updated_order.reference} updated.")
             return redirect("orders:list")
     else:
-        form = OrderForm(instance=order, is_management=management_view)
+        form = OrderForm(instance=order, is_management=True)
         formset = OrderItemFormSet(instance=order)
 
     return render(
@@ -315,12 +320,11 @@ def edit_order(request, pk):
             "form": form,
             "formset": formset,
             "page_title": f"Edit {order.reference}",
-            "submit_label": "Save Changes",
+            "submit_label": "Save changes",
             "order": order,
-            "management_view": management_view,
+            "management_view": True,
         },
     )
-
 
 @management_required
 def update_order_status(request, pk):
