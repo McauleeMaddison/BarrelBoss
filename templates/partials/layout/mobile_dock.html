@@ -4,26 +4,26 @@
         href="{% url role_home_url_name %}"
         data-dock-icon="HM"
     >
-        <span class="mobile-dock-label">{% if is_management %}Home{% else %}Today{% endif %}</span>
-    </a>
-
-    <a
-        class="mobile-dock-link{% if current == 'stock:list' %} active{% endif %}"
-        href="{% url 'stock:list' %}"
-        data-dock-icon="ST"
-    >
-        <span class="mobile-dock-label">Stock</span>
-    </a>
-
-    <a
-        class="mobile-dock-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
-        href="{% url 'orders:list' %}"
-        data-dock-icon="{% if is_management %}OR{% else %}RQ{% endif %}"
-    >
-        <span class="mobile-dock-label">{% if is_management %}Orders{% else %}Requests{% endif %}</span>
+        <span class="mobile-dock-label">Home</span>
     </a>
 
     {% if is_management %}
+        <a
+            class="mobile-dock-link{% if current == 'stock:list' %} active{% endif %}"
+            href="{% url 'stock:list' %}"
+            data-dock-icon="ST"
+        >
+            <span class="mobile-dock-label">Stock</span>
+        </a>
+
+        <a
+            class="mobile-dock-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
+            href="{% url 'orders:list' %}"
+            data-dock-icon="OR"
+        >
+            <span class="mobile-dock-label">Orders</span>
+        </a>
+
         <a
             class="mobile-dock-link{% if current == 'breakages:list' %} active{% endif %}"
             href="{% url 'breakages:list' %}"
@@ -39,17 +39,33 @@
         >
             <span class="mobile-dock-label">Tasks</span>
         </a>
+
+        <a
+            class="mobile-dock-link{% if current == 'stock:list' %} active{% endif %}"
+            href="{% url 'stock:list' %}"
+            data-dock-icon="ST"
+        >
+            <span class="mobile-dock-label">Stock</span>
+        </a>
+
+        <a
+            class="mobile-dock-link{% if current == 'shifts:list' %} active{% endif %}"
+            href="{% url 'shifts:list' %}"
+            data-dock-icon="RT"
+        >
+            <span class="mobile-dock-label">Rota</span>
+        </a>
     {% endif %}
 
     <button
         type="button"
-        class="mobile-dock-link mobile-dock-button"
+        class="mobile-dock-link mobile-dock-button{% if current == 'orders:add' or current == 'breakages:add' %} active{% endif %}"
         data-nav-toggle
         aria-label="Open menu"
         aria-controls="main-navigation"
         aria-expanded="false"
         data-dock-icon="ME"
     >
-        <span class="mobile-dock-label">Menu</span>
+        <span class="mobile-dock-label">More</span>
     </button>
 </nav>

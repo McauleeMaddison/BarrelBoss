@@ -1,103 +1,195 @@
 {% load static %}
+
 <aside class="sidebar" id="main-navigation">
     <div class="brand-wrap">
         <div class="brand-block">
             <a class="brand" href="{% url role_home_url_name %}">
                 <div class="brand-mark">
-                    <img class="brand-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
+                    <img
+                        class="brand-logo"
+                        src="{% static 'images/barrelboss-logo.png' %}"
+                        alt="BarrelBoss logo"
+                    >
                     <div class="brand-copy">
                         <span class="brand-title">BarrelBoss</span>
-                        <p class="brand-subtitle">Operations Workspace</p>
+                        <p class="brand-subtitle">
+                            {% if is_management %}
+                                Management Portal
+                            {% else %}
+                                Staff Portal
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </a>
+
             <div class="sidebar-presence" role="status" aria-label="Signed in user">
                 <span class="sidebar-presence-dot" aria-hidden="true"></span>
                 <div class="sidebar-presence-copy">
-                    <strong>{{ request.user.get_username|default:'Guest' }}</strong>
+                    <strong>{{ request.user.get_username|default:"Guest" }}</strong>
                     <small>{{ user_role_label }}</small>
                 </div>
             </div>
         </div>
-        <button type="button" class="sidebar-close" aria-label="Close navigation">✕</button>
+
+        <button type="button" class="sidebar-close" aria-label="Close navigation">
+            ✕
+        </button>
     </div>
+
     <nav class="nav-links" aria-label="Main menu">
         <div class="nav-section nav-section-operations">
             <p class="nav-section-title">Everyday work</p>
 
-            <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}" data-nav-icon="HM">
-                {% if is_management %}Dashboard{% else %}Today{% endif %}
-            </a>
-
-            <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}" data-nav-icon="ST">
-                Inventory
+            <a
+                class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}"
+                href="{% url role_home_url_name %}"
+                data-nav-icon="HM"
+            >
+                Home
             </a>
 
             {% if is_management %}
-                <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="OR">
-                    Orders
+                <a
+                    class="nav-link{% if current == 'stock:list' %} active{% endif %}"
+                    href="{% url 'stock:list' %}"
+                    data-nav-icon="ST"
+                >
+                    Stock
                 </a>
 
-                <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">
+                <a
+                    class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
+                    href="{% url 'orders:list' %}"
+                    data-nav-icon="OR"
+                >
+                    Stock requests &amp; orders
+                </a>
+
+                <a
+                    class="nav-link{% if current == 'breakages:list' %} active{% endif %}"
+                    href="{% url 'breakages:list' %}"
+                    data-nav-icon="BR"
+                >
                     Breakages
                 </a>
 
-                <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="TK">
+                <a
+                    class="nav-link{% if current == 'checklists:list' %} active{% endif %}"
+                    href="{% url 'checklists:list' %}"
+                    data-nav-icon="TK"
+                >
                     Tasks &amp; checks
                 </a>
 
-                <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">
-                    Shifts
+                <a
+                    class="nav-link{% if current == 'shifts:list' %} active{% endif %}"
+                    href="{% url 'shifts:list' %}"
+                    data-nav-icon="RT"
+                >
+                    Rota
                 </a>
             {% else %}
-                <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="RQ">
-                    Requests
+                <a
+                    class="nav-link{% if current == 'checklists:list' %} active{% endif %}"
+                    href="{% url 'checklists:list' %}"
+                    data-nav-icon="TK"
+                >
+                    My tasks
                 </a>
 
-                <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="TK">
-                    Tasks
+                <a
+                    class="nav-link{% if current == 'stock:list' %} active{% endif %}"
+                    href="{% url 'stock:list' %}"
+                    data-nav-icon="ST"
+                >
+                    Stock
                 </a>
 
-                <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">
-                    Incidents
-                </a>
-
-                <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">
-                    Shifts
+                <a
+                    class="nav-link{% if current == 'shifts:list' %} active{% endif %}"
+                    href="{% url 'shifts:list' %}"
+                    data-nav-icon="RT"
+                >
+                    My rota
                 </a>
             {% endif %}
         </div>
 
         {% if is_management %}
-            <div class="nav-section nav-section-administration">
-                <p class="nav-section-title">Manager tools</p>
+            <div class="nav-section nav-section-management">
+                <p class="nav-section-title">Management</p>
 
-                <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}" data-nav-icon="SU">
+                <a
+                    class="nav-link{% if current == 'suppliers:list' %} active{% endif %}"
+                    href="{% url 'suppliers:list' %}"
+                    data-nav-icon="SU"
+                >
                     Suppliers
                 </a>
 
-                <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}" data-nav-icon="SF">
+                <a
+                    class="nav-link{% if current == 'staff' %} active{% endif %}"
+                    href="{% url 'staff' %}"
+                    data-nav-icon="SF"
+                >
                     Staff
                 </a>
 
-                <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}" data-nav-icon="RP">
+                <a
+                    class="nav-link{% if current == 'reports' %} active{% endif %}"
+                    href="{% url 'reports' %}"
+                    data-nav-icon="RP"
+                >
                     Reports
                 </a>
             </div>
 
-            <div class="nav-section nav-section-system">
+            <div class="nav-section nav-section-advanced">
                 <p class="nav-section-title">Advanced setup</p>
 
-                <a class="nav-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}" href="{% url 'sales:list' %}" data-nav-icon="TL">
+                <a
+                    class="nav-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}"
+                    href="{% url 'sales:list' %}"
+                    data-nav-icon="TL"
+                >
                     Till &amp; daily takings
                 </a>
 
-                <a class="nav-link{% if current == 'audit:list' %} active{% endif %}" href="{% url 'audit:list' %}" data-nav-icon="AU">
+                <a
+                    class="nav-link{% if current == 'audit:list' %} active{% endif %}"
+                    href="{% url 'audit:list' %}"
+                    data-nav-icon="AU"
+                >
                     Activity history
                 </a>
 
-                <a class="nav-link{% if current == 'settings' %} active{% endif %}" href="{% url 'settings' %}" data-nav-icon="SE">
+                <a
+                    class="nav-link{% if current == 'settings' %} active{% endif %}"
+                    href="{% url 'settings' %}"
+                    data-nav-icon="SE"
+                >
                     Settings
+                </a>
+            </div>
+        {% else %}
+            <div class="nav-section nav-section-staff-send">
+                <p class="nav-section-title">Quick send</p>
+
+                <a
+                    class="nav-link{% if current == 'orders:add' %} active{% endif %}"
+                    href="{% url 'orders:add' %}"
+                    data-nav-icon="RQ"
+                >
+                    Request stock
+                </a>
+
+                <a
+                    class="nav-link{% if current == 'breakages:add' %} active{% endif %}"
+                    href="{% url 'breakages:add' %}"
+                    data-nav-icon="BR"
+                >
+                    Report breakage
                 </a>
             </div>
         {% endif %}
@@ -105,6 +197,8 @@
 
     <form action="{% url 'logout' %}" method="post" class="logout-form">
         {% csrf_token %}
-        <button type="submit" class="logout-btn">Sign Out</button>
+        <button type="submit" class="logout-btn">
+            Sign Out
+        </button>
     </form>
 </aside>
