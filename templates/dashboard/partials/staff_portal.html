@@ -1,0 +1,122 @@
+<div class="dashboard-view dashboard-view-staff">
+<section class="panel portal-hero staff-command-panel">
+    <div class="staff-command-shell">
+        <div class="staff-command-main">
+            <div class="portal-hero-head">
+                <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
+                <span class="badge portal-badge">Staff Mode</span>
+            </div>
+            <h3 class="portal-hero-title">{{ overview_heading }}</h3>
+            <p class="portal-hero-copy">{{ overview_copy }}</p>
+            <div class="staff-priority-grid">
+                {% for item in attention_items|slice:":2" %}
+                <article class="attention-card attention-card-{{ item.tone|default:'neutral' }} staff-priority-card">
+                    <div class="attention-card-head">
+                        <span class="attention-card-label">{{ item.label }}</span>
+                        <strong>{{ item.value }}</strong>
+                    </div>
+                    <p>{{ item.copy }}</p>
+                    {% if item.action_label %}
+                        {% if item.href %}
+                        <a class="attention-card-link" href="{{ item.href }}">{{ item.action_label }}</a>
+                        {% else %}
+                        <a class="attention-card-link" href="{% url item.url_name %}{% if item.query %}?{{ item.query }}{% endif %}">
+                            {{ item.action_label }}
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+
+        <aside class="dashboard-hero-card staff-focus-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Today queue</h3>
+                    <p class="panel-subtitle">The short list to clear before service and handover get messy.</p>
+                </div>
+            </div>
+            <ul class="staff-focus-list">
+                {% for item in focus_list %}
+                <li class="staff-focus-item">
+                    <div class="staff-focus-copy">
+                        <span class="staff-focus-kicker">{{ item.owner }}</span>
+                        <strong>{{ item.task }}</strong>
+                        <small>Due {{ item.due }}</small>
+                    </div>
+                    <span class="metric-state">{{ item.state }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </aside>
+    </div>
+</section>
+
+<section class="staff-summary-grid">
+    {% for card in metrics %}
+    <article class="staff-summary-card">
+        <div class="staff-summary-head">
+            <span class="staff-summary-label">{{ card.label }}</span>
+            {% if card.state %}
+            <span class="metric-state metric-state-{{ card.state_tone|default:card.tone }}">{{ card.state }}</span>
+            {% endif %}
+        </div>
+        <strong class="staff-summary-value">{{ card.value }}</strong>
+        {% if card.summary %}
+        <p class="staff-summary-copy">{{ card.summary }}</p>
+        {% endif %}
+    </article>
+    {% endfor %}
+</section>
+
+<section class="staff-workspace-grid">
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Quick tools</h3>
+                <p class="panel-subtitle">One clear route for the jobs bar staff do most often.</p>
+            </div>
+        </div>
+        <div class="staff-tool-grid">
+            {% for action in quick_actions %}
+            <article class="action-tile staff-tool-card">
+                <div class="staff-tool-head">
+                    <p class="kicker">{{ action.label }}</p>
+                    <span class="filter-chip">{{ action.stat }}</span>
+                </div>
+                <strong>{{ action.title }}</strong>
+                <span>{{ action.copy }}</span>
+                {% if action.href %}
+                <a class="metric-action-link" href="{{ action.href }}">{{ action.action_label }}</a>
+                {% else %}
+                <a class="metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
+                    {{ action.action_label }}
+                </a>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel portal-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Recent updates</h3>
+                <p class="panel-subtitle">Only the latest changes tied to your shift work.</p>
+            </div>
+        </div>
+        <ul class="activity-list staff-activity-list" id="activityList">
+            {% for item in activity|slice:":6" %}
+            <li>
+                <div>
+                    <strong>{{ item.time }}</strong>
+                    <small>{{ item.text }}</small>
+                </div>
+                <span class="activity-chip badge">{{ item.category|title }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </article>
+</section>
+</div>

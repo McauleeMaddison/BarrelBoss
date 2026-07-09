@@ -26,11 +26,11 @@
             <p class="nav-section-title">Everyday work</p>
 
             <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}" data-nav-icon="HM">
-                Home
+                {% if is_management %}Dashboard{% else %}Today{% endif %}
             </a>
 
             <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}" data-nav-icon="ST">
-                Stock
+                Inventory
             </a>
 
             {% if is_management %}
@@ -51,19 +51,19 @@
                 </a>
             {% else %}
                 <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="RQ">
-                    Stock requests
+                    Requests
                 </a>
 
                 <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="TK">
-                    My tasks
+                    Tasks
                 </a>
 
                 <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">
-                    Report breakage
+                    Incidents
                 </a>
 
                 <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">
-                    My shifts
+                    Shifts
                 </a>
             {% endif %}
         </div>

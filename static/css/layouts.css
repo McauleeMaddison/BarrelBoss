@@ -137,7 +137,8 @@ html[data-theme="light"] .detail-drawer-card {
     }
 
     .app-shell .main-content {
-        padding-bottom: calc(6.9rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(8.2rem + env(safe-area-inset-bottom, 0px));
+        scroll-padding-bottom: calc(8.6rem + env(safe-area-inset-bottom, 0px));
     }
 
     .app-shell .sidebar {
@@ -186,6 +187,10 @@ html[data-theme="light"] .detail-drawer-card {
         min-height: 52px;
         padding: 0.42rem 0.12rem;
         gap: 0.32rem;
+    }
+
+    .app-shell .page-shell {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
 
     .app-shell .mobile-dock-label {

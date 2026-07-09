@@ -940,6 +940,11 @@ def _staff_dashboard_payload(user):
         if next_shift
         else "No upcoming shift scheduled"
     )
+    next_shift_short = (
+        f"{next_shift.shift_date:%a %d %b} at {next_shift.start_time:%H:%M}"
+        if next_shift
+        else "No shift booked"
+    )
     metrics = [
         {
             "label": "Hours This Week",
@@ -1255,6 +1260,64 @@ def _staff_dashboard_payload(user):
             }
         )
 
+    quick_actions = [
+        {
+            "label": "Inventory",
+            "title": "Check stock",
+            "copy": "Open the live stock view before service and confirm what is low, short, or newly delivered.",
+            "stat": "Floor stock live",
+            "url_name": "stock:list",
+            "action_label": "Open stock",
+        },
+        {
+            "label": "Requests",
+            "title": "Stock requests",
+            "copy": "Raise a request fast or review anything still waiting on approval or delivery.",
+            "stat": (
+                f"{open_order_count} open request(s)"
+                if open_order_count
+                else "Ready for a new request"
+            ),
+            "url_name": "orders:list" if open_order_count else "orders:add",
+            "action_label": "Review requests" if open_order_count else "New request",
+        },
+        {
+            "label": "Tasks",
+            "title": "Task queue",
+            "copy": "Clear due-today and overdue checklist work before handover starts to slip.",
+            "stat": (
+                f"{tasks_overdue} overdue"
+                if tasks_overdue
+                else f"{tasks_due_today} due today"
+                if tasks_due_today
+                else "Queue clear"
+            ),
+            "url_name": "checklists:list",
+            "query": "preset=overdue" if tasks_overdue else "preset=today",
+            "action_label": "Open tasks",
+        },
+        {
+            "label": "Incidents",
+            "title": "Log breakage",
+            "copy": "Record losses while the details are still fresh so follow-up is easier later.",
+            "stat": (
+                f"{breakages_today} logged today"
+                if breakages_today
+                else "Nothing logged today"
+            ),
+            "url_name": "breakages:add",
+            "action_label": "Log incident",
+        },
+        {
+            "label": "Rota",
+            "title": "My shifts",
+            "copy": "Check your next start time and this week’s scheduled hours without digging around.",
+            "stat": next_shift_short,
+            "url_name": "shifts:list",
+            "action_label": "Open rota",
+        },
+    ]
+
     activity_events = []
     for order in my_orders_qs.order_by("-updated_at")[:5]:
         activity_events.append(
@@ -1320,16 +1383,25 @@ def _staff_dashboard_payload(user):
 
     return {
         "portal_title": "Staff Portal",
-        "overview_heading": "Staff Shift Overview",
+        "overview_heading": "Start your shift",
         "overview_copy": (
-            f"{open_order_count} open order request(s). "
-            f"{tasks_due_today} task(s) due today and {tasks_overdue} overdue."
+            "Clear your tasks, keep requests moving, and log issues while the details are fresh."
         ),
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,
         "portal_sections": portal_sections,
         "focus_list": focus_list,
+        "quick_actions": quick_actions,
+        "staff_snapshot": {
+            "hours_this_week": f"{hours_this_week:.1f}",
+            "open_order_count": open_order_count,
+            "pending_delivery_count": pending_delivery_count,
+            "tasks_due_today": tasks_due_today,
+            "tasks_overdue": tasks_overdue,
+            "breakages_this_week": breakages_this_week,
+            "next_shift_note": next_shift_note,
+        },
         "throughput": _build_throughput(
             last_seven_dates,
             service_values=service_values,

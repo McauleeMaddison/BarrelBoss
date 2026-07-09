@@ -4,7 +4,7 @@
         href="{% url role_home_url_name %}"
         data-dock-icon="HM"
     >
-        <span class="mobile-dock-label">Home</span>
+        <span class="mobile-dock-label">{% if is_management %}Home{% else %}Today{% endif %}</span>
     </a>
 
     <a
@@ -20,7 +20,7 @@
         href="{% url 'orders:list' %}"
         data-dock-icon="{% if is_management %}OR{% else %}RQ{% endif %}"
     >
-        <span class="mobile-dock-label">{% if is_management %}Orders{% else %}Request{% endif %}</span>
+        <span class="mobile-dock-label">{% if is_management %}Orders{% else %}Requests{% endif %}</span>
     </a>
 
     {% if is_management %}
