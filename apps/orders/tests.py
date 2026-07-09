@@ -1,8 +1,10 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
 from apps.stock.models import StockItem
@@ -212,3 +214,30 @@ class OrderWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Add at least one order item")
         self.assertEqual(Order.objects.count(), 0)
+
+    def test_orders_list_supports_overdue_preset(self):
+        overdue_order = Order.objects.create(
+            supplier=self.supplier,
+            created_by=self.manager_user,
+            status=Order.Status.PENDING_DELIVERY,
+            order_date=timezone.localdate() - timedelta(days=3),
+            delivery_date=timezone.localdate() - timedelta(days=1),
+        )
+        overdue_order.items.create(stock_item=self.stock_one, quantity=2)
+
+        on_time_order = Order.objects.create(
+            supplier=self.supplier,
+            created_by=self.manager_user,
+            status=Order.Status.PENDING_DELIVERY,
+            order_date=timezone.localdate(),
+            delivery_date=timezone.localdate() + timedelta(days=2),
+        )
+        on_time_order.items.create(stock_item=self.stock_two, quantity=1)
+
+        self.client.login(username="order_manager", password="strong-pass-123")
+        response = self.client.get(reverse("orders:list"), {"preset": "overdue"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, overdue_order.reference)
+        self.assertNotContains(response, on_time_order.reference)
+        self.assertEqual(response.context["selected_preset_label"], "Overdue")

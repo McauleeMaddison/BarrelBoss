@@ -230,8 +230,9 @@ def list_checklists(request):
                 "value": "Queue clear",
                 "copy": "No overdue blockers are showing inside the current checklist scope.",
                 "tone": "ok",
-                "action_label": "Open queue",
-                "url_name": "checklists:list",
+                "action_label": "Assign task" if is_management(request.user) else "Open pending",
+                "url_name": "checklists:add" if is_management(request.user) else "checklists:list",
+                "query": None if is_management(request.user) else "status=pending",
             }
         )
 

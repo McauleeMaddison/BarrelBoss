@@ -82,9 +82,9 @@ class DashboardAccessTests(TestCase):
         self.assertIn("chart_points", response.context["metrics"][0])
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
-        self.assertContains(response, "Start your shift")
-        self.assertContains(response, "Today queue")
+        self.assertContains(response, "Today")
         self.assertContains(response, "Quick tools")
+        self.assertContains(response, "View stock")
 
     def test_staff_cannot_access_management_portal(self):
         self.client.login(username="dash_staff", password="strong-pass-123")
@@ -221,11 +221,11 @@ class DashboardDataDrivenMetricsTests(TestCase):
         metrics_by_label = {
             metric["label"]: metric["value"] for metric in response.context["metrics"]
         }
-        self.assertEqual(metrics_by_label["My Open Order Requests"], 1)
-        self.assertEqual(metrics_by_label["My Tasks Due Today"], 1)
-        self.assertEqual(metrics_by_label["My Breakages This Week"], 1)
+        self.assertEqual(metrics_by_label["My Tasks"], 1)
+        self.assertEqual(metrics_by_label["Stock"], "View")
         self.assertEqual(metrics_by_label["Hours This Week"], "7.5")
+        self.assertEqual(metrics_by_label["Next Shift"], "12:00")
         self.assertEqual(len(response.context["portal_sections"]), 4)
         self.assertContains(response, "Close till review")
-        self.assertContains(response, "Stock requests")
-        self.assertContains(response, "Check stock")
+        self.assertContains(response, "Request stock")
+        self.assertContains(response, "View stock")

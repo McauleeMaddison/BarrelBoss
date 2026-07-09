@@ -110,9 +110,11 @@ def _order_context_base(
 
 @login_required
 def list_orders(request):
+    selected_preset = request.GET.get("preset", "")
     selected_status = request.GET.get("status", "")
     selected_supplier = request.GET.get("supplier", "")
     management_view = is_management(request.user)
+    today = timezone.localdate()
 
     visible_qs = (
         Order.objects.select_related("supplier", "created_by")
@@ -124,6 +126,21 @@ def list_orders(request):
 
     metrics_qs = visible_qs
     display_qs = visible_qs.annotate(total_lines=Count("items"), total_units=Sum("items__quantity"))
+
+    preset_filters = {
+        "drafts": {"status": Order.Status.DRAFT},
+        "ordered": {"status": Order.Status.ORDERED},
+        "pending": {"status": Order.Status.PENDING_DELIVERY},
+        "delivered": {"status": Order.Status.DELIVERED},
+    }
+
+    if selected_preset == "overdue":
+        display_qs = display_qs.filter(
+            delivery_date__lt=today,
+            status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
+        )
+    elif selected_preset in preset_filters:
+        display_qs = display_qs.filter(**preset_filters[selected_preset])
 
     if selected_status and selected_status in Order.Status.values:
         display_qs = display_qs.filter(status=selected_status)
@@ -153,13 +170,21 @@ def list_orders(request):
             .first()
             or ""
         )
-    filters_active = bool(selected_status or selected_supplier)
+    filters_active = bool(selected_preset or selected_status or selected_supplier)
+    preset_labels = {
+        "drafts": "Drafts",
+        "ordered": "Ordered",
+        "pending": "Pending Delivery",
+        "delivered": "Delivered",
+        "overdue": "Overdue Delivery",
+    }
     filter_presets = [
         {"label": "All Orders", "query": "", "active": not filters_active},
-        {"label": "Drafts", "query": f"status={Order.Status.DRAFT}", "active": selected_status == Order.Status.DRAFT and not selected_supplier},
-        {"label": "Ordered", "query": f"status={Order.Status.ORDERED}", "active": selected_status == Order.Status.ORDERED and not selected_supplier},
-        {"label": "Pending Delivery", "query": f"status={Order.Status.PENDING_DELIVERY}", "active": selected_status == Order.Status.PENDING_DELIVERY and not selected_supplier},
-        {"label": "Delivered", "query": f"status={Order.Status.DELIVERED}", "active": selected_status == Order.Status.DELIVERED and not selected_supplier},
+        {"label": "Drafts", "query": "preset=drafts", "active": selected_preset == "drafts" and not selected_status and not selected_supplier},
+        {"label": "Ordered", "query": "preset=ordered", "active": selected_preset == "ordered" and not selected_status and not selected_supplier},
+        {"label": "Pending Delivery", "query": "preset=pending", "active": selected_preset == "pending" and not selected_status and not selected_supplier},
+        {"label": "Overdue", "query": "preset=overdue", "active": selected_preset == "overdue" and not selected_status and not selected_supplier},
+        {"label": "Delivered", "query": "preset=delivered", "active": selected_preset == "delivered" and not selected_status and not selected_supplier},
     ]
     attention_items = []
     if context["overdue_delivery_count"]:
@@ -169,9 +194,9 @@ def list_orders(request):
                 "value": f"{context['overdue_delivery_count']} order(s)",
                 "copy": "Expected delivery dates have passed and should be chased or updated.",
                 "tone": "alert",
-                "action_label": "Open ordered",
+                "action_label": "Open overdue",
                 "url_name": "orders:list",
-                "query": f"status={Order.Status.ORDERED}",
+                "query": "preset=overdue",
             }
         )
     if context["stale_draft_count"]:
@@ -183,7 +208,7 @@ def list_orders(request):
                 "tone": "warn",
                 "action_label": "Open drafts",
                 "url_name": "orders:list",
-                "query": f"status={Order.Status.DRAFT}",
+                "query": "preset=drafts",
             }
         )
     if context["pending_count"]:
@@ -195,7 +220,7 @@ def list_orders(request):
                 "tone": "neutral",
                 "action_label": "Track pending",
                 "url_name": "orders:list",
-                "query": f"status={Order.Status.PENDING_DELIVERY}",
+                "query": "preset=pending",
             }
         )
     if not attention_items:
@@ -205,19 +230,20 @@ def list_orders(request):
                 "value": "Queue clear",
                 "copy": "No stale drafts or overdue deliveries are currently showing in this view.",
                 "tone": "ok",
-                "action_label": "Open orders",
-                "url_name": "orders:list",
+                "action_label": "Create order" if management_view else "New request",
+                "url_name": "orders:add",
             }
         )
     context.update(
         {
             "filters_active": filters_active,
-            "active_filter_count": sum([bool(selected_status), bool(selected_supplier)]),
+            "active_filter_count": sum([bool(selected_preset), bool(selected_status), bool(selected_supplier)]),
+            "selected_preset": selected_preset,
             "selected_status_label": status_labels.get(selected_status, ""),
             "selected_supplier_label": selected_supplier_label,
             "selected_preset_label": next(
                 (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
-                "",
+                preset_labels.get(selected_preset, ""),
             ),
             "filter_presets": filter_presets,
             "attention_items": attention_items,
