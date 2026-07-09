@@ -4,12 +4,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.permissions import is_management, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from apps.suppliers.models import Supplier
+from taptrack.module_ui import build_module_link, build_module_panel, build_module_snapshot
 from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import OrderForm, OrderItemFormSet
@@ -234,6 +236,121 @@ def list_orders(request):
                 "url_name": "orders:add",
             }
         )
+
+    if management_view:
+        if context["overdue_delivery_count"]:
+            primary_title = "Review overdue deliveries"
+            primary_copy = (
+                f"{context['overdue_delivery_count']} order(s) have passed their expected delivery date and should be chased or updated first."
+            )
+            primary_url = f"{reverse('orders:list')}?preset=overdue"
+            primary_label = "Open overdue deliveries"
+        elif context["awaiting_approval_count"]:
+            primary_title = "Clear the draft queue"
+            primary_copy = (
+                f"{context['awaiting_approval_count']} request(s) are still waiting for approval or a decision."
+            )
+            primary_url = f"{reverse('orders:list')}?preset=drafts"
+            primary_label = "Review draft queue"
+        else:
+            primary_title = "Create the next order"
+            primary_copy = (
+                "The urgent queue is clear, so you can add new supplier orders without missing any current blockers."
+            )
+            primary_url = reverse("orders:add")
+            primary_label = "Create order"
+        kicker = "Procurement"
+        badge = "Manager Queue"
+        title = "Keep supplier orders moving without losing the urgent ones."
+        copy = "Clear draft bottlenecks, chase late deliveries, and keep the live supplier pipeline easy to work through."
+    else:
+        if context["awaiting_approval_count"]:
+            primary_title = "Finish your draft requests"
+            primary_copy = (
+                f"{context['awaiting_approval_count']} request(s) are still sitting in draft and can be finished before they slow the queue down."
+            )
+            primary_url = f"{reverse('orders:list')}?preset=drafts"
+            primary_label = "Review drafts"
+        elif context["pending_count"]:
+            primary_title = "Track incoming delivery"
+            primary_copy = (
+                f"{context['pending_count']} order(s) are still in flight and should stay visible until the stock lands."
+            )
+            primary_url = f"{reverse('orders:list')}?preset=pending"
+            primary_label = "Track delivery"
+        else:
+            primary_title = "Raise a stock request"
+            primary_copy = (
+                "No open blockers are showing, so this is the right moment to send the next supplier request cleanly."
+            )
+            primary_url = reverse("orders:add")
+            primary_label = "Create request"
+        kicker = "Request Tracking"
+        badge = "My Queue"
+        title = "Track requests, delivery follow-through, and what still needs your attention."
+        copy = "Submit requests, finish drafts, and keep incoming deliveries visible until they land in stock."
+
+    module_panel = build_module_panel(
+        hero_class="orders-hero",
+        kicker=kicker,
+        badge=badge,
+        title=title,
+        copy=copy,
+        primary_title=primary_title,
+        primary_copy=primary_copy,
+        primary_url=primary_url,
+        primary_label=primary_label,
+        utility_links=[
+            build_module_link("Create order" if management_view else "New request", reverse("orders:add")),
+            build_module_link("Delivered", f"{reverse('orders:list')}?preset=delivered"),
+        ],
+        toolbar_notes=[
+            f"{context['open_order_count']} open",
+            f"{context['pending_count']} pending",
+            f"{context['total_units_in_view']} units",
+        ],
+    )
+    module_snapshots = [
+        build_module_snapshot(
+            label="Awaiting approval" if management_view else "Draft requests",
+            state=f"{context['stale_draft_count']} stale" if context["stale_draft_count"] else "Working queue",
+            tone="warn" if context["stale_draft_count"] else "ok",
+            value=context["awaiting_approval_count"],
+            copy=(
+                "Requests waiting on approval or a decision before they can move into supplier ordering."
+                if management_view
+                else "Requests you can still review and finish before they move into the approval queue."
+            ),
+            action_label="Open drafts" if management_view else "Review drafts",
+            action_url=f"{reverse('orders:list')}?preset=drafts",
+        ),
+        build_module_snapshot(
+            label="Pending delivery",
+            state="In transit",
+            tone="neutral",
+            value=context["pending_count"],
+            copy=(
+                "Orders already placed and still waiting to land into stock, which means they need follow-through rather than reordering."
+            ),
+            action_label="Track pending",
+            action_url=f"{reverse('orders:list')}?preset=pending",
+        ),
+        build_module_snapshot(
+            label="Delivery risk",
+            state="Late" if context["overdue_delivery_count"] else "On track",
+            tone="alert" if context["overdue_delivery_count"] else "ok",
+            value=context["overdue_delivery_count"],
+            copy=(
+                "Orders with delivery dates already passed and still not closed as delivered, which is where supplier friction usually shows up first."
+            ),
+            action_label="Open overdue" if context["overdue_delivery_count"] else "View pending",
+            action_url=(
+                f"{reverse('orders:list')}?preset=overdue"
+                if context["overdue_delivery_count"]
+                else f"{reverse('orders:list')}?preset=pending"
+            ),
+        ),
+    ]
     context.update(
         {
             "filters_active": filters_active,
@@ -247,6 +364,8 @@ def list_orders(request):
             ),
             "filter_presets": filter_presets,
             "attention_items": attention_items,
+            "module_panel": module_panel,
+            "module_snapshots": module_snapshots,
         }
     )
     return render(request, "orders/list.html", context)

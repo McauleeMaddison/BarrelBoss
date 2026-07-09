@@ -4,127 +4,21 @@
 {% block page_title %}Tasks{% if is_management %} & Checks{% endif %}{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero module-command-panel checklists-hero">
-    <div class="module-command-shell">
-        <div class="module-command-main">
-            <div class="portal-hero-head">
-                <p class="kicker">{% if is_management %}Task Management{% else %}Personal Task Queue{% endif %}</p>
-                <span class="badge portal-badge">{% if is_management %}Operations Checklist{% else %}Personal Checklist{% endif %}</span>
-            </div>
-            <h3 class="portal-hero-title">{% if is_management %}Keep the task queue clean, assigned, and easy to complete.{% else %}See exactly what needs closing before your shift rolls over.{% endif %}</h3>
-            <p class="portal-hero-copy">
-                {% if is_management %}
-                Use this board to spot overdue work, rebalance ownership, and keep daily checks moving without extra admin noise.
-                {% else %}
-                Work from today’s queue, clear anything overdue, and keep handover quality tight without hunting through a busy dashboard.
-                {% endif %}
-            </p>
-            {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-        </div>
+{% include 'partials/modules/command_panel.html' %}
+{% include 'partials/modules/snapshot_grid.html' %}
 
-        <aside class="dashboard-hero-card module-action-panel">
-            <div>
-                <p class="kicker">Primary action</p>
-                {% if overdue_count %}
-                <h3>Clear overdue tasks</h3>
-                <p class="panel-subtitle">{{ overdue_count }} task(s) are already late and should be completed or reassigned before anything else.</p>
-                {% elif due_today_count %}
-                <h3>Work today’s queue</h3>
-                <p class="panel-subtitle">{{ due_today_count }} task(s) still need closing in the current shift window.</p>
-                {% elif is_management %}
-                <h3>Assign the next task</h3>
-                <p class="panel-subtitle">The urgent queue is under control, so you can use this time to keep ownership and planning tidy.</p>
-                {% else %}
-                <h3>Review active tasks</h3>
-                <p class="panel-subtitle">There is no urgent backlog showing, so use the live queue to stay ahead of later handover work.</p>
-                {% endif %}
-            </div>
-
-            <div class="module-action-stack">
-                {% if overdue_count %}
-                <a class="action-btn action-link" href="?preset=overdue">Open overdue tasks</a>
-                {% elif due_today_count %}
-                <a class="action-btn action-link" href="?preset=today">Open today’s tasks</a>
-                {% elif is_management %}
-                <a class="action-btn action-link" href="{% url 'checklists:add' %}">Assign task</a>
-                {% else %}
-                <a class="action-btn action-link" href="?status=pending">Open pending tasks</a>
-                {% endif %}
-
-                <div class="module-utility-links">
-                    {% if is_management %}
-                    <a class="table-action" href="{% url 'checklists:add' %}">Assign task</a>
-                    {% endif %}
-                    <a class="table-action" href="?preset=completed">Completed</a>
-                </div>
-
-                <div class="module-toolbar-note">
-                    <span class="panel-header-meta">{{ task_count }} visible</span>
-                    <span class="panel-header-meta">{{ due_today_count }} due today</span>
-                    <span class="panel-header-meta">{{ completion_rate }}% complete</span>
-                </div>
-            </div>
-        </aside>
-    </div>
-</section>
-
-<section class="module-snapshot-grid">
-    <article class="module-snapshot-card">
-        <div class="module-snapshot-head">
-            <span class="module-snapshot-label">Overdue work</span>
-            <span class="metric-state metric-state-{% if overdue_count %}alert{% else %}ok{% endif %}">
-                {% if overdue_count %}Escalate{% else %}Clear{% endif %}
-            </span>
-        </div>
-        <strong class="module-snapshot-value">{{ overdue_count }}</strong>
-        <p class="module-snapshot-copy">Tasks already past due date that should be completed or reassigned before they keep compounding into tomorrow’s queue.</p>
-        <div class="metric-actions">
-            <a class="metric-action-link" href="?preset=overdue">Open overdue</a>
-        </div>
-    </article>
-
-    <article class="module-snapshot-card">
-        <div class="module-snapshot-head">
-            <span class="module-snapshot-label">Due today</span>
-            <span class="metric-state metric-state-{% if due_today_count %}warn{% else %}ok{% endif %}">
-                {% if due_today_count %}Current focus{% else %}No due items{% endif %}
-            </span>
-        </div>
-        <strong class="module-snapshot-value">{{ due_today_count }}</strong>
-        <p class="module-snapshot-copy">Tasks that should close before the current operating day ends, which makes this the most important active working view.</p>
-        <div class="metric-actions">
-            <a class="metric-action-link" href="?preset=today">Open today</a>
-        </div>
-    </article>
-
-    <article class="module-snapshot-card">
-        <div class="module-snapshot-head">
-            <span class="module-snapshot-label">Weekly output</span>
-            <span class="metric-state metric-state-ok">{{ completion_rate }}% complete</span>
-        </div>
-        <strong class="module-snapshot-value">{{ completed_week_count }}</strong>
-        <p class="module-snapshot-copy">Tasks completed in the last 7 days, giving a simple read on whether execution is moving or starting to stall.</p>
-        <div class="metric-actions">
-            <a class="metric-action-link" href="?preset=completed">View completed</a>
-        </div>
-    </article>
-</section>
-
-<section class="panel module-table-panel module-queue-panel" id="checklistTasks">
+<section class="panel module-table-panel module-queue-panel">
     <div class="panel-header">
         <div>
             <h3>{% if is_management %}Checklist queue{% else %}My task queue{% endif %}</h3>
             <p class="panel-subtitle">Use presets and filters to narrow the live task board, then review or complete work from the table detail drawer.</p>
         </div>
-        {% if is_management %}
-        <a class="action-btn action-link" href="{% url 'checklists:add' %}">Assign task</a>
-        {% endif %}
     </div>
 
     <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
         <div class="filter-preset-row">
             {% for preset in filter_presets %}
-            <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'checklists:list' %}{% endif %}">{{ preset.label }}</a>
             {% endfor %}
         </div>
         <div class="filter-summary-bar">

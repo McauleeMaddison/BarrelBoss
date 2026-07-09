@@ -64,6 +64,8 @@ class StockListViewTests(TestCase):
         self.assertContains(response, "Jameson")
         self.assertEqual(response.context["total_items"], 2)
         self.assertEqual(response.context["low_stock_count"], 1)
+        self.assertEqual(response.context["module_panel"]["badge"], "Stock Control")
+        self.assertEqual(len(response.context["module_snapshots"]), 3)
 
     def test_stock_list_filters_by_category(self):
         self.client.login(username="stock_user", password="strong-pass-123")

@@ -73,7 +73,7 @@ class ChecklistViewTests(TestCase):
         self.assertContains(response, "Restock fridges")
         self.assertContains(response, "Count till")
 
-    def test_checklist_context_exposes_filter_summary_and_trend(self):
+    def test_checklist_context_exposes_filter_summary_and_module_shell(self):
         self.client.login(username="task_manager", password="strong-pass-123")
         response = self.client.get(
             reverse("checklists:list"),
@@ -89,9 +89,9 @@ class ChecklistViewTests(TestCase):
         self.assertEqual(response.context["active_filter_count"], 3)
         self.assertEqual(response.context["selected_type_label"], "Opening")
         self.assertEqual(response.context["selected_status_label"], "Pending")
-        self.assertIn("label", response.context["completion_trend"])
         self.assertTrue(response.context["attention_items"])
-        self.assertEqual(len(response.context["created_chart"]), 7)
+        self.assertEqual(response.context["module_panel"]["badge"], "Operations Checklist")
+        self.assertEqual(len(response.context["module_snapshots"]), 3)
 
     def test_checklist_overdue_preset_filters_queue(self):
         self.client.login(username="task_manager", password="strong-pass-123")
@@ -101,7 +101,12 @@ class ChecklistViewTests(TestCase):
         self.assertContains(response, "Deep clean line")
         self.assertNotContains(response, "Count till")
         self.assertEqual(response.context["selected_preset_label"], "Overdue")
-        self.assertTrue(response.context["filter_presets"][0]["active"])
+        self.assertTrue(
+            any(
+                preset["active"] and preset["key"] == "overdue"
+                for preset in response.context["filter_presets"]
+            )
+        )
 
     def test_manager_can_create_task(self):
         self.client.login(username="task_manager", password="strong-pass-123")

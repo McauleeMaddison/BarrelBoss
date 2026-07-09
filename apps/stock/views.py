@@ -4,12 +4,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
+from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.accounts.permissions import management_required
+from apps.accounts.permissions import is_management, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from taptrack.pagination import build_query_string, paginate_collection
+from taptrack.module_ui import build_module_link, build_module_panel, build_module_snapshot
 
 from .forms import StockItemForm
 from .models import StockItem
@@ -20,6 +22,7 @@ def list_items(request):
     selected_category = request.GET.get("category", "")
     selected_urgency = request.GET.get("urgency", "all")
     query = (request.GET.get("q") or "").strip()
+    management_view = is_management(request.user)
 
     urgency_choices = [
         ("all", "All Urgency Bands"),
@@ -130,6 +133,7 @@ def list_items(request):
         return response
 
     page_obj = paginate_collection(request, items, per_page=12)
+    filter_query = build_query_string(request, exclude_keys={"export"})
     category_labels = dict(StockItem.Category.choices)
     urgency_label_map = dict(urgency_choices)
     filters_active = bool(query or selected_category or selected_urgency != "all")
@@ -190,14 +194,123 @@ def list_items(request):
             }
         )
 
+    if urgency_counts["critical"]:
+        primary_title = "Review critical stock"
+        primary_copy = (
+            f"{urgency_counts['critical']} line(s) are already out or well below minimum and need attention first."
+        )
+        primary_url = f"{reverse('stock:list')}?urgency=critical"
+        primary_label = "Open critical stock"
+    elif urgency_counts["low"]:
+        primary_title = "Work the low-stock queue"
+        primary_copy = (
+            f"{urgency_counts['low']} line(s) are below safe working level and should be queued for replenishment."
+        )
+        primary_url = f"{reverse('stock:list')}?urgency=low"
+        primary_label = "Open low stock"
+    elif management_view:
+        primary_title = "Add or tidy inventory"
+        primary_copy = (
+            "The urgent queue is clear, so this is the right time to clean the catalogue or add new stock lines."
+        )
+        primary_url = reverse("stock:add")
+        primary_label = "Add stock item"
+    else:
+        primary_title = "Review the watch list"
+        primary_copy = (
+            "No urgent shortage is showing, so use the watch list to stop tomorrow's problems early."
+        )
+        primary_url = f"{reverse('stock:list')}?urgency=watch"
+        primary_label = "Open watch list"
+
+    display_item_count = len(items)
+    module_panel = build_module_panel(
+        hero_class="inventory-hero",
+        kicker="Inventory",
+        badge="Stock Control",
+        title="Keep service-critical stock visible and actionable.",
+        copy=(
+            "Use this board to spot urgent shortages fast, tighten replenishment decisions, and keep the working stock list clean."
+        ),
+        primary_title=primary_title,
+        primary_copy=primary_copy,
+        primary_url=primary_url,
+        primary_label=primary_label,
+        utility_links=[
+            *(
+                [build_module_link("Create order", reverse("orders:add"))]
+                if management_view
+                else []
+            ),
+            build_module_link(
+                "Export CSV",
+                f"{reverse('stock:list')}?{filter_query}&export=csv"
+                if filter_query
+                else f"{reverse('stock:list')}?export=csv",
+            ),
+        ],
+        toolbar_notes=[
+            f"{display_item_count} shown",
+            f"{total_units} units",
+            f"{restock_gap_units} gap",
+        ],
+    )
+    module_snapshots = [
+        build_module_snapshot(
+            label="Immediate action",
+            state=(
+                f"{urgency_counts['critical']} critical"
+                if urgency_counts["critical"]
+                else ("Restock now" if urgency_counts["low"] else "Clear")
+            ),
+            tone="alert" if urgency_counts["critical"] else ("warn" if urgency_counts["low"] else "ok"),
+            value=urgency_counts["critical"] + urgency_counts["low"],
+            copy=(
+                "Critical and low-stock lines combined into one queue that should be reviewed before ordinary restocking."
+            ),
+            action_label="Open critical" if urgency_counts["critical"] else "Open low stock",
+            action_url=(
+                f"{reverse('stock:list')}?urgency=critical"
+                if urgency_counts["critical"]
+                else f"{reverse('stock:list')}?urgency=low"
+            ),
+        ),
+        build_module_snapshot(
+            label="Restock gap",
+            state="Replenish" if restock_gap_units else "Covered",
+            tone="warn" if restock_gap_units else "ok",
+            value=restock_gap_units,
+            copy=(
+                "Units still needed to bring low and critical lines back to their minimum working level."
+            ),
+            action_label="Create order" if management_view else "Review low stock",
+            action_url=(
+                reverse("orders:add")
+                if management_view
+                else f"{reverse('stock:list')}?urgency=low"
+            ),
+        ),
+        build_module_snapshot(
+            label="Stable stock",
+            state=f"{urgency_counts['healthy']} healthy",
+            tone="ok",
+            value=urgency_counts["watch"],
+            copy=(
+                "Lines on the watch list that still have buffer left, but are close enough to need monitoring before they become urgent."
+            ),
+            action_label="Open watch list",
+            action_url=f"{reverse('stock:list')}?urgency=watch",
+        ),
+    ]
+
     context = {
         "items": list(page_obj.object_list),
         "page_obj": page_obj,
         "is_paginated": page_obj.has_other_pages(),
         "pagination_query": build_query_string(request),
-        "filter_query": build_query_string(request, exclude_keys={"export"}),
+        "filter_query": filter_query,
         "total_items": len(inventory_items),
-        "display_item_count": len(items),
+        "display_item_count": display_item_count,
         "low_stock_count": urgency_counts["critical"] + urgency_counts["low"],
         "critical_stock_count": urgency_counts["critical"],
         "watch_stock_count": urgency_counts["watch"],
@@ -226,6 +339,8 @@ def list_items(request):
         ),
         "filter_presets": filter_presets,
         "attention_items": attention_items,
+        "module_panel": module_panel,
+        "module_snapshots": module_snapshots,
     }
     return render(request, "stock/list.html", context)
 

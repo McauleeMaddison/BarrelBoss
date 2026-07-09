@@ -1,0 +1,41 @@
+<section class="panel portal-hero module-command-panel {{ module_panel.hero_class }}">
+    <div class="module-command-shell">
+        <div class="module-command-main">
+            <div class="portal-hero-head">
+                <p class="kicker">{{ module_panel.kicker }}</p>
+                <span class="badge portal-badge">{{ module_panel.badge }}</span>
+            </div>
+            <h3 class="portal-hero-title">{{ module_panel.title }}</h3>
+            <p class="portal-hero-copy">{{ module_panel.copy }}</p>
+            {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+        </div>
+
+        <aside class="dashboard-hero-card module-action-panel">
+            <div>
+                <p class="kicker">{{ module_panel.primary_kicker }}</p>
+                <h3>{{ module_panel.primary_title }}</h3>
+                <p class="panel-subtitle">{{ module_panel.primary_copy }}</p>
+            </div>
+
+            <div class="module-action-stack">
+                <a class="action-btn action-link" href="{{ module_panel.primary_url }}">{{ module_panel.primary_label }}</a>
+
+                {% if module_panel.utility_links %}
+                <div class="module-utility-links">
+                    {% for link in module_panel.utility_links %}
+                    <a class="table-action" href="{{ link.url }}">{{ link.label }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if module_panel.toolbar_notes %}
+                <div class="module-toolbar-note">
+                    {% for note in module_panel.toolbar_notes %}
+                    <span class="panel-header-meta">{{ note }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</section>

@@ -1,0 +1,17 @@
+<section class="module-snapshot-grid">
+    {% for card in module_snapshots %}
+    <article class="module-snapshot-card">
+        <div class="module-snapshot-head">
+            <span class="module-snapshot-label">{{ card.label }}</span>
+            <span class="metric-state metric-state-{{ card.tone }}">{{ card.state }}</span>
+        </div>
+        <strong class="module-snapshot-value">{{ card.value }}</strong>
+        <p class="module-snapshot-copy">{{ card.copy }}</p>
+        {% if card.action_label and card.action_url %}
+        <div class="metric-actions">
+            <a class="metric-action-link" href="{{ card.action_url }}">{{ card.action_label }}</a>
+        </div>
+        {% endif %}
+    </article>
+    {% endfor %}
+</section>

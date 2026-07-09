@@ -81,6 +81,8 @@ class OrderWorkflowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["management_view"])
+        self.assertEqual(response.context["module_panel"]["badge"], "My Queue")
+        self.assertEqual(len(response.context["module_snapshots"]), 3)
 
     def test_manager_can_create_order_with_item_lines(self):
         self.client.login(username="order_manager", password="strong-pass-123")

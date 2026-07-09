@@ -4,44 +4,17 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.permissions import is_management, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
+from taptrack.module_ui import build_module_link, build_module_panel, build_module_snapshot
 from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import ChecklistForm
 from .models import Checklist
-
-
-def _build_trend(current_value, previous_value, suffix):
-    change = current_value - previous_value
-    if change > 0:
-        return {"label": f"+{change} {suffix}", "direction": "up"}
-    if change < 0:
-        return {"label": f"{change} {suffix}", "direction": "down"}
-    return {"label": f"0 {suffix}", "direction": "flat"}
-
-
-def _build_chart_points(values):
-    highest = max(values) if values else 0
-    chart = []
-    for index, value in enumerate(values):
-        if highest <= 0:
-            height = 0
-        else:
-            height = int(round((value / highest) * 100))
-            if value > 0 and height < 8:
-                height = 8
-        chart.append(
-            {
-                "height": height,
-                "value": value,
-                "is_latest": index == len(values) - 1,
-            }
-        )
-    return chart
 
 
 def _sync_completed_timestamp(task):
@@ -54,6 +27,7 @@ def _sync_completed_timestamp(task):
 @login_required
 def list_checklists(request):
     today = timezone.localdate()
+    management_view = is_management(request.user)
     selected_type = request.GET.get("type", "")
     selected_status = request.GET.get("status", "")
     selected_preset = request.GET.get("preset", "")
@@ -61,7 +35,7 @@ def list_checklists(request):
 
     tasks_qs = Checklist.objects.select_related("assigned_to", "created_by")
 
-    if not is_management(request.user):
+    if not management_view:
         tasks_qs = tasks_qs.filter(assigned_to=request.user)
 
     if selected_preset == "overdue":
@@ -91,9 +65,6 @@ def list_checklists(request):
     page_obj = paginate_collection(request, tasks_qs, per_page=12)
     tasks = list(page_obj.object_list)
     week_ago = today - timedelta(days=7)
-    previous_week_start = week_ago - timedelta(days=7)
-    previous_week_end = week_ago - timedelta(days=1)
-    last_seven_dates = [today - timedelta(days=6 - offset) for offset in range(7)]
 
     total = scope_qs.count()
     completed_count = scope_qs.filter(completed=True).count()
@@ -102,30 +73,13 @@ def list_checklists(request):
     overdue_count = scope_qs.filter(due_date__lt=today, completed=False).count()
     unassigned_count = (
         scope_qs.filter(assigned_to__isnull=True, completed=False).count()
-        if is_management(request.user)
+        if management_view
         else 0
     )
     completed_week_count = scope_qs.filter(
         completed=True,
         completed_at__date__gte=week_ago,
     ).count()
-    completed_previous_week_count = scope_qs.filter(
-        completed=True,
-        completed_at__date__range=(previous_week_start, previous_week_end),
-    ).count()
-
-    created_series = [scope_qs.filter(created_at__date=day).count() for day in last_seven_dates]
-    due_series = [
-        scope_qs.filter(due_date=day, completed=False).count() for day in last_seven_dates
-    ]
-    overdue_series = [
-        scope_qs.filter(completed=False, due_date__lt=day + timedelta(days=1)).count()
-        for day in last_seven_dates
-    ]
-    completed_series = [
-        scope_qs.filter(completed=True, completed_at__date=day).count()
-        for day in last_seven_dates
-    ]
 
     filters_active = bool(query or selected_type or selected_status or selected_preset)
     active_filter_count = sum(
@@ -144,48 +98,6 @@ def list_checklists(request):
         "completed": "Completed",
     }
     selected_preset_label = preset_choices.get(selected_preset, "")
-
-    if overdue_count:
-        queue_state_label = "Needs intervention"
-        queue_state_copy = f"{overdue_count} overdue task(s) need immediate follow-up."
-        queue_state_tone = "alert"
-    elif due_today_count:
-        queue_state_label = "Active today"
-        queue_state_copy = f"{due_today_count} task(s) are due in the current shift window."
-        queue_state_tone = "warn"
-    else:
-        queue_state_label = "Under control"
-        queue_state_copy = "No overdue backlog and no tasks due today."
-        queue_state_tone = "ok"
-
-    hero_signals = [
-        {
-            "label": "Queue health",
-            "value": queue_state_label,
-            "copy": queue_state_copy,
-            "tone": queue_state_tone,
-        },
-        {
-            "label": "Weekly output",
-            "value": f"{completed_week_count} closed",
-            "copy": _build_trend(
-                completed_week_count,
-                completed_previous_week_count,
-                "vs previous 7 days",
-            )["label"],
-            "tone": "ok",
-        },
-        {
-            "label": "Control mode",
-            "value": "Assignment control" if is_management(request.user) else "Personal execution",
-            "copy": (
-                "Managers can rebalance ownership and clean up blockers."
-                if is_management(request.user)
-                else "Only your assigned tasks are shown in this queue."
-            ),
-            "tone": "neutral",
-        },
-    ]
 
     attention_items = []
     if overdue_count:
@@ -212,7 +124,7 @@ def list_checklists(request):
                 "query": "preset=today",
             }
         )
-    if is_management(request.user) and unassigned_count:
+    if management_view and unassigned_count:
         attention_items.append(
             {
                 "label": "Unassigned work",
@@ -230,19 +142,133 @@ def list_checklists(request):
                 "value": "Queue clear",
                 "copy": "No overdue blockers are showing inside the current checklist scope.",
                 "tone": "ok",
-                "action_label": "Assign task" if is_management(request.user) else "Open pending",
-                "url_name": "checklists:add" if is_management(request.user) else "checklists:list",
-                "query": None if is_management(request.user) else "status=pending",
+                "action_label": "Assign task" if management_view else "Open pending",
+                "url_name": "checklists:add" if management_view else "checklists:list",
+                "query": None if management_view else "status=pending",
             }
         )
 
     filter_presets = [
-        {"key": "overdue", "label": "Overdue", "query": "preset=overdue"},
-        {"key": "today", "label": "Today", "query": "preset=today"},
-        {"key": "completed", "label": "Completed", "query": "preset=completed"},
+        {
+            "key": "",
+            "label": "All Tasks",
+            "query": "",
+            "active": not filters_active,
+        },
+        {
+            "key": "overdue",
+            "label": "Overdue",
+            "query": "preset=overdue",
+            "active": selected_preset == "overdue" and not query and not selected_type and not selected_status,
+        },
+        {
+            "key": "today",
+            "label": "Today",
+            "query": "preset=today",
+            "active": selected_preset == "today" and not query and not selected_type and not selected_status,
+        },
+        {
+            "key": "completed",
+            "label": "Completed",
+            "query": "preset=completed",
+            "active": selected_preset == "completed" and not query and not selected_type and not selected_status,
+        },
     ]
-    for preset in filter_presets:
-        preset["active"] = preset["key"] == selected_preset
+
+    if overdue_count:
+        primary_title = "Clear overdue tasks"
+        primary_copy = (
+            f"{overdue_count} task(s) are already late and should be completed or reassigned before anything else."
+        )
+        primary_url = f"{reverse('checklists:list')}?preset=overdue"
+        primary_label = "Open overdue tasks"
+    elif due_today_count:
+        primary_title = "Work today's queue"
+        primary_copy = f"{due_today_count} task(s) still need closing in the current shift window."
+        primary_url = f"{reverse('checklists:list')}?preset=today"
+        primary_label = "Open today's tasks"
+    elif management_view:
+        primary_title = "Assign the next task"
+        primary_copy = (
+            "The urgent queue is under control, so you can use this time to keep ownership and planning tidy."
+        )
+        primary_url = reverse("checklists:add")
+        primary_label = "Assign task"
+    else:
+        primary_title = "Review active tasks"
+        primary_copy = (
+            "There is no urgent backlog showing, so use the live queue to stay ahead of later handover work."
+        )
+        primary_url = f"{reverse('checklists:list')}?status=pending"
+        primary_label = "Open pending tasks"
+
+    module_panel = build_module_panel(
+        hero_class="checklists-hero",
+        kicker="Task Management" if management_view else "Personal Task Queue",
+        badge="Operations Checklist" if management_view else "Personal Checklist",
+        title=(
+            "Keep the task queue clean, assigned, and easy to complete."
+            if management_view
+            else "See exactly what needs closing before your shift rolls over."
+        ),
+        copy=(
+            "Use this board to spot overdue work, rebalance ownership, and keep daily checks moving without extra admin noise."
+            if management_view
+            else "Work from today's queue, clear anything overdue, and keep handover quality tight without hunting through a busy dashboard."
+        ),
+        primary_title=primary_title,
+        primary_copy=primary_copy,
+        primary_url=primary_url,
+        primary_label=primary_label,
+        utility_links=[
+            *(
+                [build_module_link("Assign task", reverse("checklists:add"))]
+                if management_view
+                else []
+            ),
+            build_module_link("Completed", f"{reverse('checklists:list')}?preset=completed"),
+        ],
+        toolbar_notes=[
+            f"{total} visible",
+            f"{due_today_count} due today",
+            f"{completion_rate}% complete",
+        ],
+    )
+    module_snapshots = [
+        build_module_snapshot(
+            label="Overdue work",
+            state="Escalate" if overdue_count else "Clear",
+            tone="alert" if overdue_count else "ok",
+            value=overdue_count,
+            copy=(
+                "Tasks already past due date that should be completed or reassigned before they keep compounding into tomorrow's queue."
+            ),
+            action_label="Open overdue",
+            action_url=f"{reverse('checklists:list')}?preset=overdue",
+        ),
+        build_module_snapshot(
+            label="Due today",
+            state="Current focus" if due_today_count else "No due items",
+            tone="warn" if due_today_count else "ok",
+            value=due_today_count,
+            copy=(
+                "Tasks that should close before the current operating day ends, which makes this the most important active working view."
+            ),
+            action_label="Open today",
+            action_url=f"{reverse('checklists:list')}?preset=today",
+        ),
+        build_module_snapshot(
+            label="Weekly output",
+            state=f"{completion_rate}% complete",
+            tone="ok",
+            value=completed_week_count,
+            copy=(
+                "Tasks completed in the last 7 days, giving a simple read on whether execution is moving or starting to stall."
+            ),
+            action_label="View completed",
+            action_url=f"{reverse('checklists:list')}?preset=completed",
+        ),
+    ]
 
     for task in tasks:
         task.assignee_label = task.assigned_to.username if task.assigned_to else "Unassigned"
@@ -281,7 +307,6 @@ def list_checklists(request):
         "overdue_count": overdue_count,
         "unassigned_count": unassigned_count,
         "completed_week_count": completed_week_count,
-        "completed_previous_week_count": completed_previous_week_count,
         "completion_rate": completion_rate,
         "type_choices": Checklist.ChecklistType.choices,
         "selected_type": selected_type,
@@ -289,23 +314,18 @@ def list_checklists(request):
         "selected_status": selected_status,
         "selected_status_label": selected_status_label,
         "selected_preset": selected_preset,
-        "selected_preset_label": selected_preset_label,
+        "selected_preset_label": next(
+            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+            selected_preset_label,
+        ),
         "query": query,
         "status_choices": status_choices,
         "filters_active": filters_active,
         "active_filter_count": active_filter_count,
         "filter_presets": filter_presets,
         "attention_items": attention_items,
-        "hero_signals": hero_signals,
-        "completion_trend": _build_trend(
-            completed_week_count,
-            completed_previous_week_count,
-            "vs previous 7 days",
-        ),
-        "created_chart": _build_chart_points(created_series),
-        "due_chart": _build_chart_points(due_series),
-        "overdue_chart": _build_chart_points(overdue_series),
-        "completion_chart": _build_chart_points(completed_series),
+        "module_panel": module_panel,
+        "module_snapshots": module_snapshots,
     }
     return render(request, "checklists/list.html", context)
 
