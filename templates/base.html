@@ -27,7 +27,8 @@
             document.documentElement.style.colorScheme = theme;
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260707-cleanup1">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260709-mobile-nav2">
+    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260709-structure1">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
@@ -38,115 +39,7 @@
 <div class="shell-bg"></div>
 <div class="layout">
     {% with current=request.resolver_match.view_name %}
-    <aside class="sidebar" id="main-navigation">
-        <div class="brand-wrap">
-            <div class="brand-block">
-                <a class="brand" href="{% url role_home_url_name %}">
-                    <div class="brand-mark">
-                        <img class="brand-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
-                        <div class="brand-copy">
-                            <span class="brand-title">BarrelBoss</span>
-                            <p class="brand-subtitle">Operations Workspace</p>
-                        </div>
-                    </div>
-                </a>
-                <div class="sidebar-presence" role="status" aria-label="Signed in user">
-                    <span class="sidebar-presence-dot" aria-hidden="true"></span>
-                    <div class="sidebar-presence-copy">
-                        <strong>{{ request.user.get_username|default:'Guest' }}</strong>
-                        <small>{{ user_role_label }}</small>
-                    </div>
-                </div>
-            </div>
-            <button type="button" class="sidebar-close" aria-label="Close navigation">✕</button>
-        </div>
-        <nav class="nav-links" aria-label="Main menu">
-    <div class="nav-section nav-section-operations">
-        <p class="nav-section-title">Everyday work</p>
-
-        <a class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}" href="{% url role_home_url_name %}" data-nav-icon="HM">
-            Home
-        </a>
-
-        <a class="nav-link{% if current == 'stock:list' %} active{% endif %}" href="{% url 'stock:list' %}" data-nav-icon="ST">
-            Stock
-        </a>
-
-        {% if is_management %}
-            <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="OR">
-                Orders
-            </a>
-
-            <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">
-                Breakages
-            </a>
-
-            <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="TK">
-                Tasks &amp; checks
-            </a>
-
-            <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">
-                Shifts
-            </a>
-        {% else %}
-            <a class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}" href="{% url 'orders:list' %}" data-nav-icon="RQ">
-                Stock requests
-            </a>
-
-            <a class="nav-link{% if current == 'checklists:list' %} active{% endif %}" href="{% url 'checklists:list' %}" data-nav-icon="TK">
-                My tasks
-            </a>
-
-            <a class="nav-link{% if current == 'breakages:list' %} active{% endif %}" href="{% url 'breakages:list' %}" data-nav-icon="BR">
-                Report breakage
-            </a>
-
-            <a class="nav-link{% if current == 'shifts:list' %} active{% endif %}" href="{% url 'shifts:list' %}" data-nav-icon="SH">
-                My shifts
-            </a>
-        {% endif %}
-    </div>
-
-    {% if is_management %}
-        <div class="nav-section nav-section-administration">
-            <p class="nav-section-title">Manager tools</p>
-
-            <a class="nav-link{% if current == 'suppliers:list' %} active{% endif %}" href="{% url 'suppliers:list' %}" data-nav-icon="SU">
-                Suppliers
-            </a>
-
-            <a class="nav-link{% if current == 'staff' %} active{% endif %}" href="{% url 'staff' %}" data-nav-icon="SF">
-                Staff
-            </a>
-
-            <a class="nav-link{% if current == 'reports' %} active{% endif %}" href="{% url 'reports' %}" data-nav-icon="RP">
-                Reports
-            </a>
-        </div>
-
-        <div class="nav-section nav-section-system">
-            <p class="nav-section-title">Advanced setup</p>
-
-            <a class="nav-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}" href="{% url 'sales:list' %}" data-nav-icon="TL">
-                Till &amp; daily takings
-            </a>
-
-            <a class="nav-link{% if current == 'audit:list' %} active{% endif %}" href="{% url 'audit:list' %}" data-nav-icon="AU">
-                Activity history
-            </a>
-
-            <a class="nav-link{% if current == 'settings' %} active{% endif %}" href="{% url 'settings' %}" data-nav-icon="SE">
-                Settings
-            </a>
-        </div>
-    {% endif %}
-</nav>
-
-        <form action="{% url 'logout' %}" method="post" class="logout-form">
-            {% csrf_token %}
-            <button type="submit" class="logout-btn">Sign Out</button>
-        </form>
-    </aside>
+    {% include 'partials/layout/sidebar.html' %}
 
     <main class="main-content">
         <header class="topbar" data-topbar>
@@ -217,65 +110,14 @@
         </div>
     </main>
 
-   <nav class="mobile-dock" aria-label="Quick navigation">
-    <a
-        class="mobile-dock-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}"
-        href="{% url role_home_url_name %}"
-        data-dock-icon="HM"
-    >
-        <span class="mobile-dock-label">Home</span>
-    </a>
-
-    <a
-        class="mobile-dock-link{% if current == 'stock:list' %} active{% endif %}"
-        href="{% url 'stock:list' %}"
-        data-dock-icon="ST"
-    >
-        <span class="mobile-dock-label">Stock</span>
-    </a>
-
-    <a
-        class="mobile-dock-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
-        href="{% url 'orders:list' %}"
-        data-dock-icon="{% if is_management %}OR{% else %}RQ{% endif %}"
-    >
-        <span class="mobile-dock-label">{% if is_management %}Orders{% else %}Request{% endif %}</span>
-    </a>
-
-    {% if is_management %}
-        <a
-            class="mobile-dock-link{% if current == 'breakages:list' %} active{% endif %}"
-            href="{% url 'breakages:list' %}"
-            data-dock-icon="BR"
-        >
-            <span class="mobile-dock-label">Breakages</span>
-        </a>
-    {% else %}
-        <a
-            class="mobile-dock-link{% if current == 'checklists:list' %} active{% endif %}"
-            href="{% url 'checklists:list' %}"
-            data-dock-icon="TK"
-        >
-            <span class="mobile-dock-label">Tasks</span>
-        </a>
-    {% endif %}
-
-    <button
-        type="button"
-        class="mobile-dock-link mobile-dock-button"
-        data-nav-toggle
-        aria-label="Open menu"
-        aria-controls="main-navigation"
-        aria-expanded="false"
-        data-dock-icon="ME"
-    >
-        <span class="mobile-dock-label">Menu</span>
-    </button>
-</nav>
+   {% include 'partials/layout/mobile_dock.html' %}
 {% endwith %}
 </div>
 {% include 'partials/detail_drawer.html' %}
 <script src="{% static 'js/pwa.js' %}" defer></script>
-<script src="{% static 'js/app.js' %}?v=20260704-ui13" defer></script>
+<script src="{% static 'js/core/app-shell.js' %}?v=20260709-structure1" defer></script>
+<script src="{% static 'js/modules/dashboard-tools.js' %}?v=20260709-structure1" defer></script>
+<script src="{% static 'js/modules/screen-tools.js' %}?v=20260709-structure1" defer></script>
+<script src="{% static 'js/modules/push-settings.js' %}?v=20260709-structure1" defer></script>
 </body>
 </html>

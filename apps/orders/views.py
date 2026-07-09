@@ -16,6 +16,17 @@ from .forms import OrderForm, OrderItemFormSet
 from .models import Order
 
 
+def _can_edit_order(user, order):
+    return (
+        is_management(user)
+        or (
+            order.created_by_id
+            and order.created_by_id == user.id
+            and order.status == Order.Status.DRAFT
+        )
+    )
+
+
 def _order_context_base(
     display_qs,
     page_obj,
@@ -97,7 +108,7 @@ def _order_context_base(
     }
 
 
-@management_required
+@login_required
 def list_orders(request):
     selected_status = request.GET.get("status", "")
     selected_supplier = request.GET.get("supplier", "")
@@ -252,7 +263,7 @@ def add_order(request):
                 return redirect("orders:list")
 
             messages.success(request, "Stock request sent to management.")
-            return redirect("orders:add")
+            return redirect("orders:list")
     else:
         initial = {}
 
@@ -282,16 +293,23 @@ def add_order(request):
         },
     )
 
-@management_required
+@login_required
 def edit_order(request, pk):
     order = get_object_or_404(Order.objects.prefetch_related("items"), pk=pk)
+    management_view = is_management(request.user)
+
+    if not _can_edit_order(request.user, order):
+        messages.error(request, "You can only edit your own draft requests.")
+        return redirect("orders:list")
 
     if request.method == "POST":
-        form = OrderForm(request.POST, instance=order, is_management=True)
+        form = OrderForm(request.POST, instance=order, is_management=management_view)
         formset = OrderItemFormSet(request.POST, instance=order)
 
         if form.is_valid() and formset.is_valid():
             updated_order = form.save(commit=False)
+            if not management_view:
+                updated_order.status = Order.Status.DRAFT
             updated_order.save()
             formset.save()
 
@@ -310,7 +328,7 @@ def edit_order(request, pk):
             messages.success(request, f"Order {updated_order.reference} updated.")
             return redirect("orders:list")
     else:
-        form = OrderForm(instance=order, is_management=True)
+        form = OrderForm(instance=order, is_management=management_view)
         formset = OrderItemFormSet(instance=order)
 
     return render(
@@ -322,7 +340,7 @@ def edit_order(request, pk):
             "page_title": f"Edit {order.reference}",
             "submit_label": "Save changes",
             "order": order,
-            "management_view": True,
+            "management_view": management_view,
         },
     )
 

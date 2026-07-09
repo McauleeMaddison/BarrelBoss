@@ -58,6 +58,7 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Management Portal")
+        self.assertEqual(len(response.context["portal_sections"]), 4)
         self.assertEqual(len(response.context["metrics"]), 4)
         self.assertIn("state", response.context["metrics"][0])
         self.assertIn("trend", response.context["metrics"][0])
@@ -65,7 +66,8 @@ class DashboardAccessTests(TestCase):
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Management Overview")
-        self.assertContains(response, "Premium Workstreams")
+        self.assertContains(response, "Operational Control Board")
+        self.assertContains(response, "Cellar watch")
 
     def test_staff_portal_context(self):
         self.client.login(username="dash_staff", password="strong-pass-123")
@@ -74,13 +76,15 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Staff Portal")
-        self.assertEqual(len(response.context["quick_actions"]), 3)
+        self.assertEqual(len(response.context["portal_sections"]), 4)
         self.assertIn("state", response.context["metrics"][0])
         self.assertIn("trend", response.context["metrics"][0])
         self.assertIn("chart_points", response.context["metrics"][0])
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Staff Shift Overview")
+        self.assertContains(response, "My Operational Board")
+        self.assertContains(response, "Shift run sheet")
 
     def test_staff_cannot_access_management_portal(self):
         self.client.login(username="dash_staff", password="strong-pass-123")
@@ -205,7 +209,9 @@ class DashboardDataDrivenMetricsTests(TestCase):
         self.assertEqual(metrics_by_label["Low Stock Items"], 1)
         self.assertEqual(metrics_by_label["Order Requests Awaiting Approval"], 1)
         self.assertEqual(metrics_by_label["Shifts Scheduled This Week"], 1)
-        self.assertEqual(len(response.context["quick_actions"]), 4)
+        self.assertEqual(len(response.context["portal_sections"]), 4)
+        self.assertContains(response, "Metric Lager Barrel")
+        self.assertContains(response, "Toast Control Feed")
 
     def test_staff_portal_uses_live_personal_counts(self):
         self.client.login(username="metric_staff", password="strong-pass-123")
@@ -219,3 +225,6 @@ class DashboardDataDrivenMetricsTests(TestCase):
         self.assertEqual(metrics_by_label["My Tasks Due Today"], 1)
         self.assertEqual(metrics_by_label["My Breakages This Week"], 1)
         self.assertEqual(metrics_by_label["Hours This Week"], "7.5")
+        self.assertEqual(len(response.context["portal_sections"]), 4)
+        self.assertContains(response, "Close till review")
+        self.assertContains(response, "Stock requests")

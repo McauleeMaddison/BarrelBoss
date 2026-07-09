@@ -141,7 +141,7 @@
     </article>
 </section>
 
-<section class="panel" id="inventoryTable">
+<section class="panel module-table-panel" id="inventoryTable">
     <div class="panel-header">
         <div>
             <h3>Current Inventory</h3>
@@ -224,22 +224,22 @@
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>
+                    <td data-label="Item">
                         <strong>{{ item.name }}</strong>
                         <br>
                         <small class="panel-subtitle">{{ item.stock_note }}</small>
                     </td>
-                    <td>{{ item.get_category_display }}</td>
-                    <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
-                    <td>{{ item.minimum_display }}</td>
-                    <td>{{ item.stock_gap }}</td>
-                    <td>{{ item.supplier.name|default:'-' }}</td>
-                    <td>£{{ item.cost|floatformat:2 }}</td>
-                    <td>£{{ item.value_estimate|floatformat:2 }}</td>
-                    <td>
+                    <td data-label="Category">{{ item.get_category_display }}</td>
+                    <td data-label="Quantity">{{ item.quantity }} {{ item.get_unit_display }}</td>
+                    <td data-label="Minimum">{{ item.minimum_display }}</td>
+                    <td data-label="Gap">{{ item.stock_gap }}</td>
+                    <td data-label="Supplier">{{ item.supplier.name|default:'-' }}</td>
+                    <td data-label="Unit Cost">£{{ item.cost|floatformat:2 }}</td>
+                    <td data-label="Est. Value">£{{ item.value_estimate|floatformat:2 }}</td>
+                    <td data-label="Urgency">
                         <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
                     </td>
-                    <td class="stock-actions-cell mobile-action-cell">
+                    <td class="stock-actions-cell mobile-action-cell" data-label="Review">
                         <button
                             class="table-action"
                             type="button"

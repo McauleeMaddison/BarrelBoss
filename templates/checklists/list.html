@@ -142,7 +142,7 @@
     </article>
 </section>
 
-<section class="panel" id="checklistTasks">
+<section class="panel module-table-panel" id="checklistTasks">
     <div class="panel-header">
         <h3>Checklist Tasks</h3>
         {% if is_management %}
@@ -225,7 +225,7 @@
         <tbody>
             {% for task in tasks %}
             <tr class="task-row task-row-{{ task.row_tone }}">
-                <td class="task-primary-cell">
+                <td class="task-primary-cell" data-label="Task">
                     <div class="task-primary-block">
                         <strong>{{ task.title }}</strong>
                         <div class="task-inline-meta">
@@ -234,18 +234,18 @@
                         </div>
                     </div>
                 </td>
-                <td>{{ task.get_checklist_type_display }}</td>
-                <td>{{ task.assignee_label }}</td>
-                <td>
+                <td data-label="Type">{{ task.get_checklist_type_display }}</td>
+                <td data-label="Assigned To">{{ task.assignee_label }}</td>
+                <td data-label="Due Date">
                     <div class="task-due-cell">
                         <strong>{{ task.due_date|date:"d M Y" }}</strong>
                         <span class="badge {{ task.due_badge_class }}">{{ task.due_state_label }}</span>
                     </div>
                 </td>
-                <td>
+                <td data-label="Status">
                     <span class="badge {{ task.status_badge_class }}">{{ task.status_label }}</span>
                 </td>
-                <td class="stock-actions-cell mobile-action-cell">
+                <td class="stock-actions-cell mobile-action-cell" data-label="Review">
                     <button
                         class="table-action"
                         type="button"

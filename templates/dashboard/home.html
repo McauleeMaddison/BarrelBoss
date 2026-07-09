@@ -96,21 +96,79 @@
     <article class="panel portal-panel">
         <div class="panel-header">
             <div>
-                <h3>{% if management_view %}Premium Workstreams{% else %}Primary Workflows{% endif %}</h3>
-                <p class="panel-subtitle">Keep the main operational paths visible without repeating the same controls all over the page.</p>
+                <h3>{% if management_view %}Operational Control Board{% else %}My Operational Board{% endif %}</h3>
+                <p class="panel-subtitle">Use the portal sections as working views first, then jump into the full module only when you need more detail.</p>
             </div>
+            <label class="dashboard-panel-select-label">
+                Section
+                <select class="dashboard-panel-select" data-dashboard-panel-select>
+                    {% for section in portal_sections %}
+                    <option value="{{ section.slug }}">{{ section.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
         </div>
-        <div class="action-grid dashboard-action-grid">
-            {% for action in quick_actions %}
-            <a class="action-tile" href="{% url action.url_name %}">
-                <strong>{{ action.title }}</strong>
-                {% if action.state %}
-                <span class="panel-header-meta">{{ action.state }}</span>
-                {% endif %}
-                <span>{{ action.meta }}</span>
-            </a>
+        <div class="dashboard-controls dashboard-section-tabs">
+            {% for section in portal_sections %}
+            <button class="segment-btn{% if forloop.first %} active{% endif %}" type="button" data-dashboard-panel-target="{{ section.slug }}">
+                {{ section.label }}
+            </button>
             {% endfor %}
         </div>
+        {% for section in portal_sections %}
+        <div class="dashboard-panel-group dashboard-workspace-group" data-dashboard-panel-group="{{ section.slug }}"{% if not forloop.first %} hidden{% endif %}>
+            <div class="dashboard-workspace-shell">
+                <div class="dashboard-workspace-main">
+                    <div class="dashboard-workspace-head">
+                        <p class="kicker dashboard-workspace-kicker">{{ section.eyebrow }}</p>
+                        <h4>{{ section.title }}</h4>
+                    </div>
+                    <p class="panel-subtitle">{{ section.copy }}</p>
+                    <div class="dashboard-section-stats">
+                        {% for stat in section.stats %}
+                        <article class="dashboard-section-stat">
+                            <span>{{ stat.label }}</span>
+                            <strong>{{ stat.value }}</strong>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="dashboard-workspace-side">
+                    {% if section.rows %}
+                    <ul class="dashboard-record-list">
+                        {% for row in section.rows %}
+                        <li class="dashboard-record-row">
+                            <div class="dashboard-record-copy">
+                                <strong>{{ row.title }}</strong>
+                                <small>{{ row.meta }}</small>
+                                {% if row.note %}
+                                <span class="dashboard-record-note">{{ row.note }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="metric-state metric-state-{{ row.tone|default:'neutral' }}">{{ row.badge }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="empty-state">{{ section.empty_state }}</p>
+                    {% endif %}
+                    {% if section.actions %}
+                    <div class="metric-actions">
+                        {% for action in section.actions %}
+                        {% if action.href %}
+                        <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                        {% else %}
+                        <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
+                            {{ action.label }}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </article>
 
     <article class="panel portal-panel">

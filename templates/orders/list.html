@@ -129,7 +129,7 @@
     </article>
 </section>
 
-<section class="panel" id="ordersTable">
+<section class="panel module-table-panel" id="ordersTable">
     <div class="panel-header">
         <div>
             <h3>{% if management_view %}Management Order Queue{% else %}My Stock Order Requests{% endif %}</h3>
@@ -208,16 +208,16 @@
             <tbody>
                 {% for order in orders %}
                 <tr>
-                    <td>{{ order.reference }}</td>
-                    <td>{{ order.supplier.name }}</td>
-                    <td>{{ order.order_date }}</td>
-                    <td>{{ order.delivery_date|default:'-' }}</td>
-                    <td>{{ order.total_units_display }} units</td>
-                    <td>
+                    <td data-label="Reference">{{ order.reference }}</td>
+                    <td data-label="Supplier">{{ order.supplier.name }}</td>
+                    <td data-label="Order Date">{{ order.order_date }}</td>
+                    <td data-label="Delivery Date">{{ order.delivery_date|default:'-' }}</td>
+                    <td data-label="Items">{{ order.total_units_display }} units</td>
+                    <td data-label="Status">
                         <span class="badge {{ order.status_badge_class }}">{{ order.get_status_display }}</span>
                     </td>
-                    <td>{{ order.created_by_display }}</td>
-                    <td class="stock-actions-cell mobile-action-cell">
+                    <td data-label="Created By">{{ order.created_by_display }}</td>
+                    <td class="stock-actions-cell mobile-action-cell" data-label="Review">
                         <button
                             class="table-action"
                             type="button"

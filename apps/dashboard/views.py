@@ -113,6 +113,146 @@ def _connector_health_state(integration):
     return "ok"
 
 
+def _format_short_date(value):
+    return value.strftime("%a %d %b")
+
+
+def _format_short_datetime(value):
+    return timezone.localtime(value).strftime("%d %b %H:%M")
+
+
+def _order_tone(status):
+    if status == Order.Status.DRAFT:
+        return "warn"
+    if status == Order.Status.PENDING_DELIVERY:
+        return "warn"
+    if status == Order.Status.ORDERED:
+        return "neutral"
+    if status == Order.Status.DELIVERED:
+        return "ok"
+    return "alert"
+
+
+def _stock_row(item):
+    shortage = max(item.minimum_level - item.quantity, 0)
+    return {
+        "title": item.name,
+        "meta": (
+            f"{item.quantity} {item.get_unit_display().lower()} on hand vs min "
+            f"{item.minimum_level}"
+        ),
+        "note": (
+            f"Supplier: {item.supplier.name}"
+            if item.supplier
+            else "Supplier: Not linked yet"
+        ),
+        "badge": f"{shortage} short" if shortage else "At minimum",
+        "tone": "alert" if item.quantity < item.minimum_level else "warn",
+    }
+
+
+def _order_row(order):
+    item_count = getattr(order, "item_count", 0)
+    delivery_copy = (
+        f"Due {_format_short_date(order.delivery_date)}"
+        if order.delivery_date
+        else "No delivery date"
+    )
+    return {
+        "title": order.reference,
+        "meta": f"{order.supplier.name} · {item_count} line(s) · {delivery_copy}",
+        "note": (
+            f"Requested by {order.created_by.username}"
+            if order.created_by
+            else "Requested by team"
+        ),
+        "badge": order.get_status_display(),
+        "tone": _order_tone(order.status),
+    }
+
+
+def _task_row(task, *, today):
+    if task.due_date < today:
+        badge = "Overdue"
+        tone = "alert"
+    elif task.due_date == today:
+        badge = "Due today"
+        tone = "warn"
+    else:
+        badge = "Open"
+        tone = "neutral"
+    return {
+        "title": task.title,
+        "meta": f"{task.get_checklist_type_display()} · due {_format_short_date(task.due_date)}",
+        "note": (
+            f"Assigned to {task.assigned_to.username}"
+            if task.assigned_to
+            else "Unassigned"
+        ),
+        "badge": badge,
+        "tone": tone,
+    }
+
+
+def _breakage_row(record):
+    return {
+        "title": f"{record.quantity} x {record.item_name}",
+        "meta": (
+            f"{record.get_issue_type_display()} · logged "
+            f"{_format_short_datetime(record.created_at)}"
+        ),
+        "note": (
+            f"Reported by {record.reported_by.username}"
+            if record.reported_by
+            else "Reporter not captured"
+        ),
+        "badge": "Loss log",
+        "tone": "warn",
+    }
+
+
+def _integration_row(integration):
+    health_state = _connector_health_state(integration)
+    last_sync_label = (
+        f"Last success {_format_short_datetime(integration.last_success_at)}"
+        if integration.last_success_at
+        else "No successful sync yet"
+    )
+    if integration.last_error_at and (
+        not integration.last_success_at or integration.last_error_at >= integration.last_success_at
+    ):
+        last_sync_label = f"Last error {_format_short_datetime(integration.last_error_at)}"
+    return {
+        "title": integration.label,
+        "meta": (
+            f"{integration.get_provider_display()} · "
+            f"{getattr(integration, 'active_mapping_count', 0)} mapped location(s)"
+        ),
+        "note": last_sync_label,
+        "badge": integration.health_label,
+        "tone": health_state,
+    }
+
+
+def _shift_row(shift, *, today):
+    if shift.shift_date == today:
+        badge = "Today"
+        tone = "warn"
+    else:
+        badge = "Upcoming"
+        tone = "neutral"
+    return {
+        "title": _format_short_date(shift.shift_date),
+        "meta": (
+            f"{shift.start_time:%H:%M}-{shift.end_time:%H:%M} · "
+            f"{shift.duration_hours:.1f}h scheduled"
+        ),
+        "note": shift.notes or "No shift notes attached",
+        "badge": badge,
+        "tone": tone,
+    }
+
+
 def _management_dashboard_payload():
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
@@ -195,6 +335,11 @@ def _management_dashboard_payload():
         created_at__date__range=(previous_seven_start, previous_seven_end)
     ).count()
     overdue_task_count = checklist_qs.filter(completed=False, due_date__lt=today).count()
+    tasks_due_today_count = checklist_qs.filter(completed=False, due_date=today).count()
+    low_stock_barrel_count = stock_qs.filter(
+        quantity__lte=F("minimum_level"),
+        category=StockItem.Category.BEER_BARRELS,
+    ).count()
 
     last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
     order_request_series = []
@@ -327,42 +472,135 @@ def _management_dashboard_payload():
         },
     ]
 
-    quick_actions = [
+    low_stock_preview = [
+        _stock_row(item)
+        for item in stock_qs.filter(quantity__lte=F("minimum_level"))
+        .select_related("supplier")
+        .order_by("quantity", "minimum_level", "name")[:4]
+    ]
+    draft_order_preview = list(
+        order_qs.filter(status=Order.Status.DRAFT)
+        .annotate(item_count=Count("items", distinct=True))
+        .order_by("created_at")[:2]
+    )
+    delivery_order_preview = list(
+        order_qs.filter(status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY])
+        .annotate(item_count=Count("items", distinct=True))
+        .order_by("delivery_date", "created_at")[:2]
+    )
+    order_queue_preview = [_order_row(order) for order in draft_order_preview + delivery_order_preview]
+    service_preview = [_integration_row(integration) for integration in pos_integrations[:4]]
+    if not service_preview and latest_sales_snapshot:
+        service_preview = [
+            {
+                "title": f"{latest_sales_snapshot.location_name} sales snapshot",
+                "meta": (
+                    f"£{latest_sales_snapshot.net_sales:,.0f} on "
+                    f"{_format_short_date(latest_sales_snapshot.business_date)}"
+                ),
+                "note": (
+                    f"{latest_sales_snapshot.transactions} transaction(s) · "
+                    f"{latest_sales_snapshot.covers} covers"
+                ),
+                "badge": latest_sales_snapshot.get_sync_mode_display(),
+                "tone": "ok"
+                if latest_sales_snapshot.sync_mode == SalesSnapshot.SyncMode.LIVE
+                else "warn",
+            }
+        ]
+    standards_preview = [
+        *[
+            _task_row(task, today=today)
+            for task in checklist_qs.filter(completed=False, due_date__lte=today)
+            .order_by("due_date", "created_at")[:2]
+        ],
+        *[_breakage_row(record) for record in breakage_qs.order_by("-created_at")[:2]],
+    ]
+
+    portal_sections = [
         {
-            "title": "POS Sync Center",
-            "url_name": "sales:sync_center",
-            "state": (
-                f"{connectors_needing_attention} need attention"
-                if connectors_needing_attention
-                else "Healthy"
+            "slug": "cellar",
+            "label": "Cellar watch",
+            "eyebrow": "Cellar pressure",
+            "title": "Low-stock cellar lines and restock pressure",
+            "copy": (
+                "Keep live cellar shortages visible here before supplier cut-off or service "
+                "risk forces a scramble."
             ),
-            "meta": (
-                f"{active_connector_count} connector(s) across {mapped_location_count} mapped location(s)."
-            ),
+            "stats": [
+                {"label": "Low-stock lines", "value": low_stock_count},
+                {"label": "Beer barrels low", "value": low_stock_barrel_count},
+                {"label": "Deliveries today", "value": deliveries_due_today},
+            ],
+            "rows": low_stock_preview,
+            "empty_state": "No cellar or back-bar lines are currently below minimum.",
+            "actions": [
+                {"label": "Open stock", "url_name": "stock:list"},
+                {"label": "Review orders", "url_name": "orders:list"},
+            ],
         },
         {
-            "title": "Cellar and Margin",
-            "url_name": "stock:list",
-            "state": "Restock pressure" if low_stock_count else "Stable",
-            "meta": (
-                f"{low_stock_count} low-stock line(s) against live sales mix and cellar demand."
+            "slug": "orders",
+            "label": "Delivery queue",
+            "eyebrow": "Approvals and inbound",
+            "title": "Order approvals and incoming deliveries",
+            "copy": (
+                "Review drafts and incoming stock in one queue instead of treating "
+                "purchasing as a separate page."
             ),
+            "stats": [
+                {"label": "Awaiting approval", "value": pending_order_count},
+                {"label": "Due today", "value": deliveries_due_today},
+                {"label": "Due tomorrow", "value": deliveries_due_tomorrow},
+            ],
+            "rows": order_queue_preview,
+            "empty_state": "No active approval or delivery queue is showing right now.",
+            "actions": [
+                {"label": "Open orders", "url_name": "orders:list"},
+                {"label": "Create order", "url_name": "orders:add"},
+            ],
         },
         {
-            "title": "Labor Control",
-            "url_name": "shifts:list",
-            "state": f"{today_labor_hours}h today" if today_labor_hours else "Needs coverage",
-            "meta": "Use live trade and rota hours together instead of in separate tools.",
+            "slug": "trade",
+            "label": "Trade pulse",
+            "eyebrow": "Sales and sync",
+            "title": "Trade pace, covers, and sales feed health",
+            "copy": (
+                "Tie live trade back into rota and cellar decisions without sending managers "
+                "into a separate till-only workflow."
+            ),
+            "stats": [
+                {"label": "Net sales today", "value": f"£{net_sales_today:,.0f}"},
+                {"label": "Covers today", "value": covers_today},
+                {"label": "Labor today", "value": f"{today_labor_hours:.1f}h"},
+            ],
+            "rows": service_preview,
+            "empty_state": "No connector or sales sync records are available yet.",
+            "actions": [
+                {"label": "Open sales", "url_name": "sales:list"},
+                {"label": "Sync center", "url_name": "sales:sync_center"},
+            ],
         },
         {
-            "title": "Daily Close Copilot",
-            "url_name": "sales:list",
-            "state": (
-                "Live close"
-                if today_sales_snapshot and abs(today_sales_snapshot.payment_gap) < 15
-                else "Needs review"
+            "slug": "standards",
+            "label": "Standards",
+            "eyebrow": "Tasks and loss",
+            "title": "Checklist drift and breakage follow-up",
+            "copy": (
+                "Keep overdue standards work and live loss records in front of the shift lead "
+                "before handover."
             ),
-            "meta": "Close quality, payment gaps, and sales freshness in one workflow.",
+            "stats": [
+                {"label": "Overdue tasks", "value": overdue_task_count},
+                {"label": "Due today", "value": tasks_due_today_count},
+                {"label": "Breakages this week", "value": breakages_this_week},
+            ],
+            "rows": standards_preview,
+            "empty_state": "No overdue tasks or fresh breakages need attention right now.",
+            "actions": [
+                {"label": "Open tasks", "url_name": "checklists:list"},
+                {"label": "Review breakages", "url_name": "breakages:list"},
+            ],
         },
     ]
 
@@ -622,7 +860,7 @@ def _management_dashboard_payload():
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,
-        "quick_actions": quick_actions,
+        "portal_sections": portal_sections,
         "focus_list": focus_list,
         "throughput": _build_throughput(
             last_seven_dates,
@@ -654,6 +892,7 @@ def _staff_dashboard_payload(user):
         my_shifts_qs.filter(shift_date__range=(previous_week_start, previous_week_end))
     )
     next_shift = my_shifts_qs.filter(shift_date__gte=today).first()
+    shifts_this_week_count = my_shifts_qs.filter(shift_date__range=(week_start, week_end)).count()
 
     open_order_count = my_orders_qs.filter(
         status__in=[Order.Status.DRAFT, Order.Status.ORDERED, Order.Status.PENDING_DELIVERY]
@@ -681,6 +920,8 @@ def _staff_dashboard_payload(user):
     breakages_last_week = my_breakages_qs.filter(
         created_at__date__range=(previous_seven_start, previous_seven_end)
     ).count()
+    breakages_today = my_breakages_qs.filter(created_at__date=today).count()
+    latest_breakage = my_breakages_qs.order_by("-created_at").first()
     last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
     hours_series = []
     order_request_series = []
@@ -792,24 +1033,123 @@ def _staff_dashboard_payload(user):
         },
     ]
 
-    quick_actions = [
+    upcoming_shift_preview = [
+        _shift_row(shift, today=today)
+        for shift in my_shifts_qs.filter(shift_date__gte=today)[:4]
+    ]
+    open_task_preview = [
+        _task_row(task, today=today)
+        for task in my_tasks_qs.filter(completed=False).order_by("due_date", "created_at")[:4]
+    ]
+    open_order_preview = [
+        _order_row(order)
+        for order in my_orders_qs.filter(
+            status__in=[Order.Status.DRAFT, Order.Status.ORDERED, Order.Status.PENDING_DELIVERY]
+        )
+        .annotate(item_count=Count("items", distinct=True))
+        .order_by("delivery_date", "created_at")[:4]
+    ]
+    incident_preview = [_breakage_row(record) for record in my_breakages_qs.order_by("-created_at")[:4]]
+
+    portal_sections = [
         {
-            "title": "Review My Shift Hours",
-            "url_name": "shifts:list",
-            "state": "Next shift booked" if next_shift else "No shift booked",
-            "meta": "View upcoming shifts and weekly totals.",
+            "slug": "shift",
+            "label": "Shift run sheet",
+            "eyebrow": "Rota view",
+            "title": "Upcoming shifts and weekly hours",
+            "copy": (
+                "Keep the next shift, weekly hours, and any schedule notes visible without "
+                "leaving the portal."
+            ),
+            "stats": [
+                {"label": "Hours this week", "value": f"{hours_this_week:.1f}h"},
+                {"label": "Shifts this week", "value": shifts_this_week_count},
+                {
+                    "label": "Next shift",
+                    "value": (
+                        next_shift.start_time.strftime("%H:%M")
+                        if next_shift and next_shift.shift_date == today
+                        else _format_short_date(next_shift.shift_date)
+                        if next_shift
+                        else "None"
+                    ),
+                },
+            ],
+            "rows": upcoming_shift_preview,
+            "empty_state": "No upcoming shifts are scheduled yet.",
+            "actions": [
+                {"label": "Open roster", "url_name": "shifts:list"},
+            ],
         },
         {
-            "title": "Create Order Request",
-            "url_name": "orders:add",
-            "state": "Procurement",
-            "meta": "Submit a draft order request for manager approval.",
+            "slug": "tasks",
+            "label": "My task queue",
+            "eyebrow": "Checklist work",
+            "title": "Tasks due today, overdue, and ready for handover",
+            "copy": (
+                "Run checklist work from the portal so overdue jobs stay visible before the "
+                "shift gets busy."
+            ),
+            "stats": [
+                {"label": "Due today", "value": tasks_due_today},
+                {"label": "Overdue", "value": tasks_overdue},
+                {"label": "Completed this week", "value": completed_tasks_this_week},
+            ],
+            "rows": open_task_preview,
+            "empty_state": "No open checklist tasks are assigned to you right now.",
+            "actions": [
+                {"label": "Today queue", "url_name": "checklists:list", "query": "preset=today"},
+                {"label": "Overdue", "url_name": "checklists:list", "query": "preset=overdue"},
+            ],
         },
         {
-            "title": "Review My Orders",
-            "url_name": "orders:list",
-            "state": f"{open_order_count} open",
-            "meta": "Track request status and expected delivery dates.",
+            "slug": "requests",
+            "label": "Stock requests",
+            "eyebrow": "Procurement",
+            "title": "Open requests and incoming stock",
+            "copy": (
+                "Track draft requests and delivery follow-through from the portal instead of "
+                "jumping out to a separate request screen first."
+            ),
+            "stats": [
+                {"label": "Open requests", "value": open_order_count},
+                {"label": "Pending delivery", "value": pending_delivery_count},
+                {"label": "Submitted this week", "value": submitted_orders_this_week},
+            ],
+            "rows": open_order_preview,
+            "empty_state": "No active stock requests are open for you.",
+            "actions": [
+                {"label": "Review orders", "url_name": "orders:list"},
+                {"label": "New request", "url_name": "orders:add"},
+            ],
+        },
+        {
+            "slug": "incidents",
+            "label": "Incidents",
+            "eyebrow": "Loss reporting",
+            "title": "Recent breakages and incident follow-up",
+            "copy": (
+                "Loss reporting stays visible inside the staff portal so breakages are logged "
+                "before the end of shift."
+            ),
+            "stats": [
+                {"label": "This week", "value": breakages_this_week},
+                {"label": "Reported today", "value": breakages_today},
+                {
+                    "label": "Most recent",
+                    "value": (
+                        _format_short_date(latest_breakage.created_at.date())
+                        if latest_breakage
+                        else "None"
+                    ),
+                },
+            ],
+            "rows": incident_preview,
+            "empty_state": "No breakages have been logged by you recently.",
+            "actions": [
+                {"label": "Review breakages", "url_name": "breakages:list"},
+                {"label": "Log incident", "url_name": "breakages:add"},
+            ],
         },
     ]
 
@@ -988,7 +1328,7 @@ def _staff_dashboard_payload(user):
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,
-        "quick_actions": quick_actions,
+        "portal_sections": portal_sections,
         "focus_list": focus_list,
         "throughput": _build_throughput(
             last_seven_dates,
