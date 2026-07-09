@@ -869,325 +869,426 @@ def _management_dashboard_payload():
         ),
     }
 
-
 def _staff_dashboard_payload(user):
     today = timezone.localdate()
+
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
+
     previous_week_start = week_start - timedelta(days=7)
     previous_week_end = week_start - timedelta(days=1)
+
     seven_day_start = today - timedelta(days=6)
     previous_seven_start = seven_day_start - timedelta(days=7)
     previous_seven_end = seven_day_start - timedelta(days=1)
 
-    my_shifts_qs = Shift.objects.filter(staff=user).order_by("shift_date", "start_time")
-    my_orders_qs = Order.objects.filter(created_by=user).select_related("supplier")
-    my_tasks_qs = Checklist.objects.filter(assigned_to=user)
-    my_breakages_qs = Breakage.objects.filter(reported_by=user)
+    my_shifts_qs = Shift.objects.filter(
+        staff=user,
+    ).order_by(
+        "shift_date",
+        "start_time",
+    )
+
+    my_tasks_qs = Checklist.objects.filter(
+        assigned_to=user,
+    )
 
     hours_this_week = _sum_shift_hours(
-        my_shifts_qs.filter(shift_date__range=(week_start, week_end))
+        my_shifts_qs.filter(
+            shift_date__range=(week_start, week_end),
+        )
     )
+
     hours_last_week = _sum_shift_hours(
-        my_shifts_qs.filter(shift_date__range=(previous_week_start, previous_week_end))
+        my_shifts_qs.filter(
+            shift_date__range=(previous_week_start, previous_week_end),
+        )
     )
-    next_shift = my_shifts_qs.filter(shift_date__gte=today).first()
-    shifts_this_week_count = my_shifts_qs.filter(shift_date__range=(week_start, week_end)).count()
 
-    open_order_count = my_orders_qs.filter(
-        status__in=[Order.Status.DRAFT, Order.Status.ORDERED, Order.Status.PENDING_DELIVERY]
-    ).count()
-    pending_delivery_count = my_orders_qs.filter(status=Order.Status.PENDING_DELIVERY).count()
-    submitted_orders_this_week = my_orders_qs.filter(
-        created_at__date__gte=seven_day_start
-    ).count()
-    submitted_orders_last_week = my_orders_qs.filter(
-        created_at__date__range=(previous_seven_start, previous_seven_end)
+    next_shift = my_shifts_qs.filter(
+        shift_date__gte=today,
+    ).first()
+
+    shifts_this_week_count = my_shifts_qs.filter(
+        shift_date__range=(week_start, week_end),
     ).count()
 
-    tasks_due_today = my_tasks_qs.filter(due_date=today, completed=False).count()
-    tasks_overdue = my_tasks_qs.filter(due_date__lt=today, completed=False).count()
+    tasks_due_today = my_tasks_qs.filter(
+        due_date=today,
+        completed=False,
+    ).count()
+
+    tasks_overdue = my_tasks_qs.filter(
+        due_date__lt=today,
+        completed=False,
+    ).count()
+
+    open_task_count = my_tasks_qs.filter(
+        completed=False,
+    ).count()
+
     completed_tasks_this_week = my_tasks_qs.filter(
         completed=True,
         completed_at__date__gte=seven_day_start,
     ).count()
+
     completed_tasks_last_week = my_tasks_qs.filter(
         completed=True,
-        completed_at__date__range=(previous_seven_start, previous_seven_end),
+        completed_at__date__range=(
+            previous_seven_start,
+            previous_seven_end,
+        ),
     ).count()
 
-    breakages_this_week = my_breakages_qs.filter(created_at__date__gte=seven_day_start).count()
-    breakages_last_week = my_breakages_qs.filter(
-        created_at__date__range=(previous_seven_start, previous_seven_end)
-    ).count()
-    breakages_today = my_breakages_qs.filter(created_at__date=today).count()
-    latest_breakage = my_breakages_qs.order_by("-created_at").first()
-    last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
+    last_seven_dates = [
+        seven_day_start + timedelta(days=offset)
+        for offset in range(7)
+    ]
+
     hours_series = []
-    order_request_series = []
     task_completion_series = []
-    breakage_series = []
-    for day in last_seven_dates:
-        hours_series.append(_sum_shift_hours(my_shifts_qs.filter(shift_date=day)))
-        order_request_series.append(my_orders_qs.filter(created_at__date=day).count())
-        task_completion_series.append(
-            my_tasks_qs.filter(completed=True, completed_at__date=day).count()
-        )
-        breakage_series.append(my_breakages_qs.filter(created_at__date=day).count())
 
-    next_shift_note = (
-        f"Next shift: {next_shift.shift_date:%a %d %b}, {next_shift.start_time:%H:%M}"
-        if next_shift
-        else "No upcoming shift scheduled"
-    )
-    next_shift_short = (
-        f"{next_shift.shift_date:%a %d %b} at {next_shift.start_time:%H:%M}"
-        if next_shift
-        else "No shift booked"
-    )
+    for day in last_seven_dates:
+        hours_series.append(
+            _sum_shift_hours(
+                my_shifts_qs.filter(
+                    shift_date=day,
+                )
+            )
+        )
+
+        task_completion_series.append(
+            my_tasks_qs.filter(
+                completed=True,
+                completed_at__date=day,
+            ).count()
+        )
+
+    if next_shift:
+        next_shift_note = (
+            f"Next shift: {next_shift.shift_date:%a %d %b}, "
+            f"{next_shift.start_time:%H:%M}"
+        )
+
+        next_shift_short = (
+            f"{next_shift.shift_date:%a %d %b} at "
+            f"{next_shift.start_time:%H:%M}"
+        )
+
+        next_shift_value = (
+            next_shift.start_time.strftime("%H:%M")
+            if next_shift.shift_date == today
+            else _format_short_date(next_shift.shift_date)
+        )
+    else:
+        next_shift_note = "No upcoming shift scheduled."
+        next_shift_short = "No shift booked"
+        next_shift_value = "None"
+
     metrics = [
         {
-            "label": "Hours This Week",
-            "value": f"{hours_this_week:.1f}",
-            "tone": "ok",
-            "state": "Next shift booked" if next_shift else "No shift booked",
+            "label": "Next Shift",
+            "value": next_shift_value,
+            "tone": "ok" if next_shift else "warn",
+            "state": "Booked" if next_shift else "Not scheduled",
             "state_tone": "ok" if next_shift else "warn",
             "summary": next_shift_note,
-            "trend": _build_trend(
-                round(hours_this_week),
-                round(hours_last_week),
-                "hours vs last week",
-            ),
-            "note": "Weekly allocation against the previous rota window.",
+            "trend": {
+                "label": "Your rota only",
+                "direction": "flat",
+            },
+            "note": "Check your next start time before travelling in.",
             "chart_label": "7d rota hours",
             "chart_points": _build_chart_points(hours_series),
             "actions": [
-                {"label": "Open roster", "url_name": "shifts:list"},
+                {
+                    "label": "My rota",
+                    "url_name": "shifts:list",
+                },
             ],
         },
         {
-            "label": "My Open Order Requests",
-            "value": open_order_count,
-            "tone": "warn",
-            "state": "Needs approval" if open_order_count else "No blockers",
-            "state_tone": "warn" if open_order_count else "ok",
-            "summary": (
-                f"{pending_delivery_count} request(s) are pending delivery."
-                if pending_delivery_count
-                else "No deliveries are waiting on your follow-through."
-            ),
-            "trend": _build_trend(
-                submitted_orders_this_week,
-                submitted_orders_last_week,
-                "submitted vs previous 7 days",
-            ),
-            "note": "Draft requests can still be edited prior to approval",
-            "chart_label": "7d order activity",
-            "chart_points": _build_chart_points(order_request_series),
-            "actions": [
-                {"label": "Review orders", "url_name": "orders:list"},
-                {"label": "New request", "url_name": "orders:add"},
-            ],
-        },
-        {
-            "label": "My Tasks Due Today",
-            "value": tasks_due_today,
-            "tone": "neutral",
-            "state": "Close today" if tasks_due_today or tasks_overdue else "Clear today",
-            "state_tone": "warn" if tasks_due_today or tasks_overdue else "ok",
-            "summary": (
-                f"{tasks_overdue} overdue task(s) still need completion."
+            "label": "My Tasks",
+            "value": open_task_count,
+            "tone": "warn" if tasks_due_today or tasks_overdue else "ok",
+            "state": (
+                "Overdue"
                 if tasks_overdue
-                else "No overdue checklist tasks are carrying into this shift."
+                else "Due today"
+                if tasks_due_today
+                else "Clear"
+            ),
+            "state_tone": (
+                "alert"
+                if tasks_overdue
+                else "warn"
+                if tasks_due_today
+                else "ok"
+            ),
+            "summary": (
+                f"{tasks_overdue} overdue task(s) and "
+                f"{tasks_due_today} due today."
+                if tasks_due_today or tasks_overdue
+                else "No urgent checklist tasks are assigned to you."
             ),
             "trend": _build_trend(
                 completed_tasks_this_week,
                 completed_tasks_last_week,
                 "completed vs previous 7 days",
             ),
-            "note": "Complete assigned checklist tasks before handover",
+            "note": "Complete assigned tasks before handover.",
             "chart_label": "7d task output",
             "chart_points": _build_chart_points(task_completion_series),
             "actions": [
-                {"label": "Today queue", "url_name": "checklists:list", "query": "preset=today"},
-                {"label": "Overdue", "url_name": "checklists:list", "query": "preset=overdue"},
+                {
+                    "label": "Open tasks",
+                    "url_name": "checklists:list",
+                },
             ],
         },
         {
-            "label": "My Breakages This Week",
-            "value": breakages_this_week,
-            "tone": "alert",
-            "state": "Log follow-up" if breakages_this_week else "No incidents",
-            "state_tone": "alert" if breakages_this_week else "ok",
-            "summary": (
-                "Recent incidents still need accurate classification and closure."
-                if breakages_this_week
-                else "No breakage pressure has been recorded in the last 7 days."
-            ),
-            "trend": _build_trend(
-                breakages_this_week,
-                breakages_last_week,
-                "vs previous 7 days",
-            ),
-            "note": "Report and classify incidents before shift end",
-            "chart_label": "7d incidents",
-            "chart_points": _build_chart_points(breakage_series),
+            "label": "Stock",
+            "value": "View",
+            "tone": "neutral",
+            "state": "Available",
+            "state_tone": "ok",
+            "summary": "Check current stock levels before requesting anything.",
+            "trend": {
+                "label": "Live stock view",
+                "direction": "flat",
+            },
+            "note": "Use Request stock only when something needs manager attention.",
+            "chart_label": "Stock check",
+            "chart_points": _build_chart_points([1, 1, 1, 1, 1, 1, 1]),
             "actions": [
-                {"label": "Review breakages", "url_name": "breakages:list"},
+                {
+                    "label": "View stock",
+                    "url_name": "stock:list",
+                },
+                {
+                    "label": "Request stock",
+                    "url_name": "orders:add",
+                },
+            ],
+        },
+        {
+            "label": "Hours This Week",
+            "value": f"{hours_this_week:.1f}",
+            "tone": "neutral",
+            "state": f"{shifts_this_week_count} shift(s)",
+            "state_tone": "ok" if shifts_this_week_count else "warn",
+            "summary": "Your own scheduled hours for this week.",
+            "trend": _build_trend(
+                round(hours_this_week),
+                round(hours_last_week),
+                "hours vs last week",
+            ),
+            "note": "Only your own rota is shown.",
+            "chart_label": "7d rota load",
+            "chart_points": _build_chart_points(hours_series),
+            "actions": [
+                {
+                    "label": "My rota",
+                    "url_name": "shifts:list",
+                },
             ],
         },
     ]
 
     upcoming_shift_preview = [
         _shift_row(shift, today=today)
-        for shift in my_shifts_qs.filter(shift_date__gte=today)[:4]
+        for shift in my_shifts_qs.filter(
+            shift_date__gte=today,
+        )[:4]
     ]
+
     open_task_preview = [
         _task_row(task, today=today)
-        for task in my_tasks_qs.filter(completed=False).order_by("due_date", "created_at")[:4]
+        for task in my_tasks_qs.filter(
+            completed=False,
+        ).order_by(
+            "due_date",
+            "created_at",
+        )[:4]
     ]
-    open_order_preview = [
-        _order_row(order)
-        for order in my_orders_qs.filter(
-            status__in=[Order.Status.DRAFT, Order.Status.ORDERED, Order.Status.PENDING_DELIVERY]
-        )
-        .annotate(item_count=Count("items", distinct=True))
-        .order_by("delivery_date", "created_at")[:4]
-    ]
-    incident_preview = [_breakage_row(record) for record in my_breakages_qs.order_by("-created_at")[:4]]
 
     portal_sections = [
         {
-            "slug": "shift",
-            "label": "Shift run sheet",
-            "eyebrow": "Rota view",
-            "title": "Upcoming shifts and weekly hours",
+            "slug": "tasks",
+            "label": "My tasks",
+            "eyebrow": "Today",
+            "title": "Tasks assigned to you",
             "copy": (
-                "Keep the next shift, weekly hours, and any schedule notes visible without "
-                "leaving the portal."
+                "Complete your own checklist jobs before handover. "
+                "Management approvals and request history are not shown here."
             ),
             "stats": [
-                {"label": "Hours this week", "value": f"{hours_this_week:.1f}h"},
-                {"label": "Shifts this week", "value": shifts_this_week_count},
+                {
+                    "label": "Open tasks",
+                    "value": open_task_count,
+                },
+                {
+                    "label": "Due today",
+                    "value": tasks_due_today,
+                },
+                {
+                    "label": "Overdue",
+                    "value": tasks_overdue,
+                },
+            ],
+            "rows": open_task_preview,
+            "empty_state": "No open checklist tasks are assigned to you right now.",
+            "actions": [
+                {
+                    "label": "Open tasks",
+                    "url_name": "checklists:list",
+                },
+            ],
+        },
+        {
+            "slug": "stock",
+            "label": "Stock",
+            "eyebrow": "Cellar and bar",
+            "title": "View stock availability",
+            "copy": (
+                "Check what is available, low, or running out. "
+                "If something needs ordering, send one quick request to management."
+            ),
+            "stats": [
+                {
+                    "label": "Stock view",
+                    "value": "Live",
+                },
+                {
+                    "label": "Requests",
+                    "value": "Submit only",
+                },
+                {
+                    "label": "Review queue",
+                    "value": "Manager only",
+                },
+            ],
+            "rows": [],
+            "empty_state": "Open the stock page to check current levels.",
+            "actions": [
+                {
+                    "label": "View stock",
+                    "url_name": "stock:list",
+                },
+                {
+                    "label": "Request stock",
+                    "url_name": "orders:add",
+                },
+            ],
+        },
+        {
+            "slug": "rota",
+            "label": "My rota",
+            "eyebrow": "Schedule",
+            "title": "Your upcoming shifts",
+            "copy": (
+                "Only your own upcoming shifts are shown. "
+                "Staff cannot view or manage anyone else's rota."
+            ),
+            "stats": [
+                {
+                    "label": "Hours this week",
+                    "value": f"{hours_this_week:.1f}h",
+                },
+                {
+                    "label": "Shifts this week",
+                    "value": shifts_this_week_count,
+                },
                 {
                     "label": "Next shift",
-                    "value": (
-                        next_shift.start_time.strftime("%H:%M")
-                        if next_shift and next_shift.shift_date == today
-                        else _format_short_date(next_shift.shift_date)
-                        if next_shift
-                        else "None"
-                    ),
+                    "value": next_shift_value,
                 },
             ],
             "rows": upcoming_shift_preview,
             "empty_state": "No upcoming shifts are scheduled yet.",
             "actions": [
-                {"label": "Open roster", "url_name": "shifts:list"},
-            ],
-        },
-        {
-            "slug": "tasks",
-            "label": "My task queue",
-            "eyebrow": "Checklist work",
-            "title": "Tasks due today, overdue, and ready for handover",
-            "copy": (
-                "Run checklist work from the portal so overdue jobs stay visible before the "
-                "shift gets busy."
-            ),
-            "stats": [
-                {"label": "Due today", "value": tasks_due_today},
-                {"label": "Overdue", "value": tasks_overdue},
-                {"label": "Completed this week", "value": completed_tasks_this_week},
-            ],
-            "rows": open_task_preview,
-            "empty_state": "No open checklist tasks are assigned to you right now.",
-            "actions": [
-                {"label": "Today queue", "url_name": "checklists:list", "query": "preset=today"},
-                {"label": "Overdue", "url_name": "checklists:list", "query": "preset=overdue"},
-            ],
-        },
-        {
-            "slug": "requests",
-            "label": "Stock requests",
-            "eyebrow": "Procurement",
-            "title": "Open requests and incoming stock",
-            "copy": (
-                "Track draft requests and delivery follow-through from the portal instead of "
-                "jumping out to a separate request screen first."
-            ),
-            "stats": [
-                {"label": "Open requests", "value": open_order_count},
-                {"label": "Pending delivery", "value": pending_delivery_count},
-                {"label": "Submitted this week", "value": submitted_orders_this_week},
-            ],
-            "rows": open_order_preview,
-            "empty_state": "No active stock requests are open for you.",
-            "actions": [
-                {"label": "Review orders", "url_name": "orders:list"},
-                {"label": "New request", "url_name": "orders:add"},
-            ],
-        },
-        {
-            "slug": "incidents",
-            "label": "Incidents",
-            "eyebrow": "Loss reporting",
-            "title": "Recent breakages and incident follow-up",
-            "copy": (
-                "Loss reporting stays visible inside the staff portal so breakages are logged "
-                "before the end of shift."
-            ),
-            "stats": [
-                {"label": "This week", "value": breakages_this_week},
-                {"label": "Reported today", "value": breakages_today},
                 {
-                    "label": "Most recent",
-                    "value": (
-                        _format_short_date(latest_breakage.created_at.date())
-                        if latest_breakage
-                        else "None"
-                    ),
+                    "label": "Open rota",
+                    "url_name": "shifts:list",
                 },
             ],
-            "rows": incident_preview,
-            "empty_state": "No breakages have been logged by you recently.",
+        },
+        {
+            "slug": "handover",
+            "label": "End of shift",
+            "eyebrow": "Quick reports",
+            "title": "Send issues to management",
+            "copy": (
+                "Use these quick forms at the end of shift. "
+                "Submitted stock requests and breakage reports go to management only."
+            ),
+            "stats": [
+                {
+                    "label": "Stock requests",
+                    "value": "Submit only",
+                },
+                {
+                    "label": "Breakages",
+                    "value": "Report only",
+                },
+                {
+                    "label": "History",
+                    "value": "Manager only",
+                },
+            ],
+            "rows": [],
+            "empty_state": (
+                "Use Request stock or Report breakage when something needs "
+                "manager follow-up."
+            ),
             "actions": [
-                {"label": "Review breakages", "url_name": "breakages:list"},
-                {"label": "Log incident", "url_name": "breakages:add"},
+                {
+                    "label": "Request stock",
+                    "url_name": "orders:add",
+                },
+                {
+                    "label": "Report breakage",
+                    "url_name": "breakages:add",
+                },
             ],
         },
     ]
 
     focus_list = []
+
     if next_shift:
         focus_list.append(
             {
-                "task": "Prepare for scheduled shift",
+                "task": "Check your next shift",
                 "owner": "You",
-                "due": f"{next_shift.shift_date:%d %b} {next_shift.start_time:%H:%M}",
+                "due": (
+                    f"{next_shift.shift_date:%d %b} "
+                    f"{next_shift.start_time:%H:%M}"
+                ),
                 "state": "Scheduled",
             }
         )
 
-    due_task = my_tasks_qs.filter(completed=False).order_by("due_date", "created_at").first()
+    due_task = my_tasks_qs.filter(
+        completed=False,
+    ).order_by(
+        "due_date",
+        "created_at",
+    ).first()
+
     if due_task:
         focus_list.append(
             {
                 "task": due_task.title,
                 "owner": "You",
                 "due": due_task.due_date.strftime("%d %b"),
-                "state": "Pending" if due_task.due_date >= today else "Overdue",
-            }
-        )
-
-    draft_order = my_orders_qs.filter(status=Order.Status.DRAFT).order_by("created_at").first()
-    if draft_order:
-        focus_list.append(
-            {
-                "task": f"Submit {draft_order.reference} for approval",
-                "owner": "You",
-                "due": draft_order.created_at.astimezone(timezone.get_current_timezone()).strftime("%H:%M"),
-                "state": "In Progress",
+                "state": (
+                    "Overdue"
+                    if due_task.due_date < today
+                    else "Due today"
+                    if due_task.due_date == today
+                    else "Open"
+                ),
             }
         )
 
@@ -1202,6 +1303,7 @@ def _staff_dashboard_payload(user):
         )
 
     attention_items = []
+
     if tasks_overdue:
         attention_items.append(
             {
@@ -1209,82 +1311,57 @@ def _staff_dashboard_payload(user):
                 "value": f"{tasks_overdue} overdue",
                 "copy": "Assigned checklist work is still open beyond its due date.",
                 "tone": "alert",
-                "action_label": "Open checklist",
+                "action_label": "Open tasks",
                 "url_name": "checklists:list",
                 "query": "preset=overdue",
             }
         )
+
     if tasks_due_today:
         attention_items.append(
             {
                 "label": "Due today",
                 "value": f"{tasks_due_today} due",
-                "copy": "These tasks should close before the current shift finishes.",
+                "copy": "These tasks should be finished before handover.",
                 "tone": "warn",
-                "action_label": "Open today",
+                "action_label": "Open tasks",
                 "url_name": "checklists:list",
                 "query": "preset=today",
             }
         )
-    if open_order_count:
-        attention_items.append(
-            {
-                "label": "Approval queue",
-                "value": f"{open_order_count} open request(s)",
-                "copy": "Your open orders still need review, delivery follow-through, or sign-off.",
-                "tone": "warn",
-                "action_label": "Review orders",
-                "url_name": "orders:list",
-            }
-        )
+
     if next_shift:
         attention_items.append(
             {
                 "label": "Upcoming shift",
                 "value": f"{next_shift.shift_date:%a %d %b}",
-                "copy": f"Starts at {next_shift.start_time:%H:%M}. Keep your task queue clear ahead of handover.",
+                "copy": (
+                    f"Starts at {next_shift.start_time:%H:%M}. "
+                    "Check your tasks before service gets busy."
+                ),
                 "tone": "neutral",
-                "action_label": "Open roster",
+                "action_label": "My rota",
                 "url_name": "shifts:list",
             }
         )
+
     if not attention_items:
         attention_items.append(
             {
-                "label": "Attention rail",
+                "label": "Today",
                 "value": "Clear board",
-                "copy": "No overdue tasks, no open requests, and no immediate shift blockers are showing.",
+                "copy": "No overdue tasks or immediate shift blockers are showing.",
                 "tone": "ok",
-                "action_label": "Open dashboard",
-                "url_name": "dashboard:staff_portal",
+                "action_label": "View stock",
+                "url_name": "stock:list",
             }
         )
 
     quick_actions = [
         {
-            "label": "Inventory",
-            "title": "Check stock",
-            "copy": "Open the live stock view before service and confirm what is low, short, or newly delivered.",
-            "stat": "Floor stock live",
-            "url_name": "stock:list",
-            "action_label": "Open stock",
-        },
-        {
-            "label": "Requests",
-            "title": "Stock requests",
-            "copy": "Raise a request fast or review anything still waiting on approval or delivery.",
-            "stat": (
-                f"{open_order_count} open request(s)"
-                if open_order_count
-                else "Ready for a new request"
-            ),
-            "url_name": "orders:list" if open_order_count else "orders:add",
-            "action_label": "Review requests" if open_order_count else "New request",
-        },
-        {
             "label": "Tasks",
-            "title": "Task queue",
-            "copy": "Clear due-today and overdue checklist work before handover starts to slip.",
+            "title": "My tasks",
+            "copy": "Open the tasks assigned to you and mark them complete.",
             "stat": (
                 f"{tasks_overdue} overdue"
                 if tasks_overdue
@@ -1297,21 +1374,33 @@ def _staff_dashboard_payload(user):
             "action_label": "Open tasks",
         },
         {
-            "label": "Incidents",
-            "title": "Log breakage",
-            "copy": "Record losses while the details are still fresh so follow-up is easier later.",
-            "stat": (
-                f"{breakages_today} logged today"
-                if breakages_today
-                else "Nothing logged today"
-            ),
+            "label": "Stock",
+            "title": "View stock",
+            "copy": "Check what is available, low, or running out.",
+            "stat": "Live stock view",
+            "url_name": "stock:list",
+            "action_label": "View stock",
+        },
+        {
+            "label": "Request",
+            "title": "Request stock",
+            "copy": "Send a low-stock request to management.",
+            "stat": "Submit only",
+            "url_name": "orders:add",
+            "action_label": "Request stock",
+        },
+        {
+            "label": "Breakage",
+            "title": "Report breakage",
+            "copy": "Report a breakage to management before the end of shift.",
+            "stat": "Submit only",
             "url_name": "breakages:add",
-            "action_label": "Log incident",
+            "action_label": "Report breakage",
         },
         {
             "label": "Rota",
-            "title": "My shifts",
-            "copy": "Check your next start time and this week’s scheduled hours without digging around.",
+            "title": "My rota",
+            "copy": "Check your own upcoming shifts.",
             "stat": next_shift_short,
             "url_name": "shifts:list",
             "action_label": "Open rota",
@@ -1319,14 +1408,6 @@ def _staff_dashboard_payload(user):
     ]
 
     activity_events = []
-    for order in my_orders_qs.order_by("-updated_at")[:5]:
-        activity_events.append(
-            {
-                "moment": order.updated_at,
-                "category": "orders",
-                "text": f"{order.reference} is now {order.get_status_display().lower()}",
-            }
-        )
 
     for shift in my_shifts_qs.order_by("-updated_at")[:5]:
         activity_events.append(
@@ -1342,6 +1423,7 @@ def _staff_dashboard_payload(user):
 
     for task in my_tasks_qs.order_by("-updated_at")[:5]:
         task_state = "completed" if task.completed else "updated"
+
         activity_events.append(
             {
                 "moment": task.updated_at,
@@ -1350,42 +1432,46 @@ def _staff_dashboard_payload(user):
             }
         )
 
-    for record in my_breakages_qs.order_by("-created_at")[:5]:
-        activity_events.append(
-            {
-                "moment": record.created_at,
-                "category": "breakages",
-                "text": f"{record.quantity} {record.item_name} recorded ({record.get_issue_type_display()})",
-            }
-        )
+    activity_events.sort(
+        key=lambda item: item["moment"],
+        reverse=True,
+    )
 
-    activity_events.sort(key=lambda item: item["moment"], reverse=True)
     activity = [
         {
             "time": _format_activity_time(item["moment"]),
             "text": item["text"],
             "category": item["category"],
         }
-        for item in activity_events[:8]
+        for item in activity_events[:6]
     ]
+
     if not activity:
         activity = [
             {
                 "time": "Now",
-                "text": "No recent activity recorded. Start with shifts or tasks.",
+                "text": "No recent staff activity recorded.",
                 "category": "shifts",
             }
         ]
 
     service_values = []
+
     for day in last_seven_dates:
-        service_values.append(_sum_shift_hours(my_shifts_qs.filter(shift_date=day)))
+        service_values.append(
+            _sum_shift_hours(
+                my_shifts_qs.filter(
+                    shift_date=day,
+                )
+            )
+        )
 
     return {
         "portal_title": "Staff Portal",
-        "overview_heading": "Start your shift",
+        "overview_heading": "Today",
         "overview_copy": (
-            "Clear your tasks, keep requests moving, and log issues while the details are fresh."
+            "Check your shift, complete your tasks, view stock, and send "
+            "issues to management when needed."
         ),
         "metrics": metrics,
         "attention_items": attention_items,
@@ -1395,12 +1481,12 @@ def _staff_dashboard_payload(user):
         "quick_actions": quick_actions,
         "staff_snapshot": {
             "hours_this_week": f"{hours_this_week:.1f}",
-            "open_order_count": open_order_count,
-            "pending_delivery_count": pending_delivery_count,
             "tasks_due_today": tasks_due_today,
             "tasks_overdue": tasks_overdue,
-            "breakages_this_week": breakages_this_week,
             "next_shift_note": next_shift_note,
+            "open_order_count": 0,
+            "pending_delivery_count": 0,
+            "breakages_this_week": 0,
         },
         "throughput": _build_throughput(
             last_seven_dates,
@@ -1408,7 +1494,6 @@ def _staff_dashboard_payload(user):
             task_values=task_completion_series,
         ),
     }
-
 
 def _render_portal(request, *, management_view):
     payload = (
