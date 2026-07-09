@@ -1,13 +1,13 @@
 import csv
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.accounts.permissions import is_management, management_required
+from apps.accounts.scoping import current_venue_or_404
+from apps.accounts.permissions import active_venue_required, is_management, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from taptrack.pagination import build_query_string, paginate_collection
@@ -17,12 +17,13 @@ from .forms import StockItemForm
 from .models import StockItem
 
 
-@login_required
+@active_venue_required
 def list_items(request):
     selected_category = request.GET.get("category", "")
     selected_urgency = request.GET.get("urgency", "all")
     query = (request.GET.get("q") or "").strip()
-    management_view = is_management(request.user)
+    management_view = is_management(request.user, request=request)
+    venue = current_venue_or_404(request)
 
     urgency_choices = [
         ("all", "All Urgency Bands"),
@@ -35,7 +36,10 @@ def list_items(request):
     if selected_urgency not in allowed_urgency_values:
         selected_urgency = "all"
 
-    items_qs = StockItem.objects.select_related("supplier").filter(is_active=True)
+    items_qs = StockItem.objects.select_related("supplier").filter(
+        is_active=True,
+        venue=venue,
+    )
 
     if selected_category and selected_category in StockItem.Category.values:
         items_qs = items_qs.filter(category=selected_category)
@@ -347,10 +351,13 @@ def list_items(request):
 
 @management_required
 def add_item(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
-        form = StockItemForm(request.POST)
+        form = StockItemForm(request.POST, venue=venue)
         if form.is_valid():
-            item = form.save()
+            item = form.save(commit=False)
+            item.venue = venue
+            item.save()
             record_audit_event(
                 request,
                 action=AuditEvent.Action.CREATE,
@@ -365,7 +372,7 @@ def add_item(request):
             messages.success(request, "Stock item created.")
             return redirect("stock:list")
     else:
-        form = StockItemForm()
+        form = StockItemForm(venue=venue)
 
     return render(
         request,
@@ -380,10 +387,11 @@ def add_item(request):
 
 @management_required
 def edit_item(request, pk):
-    item = get_object_or_404(StockItem, pk=pk)
+    venue = current_venue_or_404(request)
+    item = get_object_or_404(StockItem, pk=pk, venue=venue)
 
     if request.method == "POST":
-        form = StockItemForm(request.POST, instance=item)
+        form = StockItemForm(request.POST, instance=item, venue=venue)
         if form.is_valid():
             updated_item = form.save()
             record_audit_event(
@@ -400,7 +408,7 @@ def edit_item(request, pk):
             messages.success(request, "Stock item updated.")
             return redirect("stock:list")
     else:
-        form = StockItemForm(instance=item)
+        form = StockItemForm(instance=item, venue=venue)
 
     return render(
         request,
@@ -416,7 +424,7 @@ def edit_item(request, pk):
 
 @management_required
 def delete_item(request, pk):
-    item = get_object_or_404(StockItem, pk=pk)
+    item = get_object_or_404(StockItem, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         item.is_active = False

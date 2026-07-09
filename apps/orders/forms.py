@@ -5,9 +5,13 @@ from .models import Order, OrderItem
 
 
 class OrderForm(forms.ModelForm):
-    def __init__(self, *args, is_management=True, **kwargs):
+    def __init__(self, *args, is_management=True, venue=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_management = is_management
+        if venue is not None:
+            self.fields["supplier"].queryset = self.fields["supplier"].queryset.filter(
+                venue=venue
+            )
         if not is_management:
             self.fields.pop("status", None)
 
@@ -22,15 +26,16 @@ class OrderForm(forms.ModelForm):
 
 
 class OrderItemForm(forms.ModelForm):
+    def __init__(self, *args, venue=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        queryset = self.fields["stock_item"].queryset.filter(is_active=True)
+        if venue is not None:
+            queryset = queryset.filter(venue=venue)
+        self.fields["stock_item"].queryset = queryset
+
     class Meta:
         model = OrderItem
         fields = ["stock_item", "quantity"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["stock_item"].queryset = self.fields["stock_item"].queryset.filter(
-            is_active=True
-        )
 
 
 class BaseOrderItemFormSet(BaseInlineFormSet):

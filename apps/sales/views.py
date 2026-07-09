@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
@@ -31,8 +32,8 @@ from .models import (
 from .services import parse_business_date, sync_integration
 
 
-def _sum_shift_hours_for_range(start_date, end_date):
-    shifts = Shift.objects.filter(shift_date__range=(start_date, end_date))
+def _sum_shift_hours_for_range(venue, start_date, end_date):
+    shifts = Shift.objects.filter(venue=venue, shift_date__range=(start_date, end_date))
     return round(sum(shift.duration_hours for shift in shifts), 1)
 
 
@@ -46,9 +47,9 @@ def _currency(value):
     return f"£{value:,.2f}"
 
 
-def _integration_queryset():
+def _integration_queryset(venue):
     return (
-        PosIntegration.objects.annotate(
+        PosIntegration.objects.filter(venue=venue).annotate(
             active_mapping_count=Count(
                 "location_mappings",
                 filter=Q(location_mappings__is_active=True),
@@ -257,7 +258,7 @@ def _build_sales_attention_items(
     return attention_items
 
 
-def _build_sync_summary(integrations):
+def _build_sync_summary(venue, integrations):
     active_connector_count = sum(1 for integration in integrations if integration.is_enabled)
     mapped_location_count = sum(
         getattr(integration, "active_mapping_count", 0) for integration in integrations
@@ -266,6 +267,7 @@ def _build_sync_summary(integrations):
         1 for integration in integrations if _integration_health_state(integration) != "ok"
     )
     webhook_queue_count = PosWebhookEvent.objects.filter(
+        integration__venue=venue,
         status=PosWebhookEvent.Status.RECEIVED
     ).count()
     return {
@@ -278,6 +280,7 @@ def _build_sync_summary(integrations):
 
 @management_required
 def list_sales(request):
+    venue = current_venue_or_404(request)
     selected_source = request.GET.get("source", "")
     selected_range = request.GET.get("range", "30")
     query = (request.GET.get("q") or "").strip()
@@ -287,8 +290,8 @@ def list_sales(request):
 
     today = timezone.localdate()
     range_start = today - timedelta(days=allowed_ranges[selected_range] - 1)
-    snapshots_qs = SalesSnapshot.objects.select_related("uploaded_by")
-    integrations = list(_integration_queryset())
+    snapshots_qs = SalesSnapshot.objects.select_related("uploaded_by").filter(venue=venue)
+    integrations = list(_integration_queryset(venue))
 
     if selected_source and selected_source in SalesSnapshot.Source.values:
         snapshots_qs = snapshots_qs.filter(source=selected_source)
@@ -333,7 +336,7 @@ def list_sales(request):
     total_card_sales = totals["card_sales"] or Decimal("0.00")
     total_digital_sales = totals["digital_sales"] or Decimal("0.00")
 
-    total_labor_hours = _sum_shift_hours_for_range(range_start, today)
+    total_labor_hours = _sum_shift_hours_for_range(venue, range_start, today)
     refund_rate = _rate(total_refunds, total_gross_sales)
     sales_per_labor_hour = (
         round(total_net_sales / Decimal(str(total_labor_hours)), 2)
@@ -355,25 +358,29 @@ def list_sales(request):
     today_snapshot = snapshots_qs.filter(business_date=today).order_by(
         "-synced_at", "-id"
     ).first()
-    today_labor_hours = _sum_shift_hours_for_range(today, today)
+    today_labor_hours = _sum_shift_hours_for_range(venue, today, today)
 
     stock_risks = {
         "beer": StockItem.objects.filter(
+            venue=venue,
             is_active=True,
             category=StockItem.Category.BEER_BARRELS,
             quantity__lte=F("minimum_level"),
         ).count(),
         "spirits": StockItem.objects.filter(
+            venue=venue,
             is_active=True,
             category=StockItem.Category.SPIRITS,
             quantity__lte=F("minimum_level"),
         ).count(),
         "wine": StockItem.objects.filter(
+            venue=venue,
             is_active=True,
             category=StockItem.Category.WINE,
             quantity__lte=F("minimum_level"),
         ).count(),
         "soft": StockItem.objects.filter(
+            venue=venue,
             is_active=True,
             category__in=[StockItem.Category.SOFT_DRINKS, StockItem.Category.MIXERS],
             quantity__lte=F("minimum_level"),
@@ -381,7 +388,7 @@ def list_sales(request):
     }
     total_stock_risk_lines = sum(stock_risks.values())
 
-    sync_summary = _build_sync_summary(integrations)
+    sync_summary = _build_sync_summary(venue, integrations)
     attention_items = _build_sales_attention_items(
         integrations=integrations,
         latest_snapshot=latest_snapshot,
@@ -556,7 +563,11 @@ def list_sales(request):
             else "badge-stock-healthy"
         )
         snapshot.sales_per_labor_hour = Decimal("0.00")
-        day_labor_hours = _sum_shift_hours_for_range(snapshot.business_date, snapshot.business_date)
+        day_labor_hours = _sum_shift_hours_for_range(
+            venue,
+            snapshot.business_date,
+            snapshot.business_date,
+        )
         if day_labor_hours:
             snapshot.sales_per_labor_hour = round(
                 snapshot.net_sales / Decimal(str(day_labor_hours)),
@@ -683,16 +694,23 @@ def list_sales(request):
 
 @management_required
 def sync_center(request):
-    integrations = list(_integration_queryset())
+    venue = current_venue_or_404(request)
+    integrations = list(_integration_queryset(venue))
     connector_rows = _build_sync_center_rows(request, integrations)
-    mappings = PosLocationMapping.objects.select_related("integration").order_by(
+    mappings = PosLocationMapping.objects.select_related("integration").filter(
+        integration__venue=venue
+    ).order_by(
         "integration__label",
         "-is_primary",
         "internal_location_name",
     )
-    recent_runs = PosSyncRun.objects.select_related("integration", "triggered_by")[:8]
-    recent_events = PosWebhookEvent.objects.select_related("integration")[:8]
-    sync_summary = _build_sync_summary(integrations)
+    recent_runs = PosSyncRun.objects.select_related("integration", "triggered_by").filter(
+        integration__venue=venue
+    )[:8]
+    recent_events = PosWebhookEvent.objects.select_related("integration").filter(
+        integration__venue=venue
+    )[:8]
+    sync_summary = _build_sync_summary(venue, integrations)
     for run in recent_runs:
         run.status_tone = (
             "ok"
@@ -769,10 +787,12 @@ def sync_center(request):
 
 @management_required
 def add_sales_snapshot(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
         form = SalesSnapshotForm(request.POST)
         if form.is_valid():
             snapshot = form.save(commit=False)
+            snapshot.venue = venue
             snapshot.uploaded_by = request.user
             snapshot.save()
             record_audit_event(
@@ -805,7 +825,7 @@ def add_sales_snapshot(request):
 
 @management_required
 def edit_sales_snapshot(request, pk):
-    snapshot = get_object_or_404(SalesSnapshot, pk=pk)
+    snapshot = get_object_or_404(SalesSnapshot, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         form = SalesSnapshotForm(request.POST, instance=snapshot)
@@ -842,10 +862,12 @@ def edit_sales_snapshot(request, pk):
 
 @management_required
 def add_pos_integration(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
         form = PosIntegrationForm(request.POST)
         if form.is_valid():
             integration = form.save(commit=False)
+            integration.venue = venue
             if not integration.webhook_secret:
                 integration.webhook_secret = secrets.token_hex(16)
             integration.created_by = request.user
@@ -878,7 +900,7 @@ def add_pos_integration(request):
 
 @management_required
 def edit_pos_integration(request, pk):
-    integration = get_object_or_404(PosIntegration, pk=pk)
+    integration = get_object_or_404(PosIntegration, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         form = PosIntegrationForm(request.POST, instance=integration)
@@ -916,8 +938,9 @@ def edit_pos_integration(request, pk):
 
 @management_required
 def add_pos_location_mapping(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
-        form = PosLocationMappingForm(request.POST)
+        form = PosLocationMappingForm(request.POST, venue=venue)
         if form.is_valid():
             mapping = form.save()
             record_audit_event(
@@ -933,7 +956,7 @@ def add_pos_location_mapping(request):
             messages.success(request, "Location mapping created.")
             return redirect("sales:sync_center")
     else:
-        form = PosLocationMappingForm()
+        form = PosLocationMappingForm(venue=venue)
 
     return render(
         request,
@@ -949,7 +972,7 @@ def add_pos_location_mapping(request):
 @management_required
 @require_POST
 def run_integration_sync(request, pk):
-    integration = get_object_or_404(PosIntegration, pk=pk)
+    integration = get_object_or_404(PosIntegration, pk=pk, venue=current_venue_or_404(request))
     try:
         run = sync_integration(
             integration,
@@ -979,7 +1002,8 @@ def run_integration_sync(request, pk):
 @management_required
 @require_POST
 def run_due_syncs(request):
-    integrations = list(_integration_queryset().filter(is_enabled=True))
+    venue = current_venue_or_404(request)
+    integrations = list(_integration_queryset(venue).filter(is_enabled=True))
     sync_targets = [
         integration
         for integration in integrations

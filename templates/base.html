@@ -64,6 +64,9 @@
                         <div class="topbar-title-row">
                             <h2>{% block page_title %}Dashboard{% endblock %}</h2>
                             <span class="badge topbar-mode-chip">{{ user_role_label }}</span>
+                            {% if active_venue %}
+                            <span class="badge topbar-mode-chip">{{ active_venue.name }}</span>
+                            {% endif %}
                         </div>
                         <p class="topbar-date">{% now "l, j F Y" %}</p>
                     </div>
@@ -93,6 +96,9 @@
                     <span class="status-chip status-chip-user">
                         <strong>{{ request.user.get_username|default:'Guest' }}</strong>
                     </span>
+                    {% if active_venue %}
+                    <span class="status-chip status-chip-time">{{ active_venue.name }}</span>
+                    {% endif %}
                 </div>
             </div>
         </header>

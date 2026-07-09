@@ -21,6 +21,13 @@ class SalesSnapshot(models.Model):
         CSV = "CSV", "CSV Import"
         LIVE = "LIVE", "Live Sync"
 
+    venue = models.ForeignKey(
+        "accounts.Venue",
+        on_delete=models.CASCADE,
+        related_name="sales_snapshots",
+        null=True,
+        blank=True,
+    )
     location_name = models.CharField(max_length=120, default="Main Bar")
     business_date = models.DateField(default=timezone.localdate)
     source = models.CharField(
@@ -135,14 +142,15 @@ class SalesSnapshot(models.Model):
     class Meta:
         ordering = ["-business_date", "-synced_at", "-id"]
         indexes = [
+            models.Index(fields=["venue", "business_date"]),
             models.Index(fields=["business_date"]),
             models.Index(fields=["source", "business_date"]),
             models.Index(fields=["location_name", "business_date"]),
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=["location_name", "source", "business_date"],
-                name="uniq_sales_snapshot_location_source_date",
+                fields=["venue", "location_name", "source", "business_date"],
+                name="uniq_sales_snapshot_venue_location_source_date",
             )
         ]
 
@@ -196,6 +204,13 @@ class PosIntegration(models.Model):
         CLOVER = SalesSnapshot.Source.CLOVER, "Clover"
         OTHER = SalesSnapshot.Source.OTHER, "Other"
 
+    venue = models.ForeignKey(
+        "accounts.Venue",
+        on_delete=models.CASCADE,
+        related_name="pos_integrations",
+        null=True,
+        blank=True,
+    )
     label = models.CharField(max_length=120)
     provider = models.CharField(
         max_length=24,
@@ -230,6 +245,7 @@ class PosIntegration(models.Model):
     class Meta:
         ordering = ["label", "provider"]
         indexes = [
+            models.Index(fields=["venue", "provider", "is_enabled"]),
             models.Index(fields=["provider", "is_enabled"]),
             models.Index(fields=["last_success_at"]),
         ]

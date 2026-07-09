@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
@@ -13,10 +14,11 @@ from .models import Supplier
 
 @management_required
 def list_suppliers(request):
+    venue = current_venue_or_404(request)
     query = request.GET.get("q", "").strip()
     selected_category = request.GET.get("category", "")
 
-    suppliers_qs = Supplier.objects.all()
+    suppliers_qs = Supplier.objects.filter(venue=venue)
 
     if query:
         suppliers_qs = suppliers_qs.filter(
@@ -133,10 +135,13 @@ def list_suppliers(request):
 
 @management_required
 def add_supplier(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
         form = SupplierForm(request.POST)
         if form.is_valid():
-            supplier = form.save()
+            supplier = form.save(commit=False)
+            supplier.venue = venue
+            supplier.save()
             record_audit_event(
                 request,
                 action=AuditEvent.Action.CREATE,
@@ -162,7 +167,7 @@ def add_supplier(request):
 
 @management_required
 def edit_supplier(request, pk):
-    supplier = get_object_or_404(Supplier, pk=pk)
+    supplier = get_object_or_404(Supplier, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         form = SupplierForm(request.POST, instance=supplier)
@@ -194,7 +199,7 @@ def edit_supplier(request, pk):
 
 @management_required
 def delete_supplier(request, pk):
-    supplier = get_object_or_404(Supplier, pk=pk)
+    supplier = get_object_or_404(Supplier, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         supplier_name = supplier.name

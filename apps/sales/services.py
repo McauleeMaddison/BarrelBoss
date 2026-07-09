@@ -52,6 +52,7 @@ def _build_snapshot_defaults(integration, mapping, business_date):
     )
 
     return {
+        "venue": integration.venue,
         "location_name": mapping.internal_location_name,
         "business_date": business_date,
         "source": integration.source_value,
@@ -121,6 +122,7 @@ def sync_integration(
         for mapping in mappings:
             defaults = _build_snapshot_defaults(integration, mapping, business_date)
             snapshot, created = SalesSnapshot.objects.update_or_create(
+                venue=integration.venue,
                 location_name=defaults["location_name"],
                 source=defaults["source"],
                 business_date=defaults["business_date"],

@@ -1,12 +1,12 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.contrib.auth.decorators import login_required
 from django.db.models import Count, F, Q, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from apps.accounts.permissions import is_management, management_required, role_home_name
+from apps.accounts.scoping import current_venue_or_404
+from apps.accounts.permissions import active_venue_required, is_management, management_required, role_home_name
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order
@@ -253,7 +253,7 @@ def _shift_row(shift, *, today):
     }
 
 
-def _management_dashboard_payload():
+def _management_dashboard_payload(venue):
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
@@ -263,14 +263,14 @@ def _management_dashboard_payload():
     previous_seven_start = seven_day_start - timedelta(days=7)
     previous_seven_end = seven_day_start - timedelta(days=1)
 
-    stock_qs = StockItem.objects.filter(is_active=True)
-    order_qs = Order.objects.select_related("supplier", "created_by")
-    shift_qs = Shift.objects.select_related("staff")
-    checklist_qs = Checklist.objects.select_related("assigned_to")
-    breakage_qs = Breakage.objects.select_related("reported_by")
-    sales_qs = SalesSnapshot.objects.all()
+    stock_qs = StockItem.objects.filter(venue=venue, is_active=True)
+    order_qs = Order.objects.select_related("supplier", "created_by").filter(venue=venue)
+    shift_qs = Shift.objects.select_related("staff").filter(venue=venue)
+    checklist_qs = Checklist.objects.select_related("assigned_to").filter(venue=venue)
+    breakage_qs = Breakage.objects.select_related("reported_by").filter(venue=venue)
+    sales_qs = SalesSnapshot.objects.filter(venue=venue)
     pos_integrations = list(
-        PosIntegration.objects.annotate(
+        PosIntegration.objects.filter(venue=venue).annotate(
             active_mapping_count=Count(
                 "location_mappings",
                 filter=Q(location_mappings__is_active=True),
@@ -869,7 +869,7 @@ def _management_dashboard_payload():
         ),
     }
 
-def _staff_dashboard_payload(user):
+def _staff_dashboard_payload(user, venue):
     today = timezone.localdate()
 
     week_start = today - timedelta(days=today.weekday())
@@ -883,6 +883,7 @@ def _staff_dashboard_payload(user):
     previous_seven_end = seven_day_start - timedelta(days=1)
 
     my_shifts_qs = Shift.objects.filter(
+        venue=venue,
         staff=user,
     ).order_by(
         "shift_date",
@@ -890,6 +891,7 @@ def _staff_dashboard_payload(user):
     )
 
     my_tasks_qs = Checklist.objects.filter(
+        venue=venue,
         assigned_to=user,
     )
 
@@ -1496,10 +1498,11 @@ def _staff_dashboard_payload(user):
     }
 
 def _render_portal(request, *, management_view):
+    venue = current_venue_or_404(request)
     payload = (
-        _management_dashboard_payload()
+        _management_dashboard_payload(venue)
         if management_view
-        else _staff_dashboard_payload(request.user)
+        else _staff_dashboard_payload(request.user, venue)
     )
     return render(
         request,
@@ -1512,14 +1515,14 @@ def _render_portal(request, *, management_view):
     )
 
 
-@login_required
+@active_venue_required
 def home(request):
-    return redirect(role_home_name(request.user))
+    return redirect(role_home_name(request.user, request=request))
 
 
-@login_required
+@active_venue_required
 def staff_portal(request):
-    if is_management(request.user):
+    if is_management(request.user, request=request):
         return redirect("dashboard:management_portal")
     return _render_portal(request, management_view=False)
 

@@ -231,7 +231,7 @@
                 </div>
                 <div>
                     <dt>Phone</dt>
-                    <dd>{{ profile.phone|default:"-" }}</dd>
+                    <dd>{{ profile.user.staff_profile.phone|default:"-" }}</dd>
                 </div>
                 <div>
                     <dt>Email</dt>
@@ -239,7 +239,7 @@
                 </div>
                 <div>
                     <dt>Notes</dt>
-                    <dd>{{ profile.notes|default:"-"|truncatechars:80 }}</dd>
+                    <dd>{{ profile.user.staff_profile.notes|default:"-"|truncatechars:80 }}</dd>
                 </div>
             </dl>
 

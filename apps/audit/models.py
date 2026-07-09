@@ -11,6 +11,13 @@ class AuditEvent(models.Model):
         TOGGLE = "TOGGLE", "Toggle"
         SETTINGS = "SETTINGS", "Settings"
 
+    venue = models.ForeignKey(
+        "accounts.Venue",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_events",
+    )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -32,6 +39,7 @@ class AuditEvent(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
         indexes = [
+            models.Index(fields=["venue", "created_at"]),
             models.Index(fields=["action", "created_at"]),
             models.Index(fields=["target_model", "created_at"]),
             models.Index(fields=["actor_username", "created_at"]),

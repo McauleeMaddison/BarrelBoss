@@ -4,7 +4,7 @@ import logging
 from django.conf import settings
 from django.urls import reverse
 
-from .models import PushSubscription
+from .models import PushSubscription, VenueMembership
 
 try:
     from pywebpush import WebPushException, webpush
@@ -86,8 +86,12 @@ def send_shift_push_notification(shift, actor=None, event_type="assigned"):
     if not push_notifications_configured():
         return 0
 
-    profile = getattr(shift.staff, "staff_profile", None)
-    if profile and not profile.notify_on_shift_assignment:
+    membership = VenueMembership.objects.filter(
+        venue=shift.venue,
+        user=shift.staff,
+        is_active=True,
+    ).first()
+    if membership and not membership.notify_on_shift_assignment:
         return 0
 
     subscriptions = PushSubscription.objects.filter(user=shift.staff, is_active=True)

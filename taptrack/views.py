@@ -16,7 +16,13 @@ from django.utils import timezone
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.accounts.forms import StaffCreateForm, StaffUpdateForm
-from apps.accounts.permissions import MANAGEMENT_ROLES, management_required, role_home_name
+from apps.accounts.scoping import current_venue_or_404, venue_users
+from apps.accounts.permissions import (
+    MANAGEMENT_ROLES,
+    active_venue_required,
+    management_required,
+    role_home_name,
+)
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from apps.accounts.push import (
@@ -25,8 +31,9 @@ from apps.accounts.push import (
     upsert_push_subscription,
 )
 from apps.orders.models import Order, OrderItem
-from apps.accounts.models import StaffProfile
+from apps.accounts.models import StaffProfile, VenueMembership
 from apps.accounts.permissions import get_user_role, is_management
+from apps.accounts.tenancy import user_has_active_venue
 from apps.stock.models import StockItem
 from taptrack.pagination import build_query_string, paginate_collection
 
@@ -66,8 +73,7 @@ def _build_chart_points(values):
     return chart
 
 
-def _allowed_role_values_for_manager(editor_user):
-    editor_role = get_user_role(editor_user)
+def _allowed_role_values_for_manager(editor_role):
     if editor_role == StaffProfile.Role.LANDLORD:
         return [choice[0] for choice in StaffProfile.Role.choices]
     return [StaffProfile.Role.MANAGER, StaffProfile.Role.STAFF]
@@ -75,12 +81,15 @@ def _allowed_role_values_for_manager(editor_user):
 
 def home_redirect(request):
     if request.user.is_authenticated:
-        return redirect(role_home_name(request.user))
+        if not user_has_active_venue(request.user):
+            return redirect("venue_setup")
+        return redirect(role_home_name(request.user, request=request))
     return redirect("login")
 
 
 @management_required
 def staff_page(request):
+    venue = current_venue_or_404(request)
     query = (request.GET.get("q") or "").strip()
     selected_status = request.GET.get("status", "all")
     selected_role = request.GET.get("role", "")
@@ -92,14 +101,18 @@ def staff_page(request):
     previous_seven_end = seven_day_start - timedelta(days=1)
     last_seven_dates = [seven_day_start + timedelta(days=offset) for offset in range(7)]
 
-    staff_qs = StaffProfile.objects.select_related("user").order_by("user__username")
+    staff_qs = (
+        VenueMembership.objects.select_related("user", "user__staff_profile")
+        .filter(venue=venue)
+        .order_by("user__username")
+    )
     if query:
         staff_qs = staff_qs.filter(
             Q(user__username__icontains=query)
             | Q(user__first_name__icontains=query)
             | Q(user__last_name__icontains=query)
             | Q(user__email__icontains=query)
-            | Q(phone__icontains=query)
+            | Q(user__staff_profile__phone__icontains=query)
             | Q(job_title__icontains=query)
         )
 
@@ -186,11 +199,11 @@ def staff_page(request):
                     profile.user.get_full_name(),
                     profile.get_role_display(),
                     profile.job_title,
-                    profile.phone,
+                    profile.user.staff_profile.phone,
                     profile.user.email,
                     "Active" if profile.is_active else "Inactive",
                     "Enabled" if profile.notify_on_shift_assignment else "Disabled",
-                    profile.notes,
+                    profile.user.staff_profile.notes,
                 ]
             )
         return response
@@ -390,14 +403,17 @@ def staff_page(request):
 
 @management_required
 def add_staff_page(request):
-    allowed_role_values = _allowed_role_values_for_manager(request.user)
+    venue = current_venue_or_404(request)
+    allowed_role_values = _allowed_role_values_for_manager(
+        get_user_role(request.user, request=request)
+    )
     if request.method == "POST":
         form = StaffCreateForm(
             request.POST,
             allowed_role_values=allowed_role_values,
         )
         if form.is_valid():
-            user = form.save()
+            user = form.save(venue=venue, invited_by=request.user)
             record_audit_event(
                 request,
                 action=AuditEvent.Action.CREATE,
@@ -423,13 +439,21 @@ def add_staff_page(request):
 
 @management_required
 def edit_staff_page(request, user_id):
-    staff_user = get_object_or_404(User.objects.select_related("staff_profile"), pk=user_id)
+    venue = current_venue_or_404(request)
+    membership = get_object_or_404(
+        VenueMembership.objects.select_related("user", "user__staff_profile"),
+        venue=venue,
+        user_id=user_id,
+    )
+    staff_user = membership.user
     profile = staff_user.staff_profile
-    allowed_role_values = _allowed_role_values_for_manager(request.user)
+    allowed_role_values = _allowed_role_values_for_manager(
+        get_user_role(request.user, request=request)
+    )
 
     if (
-        profile.role == StaffProfile.Role.LANDLORD
-        and get_user_role(request.user) != StaffProfile.Role.LANDLORD
+        membership.role == StaffProfile.Role.LANDLORD
+        and get_user_role(request.user, request=request) != StaffProfile.Role.LANDLORD
     ):
         messages.error(request, "Only landlord accounts can edit landlord profiles.")
         return redirect("staff")
@@ -439,6 +463,7 @@ def edit_staff_page(request, user_id):
             request.POST,
             instance=profile,
             user_instance=staff_user,
+            membership_instance=membership,
             allowed_role_values=allowed_role_values,
         )
         if form.is_valid():
@@ -466,6 +491,7 @@ def edit_staff_page(request, user_id):
         form = StaffUpdateForm(
             instance=profile,
             user_instance=staff_user,
+            membership_instance=membership,
             allowed_role_values=allowed_role_values,
         )
 
@@ -484,29 +510,37 @@ def edit_staff_page(request, user_id):
 @management_required
 @require_POST
 def toggle_staff_active(request, user_id):
-    staff_user = get_object_or_404(User.objects.select_related("staff_profile"), pk=user_id)
-    profile = staff_user.staff_profile
+    venue = current_venue_or_404(request)
+    membership = get_object_or_404(
+        VenueMembership.objects.select_related("user", "user__staff_profile"),
+        venue=venue,
+        user_id=user_id,
+    )
+    staff_user = membership.user
 
     if staff_user == request.user:
         messages.error(request, "You cannot deactivate your own account.")
         return redirect("staff")
 
-    profile.is_active = not profile.is_active
-    profile.save(update_fields=["is_active", "updated_at"])
+    membership.is_active = not membership.is_active
+    membership.save(update_fields=["is_active", "updated_at"])
+    staff_user.staff_profile.is_active = membership.is_active
+    staff_user.staff_profile.save(update_fields=["is_active", "updated_at"])
     record_audit_event(
         request,
         action=AuditEvent.Action.TOGGLE,
-        target=profile,
+        target=membership,
         summary=f"Toggled active status for {staff_user.username}",
-        details={"is_active": profile.is_active},
+        details={"is_active": membership.is_active},
     )
-    status_label = "active" if profile.is_active else "inactive"
+    status_label = "active" if membership.is_active else "inactive"
     messages.success(request, f"{staff_user.username} is now marked as {status_label}.")
     return redirect("staff")
 
 
 @management_required
 def reports_page(request):
+    venue = current_venue_or_404(request)
     range_days = request.GET.get("range", "7")
     if range_days not in {"7", "30", "90"}:
         range_days = "7"
@@ -563,6 +597,7 @@ def reports_page(request):
 
     low_stock_rows = list(
         StockItem.objects.filter(
+            venue=venue,
             is_active=True,
             quantity__lte=F("minimum_level"),
         )
@@ -570,9 +605,10 @@ def reports_page(request):
         .order_by("quantity", "name")
     )
 
-    orders_window_qs = Order.objects.filter(order_date__range=(start_date, today))
+    orders_window_qs = Order.objects.filter(venue=venue, order_date__range=(start_date, today))
     delivered_orders_qs = orders_window_qs.filter(status=Order.Status.DELIVERED)
     previous_orders_qs = Order.objects.filter(
+        venue=venue,
         order_date__range=(previous_start_date, previous_end_date)
     )
     previous_delivered_orders_qs = previous_orders_qs.filter(status=Order.Status.DELIVERED)
@@ -617,8 +653,12 @@ def reports_page(request):
         .order_by("-total_spend", "-total_units")
     )
 
-    breakages_window_qs = Breakage.objects.filter(created_at__date__range=(start_date, today))
+    breakages_window_qs = Breakage.objects.filter(
+        venue=venue,
+        created_at__date__range=(start_date, today),
+    )
     previous_breakages_qs = Breakage.objects.filter(
+        venue=venue,
         created_at__date__range=(previous_start_date, previous_end_date)
     )
     breakage_totals = breakages_window_qs.aggregate(
@@ -651,8 +691,9 @@ def reports_page(request):
         .order_by("-total_units", "-total_reports", "item_name")[:8]
     )
 
-    checklists_window_qs = Checklist.objects.filter(due_date__range=(start_date, today))
+    checklists_window_qs = Checklist.objects.filter(venue=venue, due_date__range=(start_date, today))
     previous_checklists_qs = Checklist.objects.filter(
+        venue=venue,
         due_date__range=(previous_start_date, previous_end_date)
     )
     checklist_totals = checklists_window_qs.aggregate(
@@ -796,6 +837,7 @@ def reports_page(request):
     ]
 
     backlog_order_count = Order.objects.filter(
+        venue=venue,
         status__in=[
             Order.Status.DRAFT,
             Order.Status.ORDERED,
@@ -1005,18 +1047,19 @@ def reports_page(request):
     return render(request, "reports/index.html", context)
 
 
-@login_required
+@active_venue_required
 def settings_page(request):
+    venue = current_venue_or_404(request)
     team_profiles = (
-        StaffProfile.objects.select_related("user")
-        .filter(is_active=True, role=StaffProfile.Role.STAFF)
+        VenueMembership.objects.select_related("user", "user__staff_profile")
+        .filter(venue=venue, is_active=True, role=StaffProfile.Role.STAFF)
         .order_by("user__username")
     )
 
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "team_shift_alerts":
-            if not is_management(request.user):
+            if not is_management(request.user, request=request):
                 messages.error(request, "Only management can update team alert preferences.")
                 return redirect("settings")
 
@@ -1026,6 +1069,10 @@ def settings_page(request):
                 if profile.notify_on_shift_assignment != should_notify:
                     profile.notify_on_shift_assignment = should_notify
                     profile.save(update_fields=["notify_on_shift_assignment", "updated_at"])
+                    profile.user.staff_profile.notify_on_shift_assignment = should_notify
+                    profile.user.staff_profile.save(
+                        update_fields=["notify_on_shift_assignment", "updated_at"]
+                    )
                     updated_count += 1
 
             if updated_count:
@@ -1070,7 +1117,7 @@ def settings_page(request):
                 "tone": "warn",
             }
         )
-    if is_management(request.user) and alerts_disabled_count:
+    if is_management(request.user, request=request) and alerts_disabled_count:
         attention_items.append(
             {
                 "label": "Team alerts",

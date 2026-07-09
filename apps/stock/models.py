@@ -23,6 +23,13 @@ class StockItem(models.Model):
         KG = "KG", "Kg"
         UNITS = "UNITS", "Units"
 
+    venue = models.ForeignKey(
+        "accounts.Venue",
+        on_delete=models.CASCADE,
+        related_name="stock_items",
+        null=True,
+        blank=True,
+    )
     name = models.CharField(max_length=150)
     category = models.CharField(max_length=40, choices=Category.choices)
     quantity = models.PositiveIntegerField(default=0)
@@ -43,6 +50,7 @@ class StockItem(models.Model):
     )
     notes = models.TextField(blank=True)
     last_restocked = models.DateField(null=True, blank=True)
+    last_counted_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -50,6 +58,7 @@ class StockItem(models.Model):
     class Meta:
         ordering = ["name"]
         indexes = [
+            models.Index(fields=["venue", "category"]),
             models.Index(fields=["category"]),
             models.Index(fields=["is_active"]),
         ]

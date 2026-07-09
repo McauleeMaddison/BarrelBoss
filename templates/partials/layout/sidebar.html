@@ -30,6 +30,45 @@
                     <small>{{ user_role_label }}</small>
                 </div>
             </div>
+
+            <div class="sidebar-presence" role="status" aria-label="Active venue">
+                <span class="sidebar-presence-dot" aria-hidden="true"></span>
+                <div class="sidebar-presence-copy">
+                    <strong>{% if active_venue %}{{ active_venue.name }}{% else %}No active venue{% endif %}</strong>
+                    <small>{% if active_organisation %}{{ active_organisation.name }}{% else %}Set up or join a venue{% endif %}</small>
+                </div>
+            </div>
+
+            {% if request.user.is_authenticated %}
+            <div class="nav-section nav-section-management">
+                <p class="nav-section-title">Venues</p>
+                {% for membership in available_venue_memberships %}
+                <a
+                    class="nav-link{% if active_venue and membership.venue_id == active_venue.id %} active{% endif %}"
+                    href="{% url 'switch_venue' membership.venue_id %}"
+                    data-nav-icon="VN"
+                >
+                    {{ membership.venue.name }}
+                </a>
+                {% endfor %}
+                <a
+                    class="nav-link{% if current == 'venue_setup' %} active{% endif %}"
+                    href="{% url 'venue_setup' %}"
+                    data-nav-icon="VS"
+                >
+                    Set up venue
+                </a>
+                {% if is_management %}
+                <a
+                    class="nav-link{% if current == 'venue_invites' %} active{% endif %}"
+                    href="{% url 'venue_invites' %}"
+                    data-nav-icon="IV"
+                >
+                    Invites
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <button type="button" class="sidebar-close" aria-label="Close navigation">

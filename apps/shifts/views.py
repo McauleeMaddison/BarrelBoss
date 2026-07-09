@@ -2,12 +2,12 @@ from calendar import monthrange
 from datetime import timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.accounts.permissions import is_management, management_required
+from apps.accounts.scoping import current_venue_or_404, venue_users
+from apps.accounts.permissions import active_venue_required, is_management, management_required
 from apps.accounts.push import send_shift_push_notification
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
@@ -37,8 +37,9 @@ def _hours_label(hours):
     return "0h"
 
 
-@login_required
+@active_venue_required
 def list_shifts(request):
+    venue = current_venue_or_404(request)
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
@@ -55,11 +56,12 @@ def list_shifts(request):
         ("past", "Past"),
     ]
 
-    visible_qs = Shift.objects.select_related("staff", "created_by")
-    if not is_management(request.user):
+    management_view = is_management(request.user, request=request)
+    visible_qs = Shift.objects.select_related("staff", "created_by").filter(venue=venue)
+    if not management_view:
         visible_qs = visible_qs.filter(staff=request.user)
 
-    if is_management(request.user) and selected_staff.isdigit():
+    if management_view and selected_staff.isdigit():
         visible_qs = visible_qs.filter(staff_id=int(selected_staff))
 
     shifts_qs = visible_qs
@@ -118,7 +120,7 @@ def list_shifts(request):
         "selected_staff": selected_staff,
         "selected_range": selected_range,
         "range_choices": range_choices,
-        "team_members": User.objects.filter(staff_profile__is_active=True).order_by("username"),
+        "team_members": venue_users(request).order_by("username"),
         "total_shifts": visible_qs.count(),
         "hours_this_week": _sum_hours(
             visible_qs.filter(shift_date__range=(week_start, week_end)).order_by("shift_date")
@@ -133,17 +135,17 @@ def list_shifts(request):
         "today": today,
         "next_shift": next_shift,
         "filters_active": bool(
-            (is_management(request.user) and selected_staff)
+            (management_view and selected_staff)
             or selected_range != "upcoming"
         ),
         "active_filter_count": sum(
             [
-                bool(selected_staff) if is_management(request.user) else 0,
+                bool(selected_staff) if management_view else 0,
                 selected_range != "upcoming",
             ]
         ),
         "selected_staff_label": (
-            User.objects.filter(pk=int(selected_staff)).values_list("username", flat=True).first()
+            venue_users(request).filter(pk=int(selected_staff)).values_list("username", flat=True).first()
             if selected_staff.isdigit()
             else ""
         ),
@@ -235,10 +237,12 @@ def list_shifts(request):
 
 @management_required
 def add_shift(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
-        form = ShiftForm(request.POST)
+        form = ShiftForm(request.POST, venue=venue)
         if form.is_valid():
             shift = form.save(commit=False)
+            shift.venue = venue
             shift.created_by = request.user
             shift.save()
             send_shift_push_notification(shift, actor=request.user, event_type="assigned")
@@ -256,7 +260,7 @@ def add_shift(request):
             messages.success(request, "Shift scheduled successfully.")
             return redirect("shifts:list")
     else:
-        form = ShiftForm()
+        form = ShiftForm(venue=venue)
 
     return render(
         request,
@@ -271,10 +275,11 @@ def add_shift(request):
 
 @management_required
 def edit_shift(request, pk):
-    shift = get_object_or_404(Shift, pk=pk)
+    venue = current_venue_or_404(request)
+    shift = get_object_or_404(Shift, pk=pk, venue=venue)
 
     if request.method == "POST":
-        form = ShiftForm(request.POST, instance=shift)
+        form = ShiftForm(request.POST, instance=shift, venue=venue)
         if form.is_valid():
             updated_shift = form.save()
             send_shift_push_notification(
@@ -296,7 +301,7 @@ def edit_shift(request, pk):
             messages.success(request, "Shift updated.")
             return redirect("shifts:list")
     else:
-        form = ShiftForm(instance=shift)
+        form = ShiftForm(instance=shift, venue=venue)
 
     return render(
         request,
@@ -312,7 +317,7 @@ def edit_shift(request, pk):
 
 @management_required
 def delete_shift(request, pk):
-    shift = get_object_or_404(Shift, pk=pk)
+    shift = get_object_or_404(Shift, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         record_audit_event(

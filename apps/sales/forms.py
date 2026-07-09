@@ -70,6 +70,13 @@ class PosIntegrationForm(forms.ModelForm):
 
 
 class PosLocationMappingForm(forms.ModelForm):
+    def __init__(self, *args, venue=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if venue is not None:
+            self.fields["integration"].queryset = self.fields["integration"].queryset.filter(
+                venue=venue
+            )
+
     class Meta:
         model = PosLocationMapping
         fields = [

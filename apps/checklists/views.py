@@ -1,13 +1,13 @@
 from datetime import timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.permissions import is_management, management_required
+from apps.accounts.scoping import current_venue_or_404
+from apps.accounts.permissions import active_venue_required, is_management, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from taptrack.module_ui import build_module_link, build_module_panel, build_module_snapshot
@@ -24,16 +24,17 @@ def _sync_completed_timestamp(task):
         task.completed_at = None
 
 
-@login_required
+@active_venue_required
 def list_checklists(request):
     today = timezone.localdate()
-    management_view = is_management(request.user)
+    venue = current_venue_or_404(request)
+    management_view = is_management(request.user, request=request)
     selected_type = request.GET.get("type", "")
     selected_status = request.GET.get("status", "")
     selected_preset = request.GET.get("preset", "")
     query = request.GET.get("q", "").strip()
 
-    tasks_qs = Checklist.objects.select_related("assigned_to", "created_by")
+    tasks_qs = Checklist.objects.select_related("assigned_to", "created_by").filter(venue=venue)
 
     if not management_view:
         tasks_qs = tasks_qs.filter(assigned_to=request.user)
@@ -332,10 +333,12 @@ def list_checklists(request):
 
 @management_required
 def add_checklist(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
-        form = ChecklistForm(request.POST)
+        form = ChecklistForm(request.POST, venue=venue)
         if form.is_valid():
             task = form.save(commit=False)
+            task.venue = venue
             task.created_by = request.user
             _sync_completed_timestamp(task)
             task.save()
@@ -349,7 +352,7 @@ def add_checklist(request):
             messages.success(request, "Checklist task assigned.")
             return redirect("checklists:list")
     else:
-        form = ChecklistForm()
+        form = ChecklistForm(venue=venue)
 
     return render(
         request,
@@ -364,10 +367,11 @@ def add_checklist(request):
 
 @management_required
 def edit_checklist(request, pk):
-    task = get_object_or_404(Checklist, pk=pk)
+    venue = current_venue_or_404(request)
+    task = get_object_or_404(Checklist, pk=pk, venue=venue)
 
     if request.method == "POST":
-        form = ChecklistForm(request.POST, instance=task)
+        form = ChecklistForm(request.POST, instance=task, venue=venue)
         if form.is_valid():
             task = form.save(commit=False)
             _sync_completed_timestamp(task)
@@ -382,7 +386,7 @@ def edit_checklist(request, pk):
             messages.success(request, "Checklist task updated.")
             return redirect("checklists:list")
     else:
-        form = ChecklistForm(instance=task)
+        form = ChecklistForm(instance=task, venue=venue)
 
     return render(
         request,
@@ -396,11 +400,11 @@ def edit_checklist(request, pk):
     )
 
 
-@login_required
+@active_venue_required
 def toggle_complete(request, pk):
-    task = get_object_or_404(Checklist, pk=pk)
+    task = get_object_or_404(Checklist, pk=pk, venue=current_venue_or_404(request))
 
-    if not is_management(request.user) and task.assigned_to_id != request.user.id:
+    if not is_management(request.user, request=request) and task.assigned_to_id != request.user.id:
         messages.error(request, "You can only update tasks assigned to you.")
         return redirect("checklists:list")
 
@@ -422,7 +426,7 @@ def toggle_complete(request, pk):
 
 @management_required
 def delete_checklist(request, pk):
-    task = get_object_or_404(Checklist, pk=pk)
+    task = get_object_or_404(Checklist, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         record_audit_event(

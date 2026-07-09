@@ -4,6 +4,13 @@ from .models import StockItem
 
 
 class StockItemForm(forms.ModelForm):
+    def __init__(self, *args, venue=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if venue is not None:
+            self.fields["supplier"].queryset = self.fields["supplier"].queryset.filter(
+                venue=venue
+            )
+
     class Meta:
         model = StockItem
         fields = [

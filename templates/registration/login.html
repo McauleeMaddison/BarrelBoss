@@ -53,6 +53,9 @@
             <button type="submit" class="login-submit-btn">Sign In</button>
             <input type="hidden" name="next" value="{{ next }}">
         </form>
+        <div class="form-actions">
+            <a class="table-action" href="{% url 'password_reset' %}">Forgot password?</a>
+        </div>
     </section>
 </div>
 <script src="{% static 'js/core/app-shell.js' %}?v=20260709-structure1" defer></script>

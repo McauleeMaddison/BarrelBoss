@@ -1,13 +1,13 @@
 from datetime import timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.permissions import is_management, management_required
+from apps.accounts.scoping import current_venue_or_404
+from apps.accounts.permissions import active_venue_required, is_management, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from apps.suppliers.models import Supplier
@@ -18,9 +18,9 @@ from .forms import OrderForm, OrderItemFormSet
 from .models import Order
 
 
-def _can_edit_order(user, order):
+def _can_edit_order(user, order, *, management_view):
     return (
-        is_management(user)
+        management_view
         or (
             order.created_by_id
             and order.created_by_id == user.id
@@ -38,6 +38,7 @@ def _order_context_base(
     selected_status,
     selected_supplier,
     management_view,
+    venue,
 ):
     orders = list(page_obj.object_list)
     week_start = timezone.localdate() - timedelta(days=7)
@@ -105,22 +106,23 @@ def _order_context_base(
         "status_choices": Order.Status.choices,
         "selected_status": selected_status,
         "selected_supplier": selected_supplier,
-        "suppliers": Supplier.objects.all(),
+        "suppliers": Supplier.objects.filter(venue=venue).order_by("name"),
         "management_view": management_view,
     }
 
 
-@login_required
+@active_venue_required
 def list_orders(request):
+    venue = current_venue_or_404(request)
     selected_preset = request.GET.get("preset", "")
     selected_status = request.GET.get("status", "")
     selected_supplier = request.GET.get("supplier", "")
-    management_view = is_management(request.user)
+    management_view = is_management(request.user, request=request)
     today = timezone.localdate()
 
     visible_qs = (
         Order.objects.select_related("supplier", "created_by")
-        .all()
+        .filter(venue=venue)
     )
 
     if not management_view:
@@ -161,6 +163,7 @@ def list_orders(request):
         selected_status=selected_status,
         selected_supplier=selected_supplier,
         management_view=management_view,
+        venue=venue,
     )
     context["pagination_query"] = build_query_string(request)
     status_labels = dict(Order.Status.choices)
@@ -168,6 +171,7 @@ def list_orders(request):
     if selected_supplier.isdigit():
         selected_supplier_label = (
             Supplier.objects.filter(pk=int(selected_supplier))
+            .filter(venue=venue)
             .values_list("name", flat=True)
             .first()
             or ""
@@ -371,16 +375,18 @@ def list_orders(request):
     return render(request, "orders/list.html", context)
 
 
-@login_required
+@active_venue_required
 def add_order(request):
-    management_view = is_management(request.user)
+    venue = current_venue_or_404(request)
+    management_view = is_management(request.user, request=request)
 
     if request.method == "POST":
-        form = OrderForm(request.POST, is_management=management_view)
-        formset = OrderItemFormSet(request.POST)
+        form = OrderForm(request.POST, is_management=management_view, venue=venue)
+        formset = OrderItemFormSet(request.POST, form_kwargs={"venue": venue})
 
         if form.is_valid() and formset.is_valid():
             order = form.save(commit=False)
+            order.venue = venue
             order.created_by = request.user
 
             if not management_view:
@@ -415,8 +421,8 @@ def add_order(request):
         if not management_view:
             initial["delivery_date"] = ""
 
-        form = OrderForm(is_management=management_view, initial=initial)
-        formset = OrderItemFormSet()
+        form = OrderForm(is_management=management_view, initial=initial, venue=venue)
+        formset = OrderItemFormSet(form_kwargs={"venue": venue})
 
     return render(
         request,
@@ -438,18 +444,19 @@ def add_order(request):
         },
     )
 
-@login_required
+@active_venue_required
 def edit_order(request, pk):
-    order = get_object_or_404(Order.objects.prefetch_related("items"), pk=pk)
-    management_view = is_management(request.user)
+    venue = current_venue_or_404(request)
+    order = get_object_or_404(Order.objects.prefetch_related("items"), pk=pk, venue=venue)
+    management_view = is_management(request.user, request=request)
 
-    if not _can_edit_order(request.user, order):
+    if not _can_edit_order(request.user, order, management_view=management_view):
         messages.error(request, "You can only edit your own draft requests.")
         return redirect("orders:list")
 
     if request.method == "POST":
-        form = OrderForm(request.POST, instance=order, is_management=management_view)
-        formset = OrderItemFormSet(request.POST, instance=order)
+        form = OrderForm(request.POST, instance=order, is_management=management_view, venue=venue)
+        formset = OrderItemFormSet(request.POST, instance=order, form_kwargs={"venue": venue})
 
         if form.is_valid() and formset.is_valid():
             updated_order = form.save(commit=False)
@@ -473,8 +480,8 @@ def edit_order(request, pk):
             messages.success(request, f"Order {updated_order.reference} updated.")
             return redirect("orders:list")
     else:
-        form = OrderForm(instance=order, is_management=management_view)
-        formset = OrderItemFormSet(instance=order)
+        form = OrderForm(instance=order, is_management=management_view, venue=venue)
+        formset = OrderItemFormSet(instance=order, form_kwargs={"venue": venue})
 
     return render(
         request,
@@ -491,7 +498,7 @@ def edit_order(request, pk):
 
 @management_required
 def update_order_status(request, pk):
-    order = get_object_or_404(Order, pk=pk)
+    order = get_object_or_404(Order, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         new_status = request.POST.get("status", "")

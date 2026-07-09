@@ -6,6 +6,13 @@ from django.db import models
 
 
 class Shift(models.Model):
+    venue = models.ForeignKey(
+        "accounts.Venue",
+        on_delete=models.CASCADE,
+        related_name="shifts",
+        null=True,
+        blank=True,
+    )
     staff = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -26,12 +33,22 @@ class Shift(models.Model):
         blank=True,
         related_name="created_shifts",
     )
+    handover_notes = models.TextField(blank=True)
+    handover_completed_at = models.DateTimeField(null=True, blank=True)
+    handover_completed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shift_handovers_completed",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-shift_date", "start_time", "staff__username"]
         indexes = [
+            models.Index(fields=["venue", "shift_date"]),
             models.Index(fields=["staff", "shift_date"]),
             models.Index(fields=["shift_date"]),
         ]

@@ -6,6 +6,18 @@ from .models import Shift
 
 
 class ShiftForm(forms.ModelForm):
+    def __init__(self, *args, venue=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if venue is not None:
+            self.fields["staff"].queryset = self.fields["staff"].queryset.filter(
+                venue_memberships__venue=venue,
+                venue_memberships__is_active=True,
+            ).order_by("username")
+            if not self.initial.get("start_time") and venue.default_shift_start_time:
+                self.fields["start_time"].initial = venue.default_shift_start_time
+            if not self.initial.get("end_time") and venue.default_shift_end_time:
+                self.fields["end_time"].initial = venue.default_shift_end_time
+
     class Meta:
         model = Shift
         fields = [

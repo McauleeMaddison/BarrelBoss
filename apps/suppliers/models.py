@@ -12,7 +12,14 @@ class Supplier(models.Model):
         CLEANING = "CLEANING", "Cleaning Supplies"
         OTHER = "OTHER", "Other"
 
-    name = models.CharField(max_length=150, unique=True)
+    venue = models.ForeignKey(
+        "accounts.Venue",
+        on_delete=models.CASCADE,
+        related_name="suppliers",
+        null=True,
+        blank=True,
+    )
+    name = models.CharField(max_length=150)
     contact_name = models.CharField(max_length=120, blank=True)
     phone = models.CharField(max_length=40, blank=True)
     email = models.EmailField(blank=True)
@@ -27,6 +34,12 @@ class Supplier(models.Model):
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["venue", "name"],
+                name="uniq_supplier_venue_name",
+            )
+        ]
 
     def __str__(self):
         return self.name

@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
 
+from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import management_required
 from taptrack.pagination import build_query_string, paginate_collection
 
@@ -12,6 +13,7 @@ from .models import AuditEvent
 
 @management_required
 def list_events(request):
+    venue = current_venue_or_404(request)
     query = (request.GET.get("q") or "").strip()
     selected_action = request.GET.get("action", "")
     selected_target = request.GET.get("target", "")
@@ -19,7 +21,7 @@ def list_events(request):
     if selected_range not in {"1", "7", "30", "90", "all"}:
         selected_range = "7"
 
-    events_qs = AuditEvent.objects.select_related("actor")
+    events_qs = AuditEvent.objects.select_related("actor").filter(venue=venue)
 
     if selected_range != "all":
         start = timezone.now() - timedelta(days=int(selected_range))
@@ -40,7 +42,8 @@ def list_events(request):
         )
 
     target_choices = (
-        AuditEvent.objects.order_by("target_model")
+        AuditEvent.objects.filter(venue=venue)
+        .order_by("target_model")
         .values_list("target_model", flat=True)
         .distinct()
     )

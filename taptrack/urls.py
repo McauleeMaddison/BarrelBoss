@@ -10,12 +10,33 @@ urlpatterns = [
     path("", core_views.home_redirect, name="home"),
     path("service-worker.js", core_views.service_worker, name="service_worker"),
     path("admin/", admin.site.urls),
+    path("accounts/", include("apps.accounts.urls")),
     path(
         "accounts/login/",
         RoleLoginView.as_view(),
         name="login",
     ),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path(
+        "accounts/password-reset/",
+        auth_views.PasswordResetView.as_view(template_name="registration/password_reset_form.html"),
+        name="password_reset",
+    ),
+    path(
+        "accounts/password-reset/done/",
+        auth_views.PasswordResetDoneView.as_view(template_name="registration/password_reset_done.html"),
+        name="password_reset_done",
+    ),
+    path(
+        "accounts/reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(template_name="registration/password_reset_confirm.html"),
+        name="password_reset_confirm",
+    ),
+    path(
+        "accounts/reset/complete/",
+        auth_views.PasswordResetCompleteView.as_view(template_name="registration/password_reset_complete.html"),
+        name="password_reset_complete",
+    ),
     path("dashboard/", include("apps.dashboard.urls")),
     path("stock/", include("apps.stock.urls")),
     path("orders/", include("apps.orders.urls")),

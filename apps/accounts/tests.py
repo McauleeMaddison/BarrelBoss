@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import PushSubscription, StaffProfile
+from .testing import VenueScopedTestCase
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
@@ -119,19 +120,19 @@ class StaffProfileSignalTests(TestCase):
         self.assertEqual(user.staff_profile.role, StaffProfile.Role.LANDLORD)
 
 
-class RoleRoutingTests(TestCase):
+class RoleRoutingTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(
+        super().setUp()
+        self.staff_user = self.create_user(
             username="staff_member",
             password="strong-pass-123",
         )
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="manager_member",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_staff_login_redirects_to_staff_portal(self):
         response = self.client.post(
@@ -170,18 +171,18 @@ class RoleRoutingTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class SettingsAndPushTests(TestCase):
+class SettingsAndPushTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(
+        super().setUp()
+        self.staff_user = self.create_user(
             username="notify_staff",
             password="strong-pass-123",
         )
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="notify_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_staff_can_access_settings_page(self):
         self.client.login(username="notify_staff", password="strong-pass-123")
@@ -258,25 +259,25 @@ class SettingsAndPushTests(TestCase):
         )
 
 
-class StaffManagementTests(TestCase):
+class StaffManagementTests(VenueScopedTestCase):
     def setUp(self):
-        self.manager_user = User.objects.create_user(
+        super().setUp()
+        self.manager_user = self.create_user(
             username="team_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
-        self.staff_user = User.objects.create_user(
+        self.staff_user = self.create_user(
             username="team_staff",
             password="strong-pass-123",
             first_name="Taylor",
             last_name="Mills",
             email="team_staff@example.com",
+            job_title="Bartender",
         )
-        self.staff_user.staff_profile.job_title = "Bartender"
         self.staff_user.staff_profile.phone = "07123456789"
-        self.staff_user.staff_profile.save(update_fields=["job_title", "phone"])
+        self.staff_user.staff_profile.save(update_fields=["phone"])
 
     def test_manager_can_view_staff_list(self):
         self.client.login(username="team_manager", password="strong-pass-123")
@@ -304,14 +305,11 @@ class StaffManagementTests(TestCase):
         self.assertEqual(len(response.context["joined_chart"]), 7)
 
     def test_staff_preset_filters_inactive_profiles(self):
-        inactive_user = User.objects.create_user(
+        inactive_user = self.create_user(
             username="inactive_member",
             password="strong-pass-123",
-        )
-        inactive_user.staff_profile.is_active = False
-        inactive_user.staff_profile.notify_on_shift_assignment = False
-        inactive_user.staff_profile.save(
-            update_fields=["is_active", "notify_on_shift_assignment"]
+            is_active=False,
+            notify_on_shift_assignment=False,
         )
 
         self.client.login(username="team_manager", password="strong-pass-123")
@@ -425,12 +423,11 @@ class StaffManagementTests(TestCase):
 
     def test_staff_management_list_is_paginated(self):
         for index in range(20):
-            extra_user = User.objects.create_user(
+            extra_user = self.create_user(
                 username=f"team_member_{index}",
                 password="strong-pass-123",
+                job_title="Bar Staff",
             )
-            extra_user.staff_profile.job_title = "Bar Staff"
-            extra_user.staff_profile.save(update_fields=["job_title"])
 
         self.client.login(username="team_manager", password="strong-pass-123")
         response = self.client.get(reverse("staff"), {"page": 2, "status": "all"})
@@ -441,7 +438,7 @@ class StaffManagementTests(TestCase):
         self.assertEqual(response.context["pagination_query"], "status=all")
 
     def test_manager_cannot_edit_landlord_profile(self):
-        landlord = User.objects.create_superuser(
+        landlord = self.create_superuser_with_membership(
             username="owner_account",
             email="owner@barrelboss.test",
             password="strong-pass-123",
@@ -452,22 +449,23 @@ class StaffManagementTests(TestCase):
         self.assertRedirects(response, reverse("staff"), fetch_redirect_response=False)
 
 
-class ReportsPageTests(TestCase):
+class ReportsPageTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(
+        super().setUp()
+        self.staff_user = self.create_user(
             username="reports_staff",
             password="strong-pass-123",
         )
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="reports_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
-        supplier = Supplier.objects.create(name="Brewline")
+        supplier = Supplier.objects.create(name="Brewline", venue=self.venue)
         stock_item = StockItem.objects.create(
             name="Carling Keg",
+            venue=self.venue,
             category=StockItem.Category.BEER_BARRELS,
             quantity=3,
             minimum_level=6,
@@ -476,6 +474,7 @@ class ReportsPageTests(TestCase):
             supplier=supplier,
         )
         order = Order.objects.create(
+            venue=self.venue,
             supplier=supplier,
             created_by=self.manager_user,
             order_date=timezone.localdate(),

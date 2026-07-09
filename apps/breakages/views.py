@@ -1,12 +1,12 @@
 from datetime import timedelta
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.accounts.permissions import management_required
+from apps.accounts.scoping import current_venue_or_404
+from apps.accounts.permissions import active_venue_required, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from taptrack.pagination import build_query_string, paginate_collection
@@ -15,12 +15,13 @@ from .forms import BreakageForm
 from .models import Breakage
 
 
-@login_required
+@active_venue_required
 def list_breakages(request):
+    venue = current_venue_or_404(request)
     query = request.GET.get("q", "").strip()
     selected_issue = request.GET.get("issue", "")
 
-    records_qs = Breakage.objects.select_related("reported_by")
+    records_qs = Breakage.objects.select_related("reported_by").filter(venue=venue)
 
     if query:
         records_qs = records_qs.filter(
@@ -35,7 +36,7 @@ def list_breakages(request):
     page_obj = paginate_collection(request, records_qs.order_by("-created_at"), per_page=12)
     records = list(page_obj.object_list)
     week_start = timezone.now() - timedelta(days=7)
-    week_count = Breakage.objects.filter(created_at__gte=week_start).count()
+    week_count = Breakage.objects.filter(venue=venue, created_at__gte=week_start).count()
     issue_labels = dict(Breakage.IssueType.choices)
     filters_active = bool(query or selected_issue)
     filter_presets = [
@@ -107,12 +108,14 @@ def list_breakages(request):
     return render(request, "breakages/list.html", context)
 
 
-@login_required
+@active_venue_required
 def add_breakage(request):
+    venue = current_venue_or_404(request)
     if request.method == "POST":
         form = BreakageForm(request.POST)
         if form.is_valid():
             record = form.save(commit=False)
+            record.venue = venue
             record.reported_by = request.user
             record.save()
             record_audit_event(
@@ -143,7 +146,7 @@ def add_breakage(request):
 
 @management_required
 def delete_breakage(request, pk):
-    record = get_object_or_404(Breakage, pk=pk)
+    record = get_object_or_404(Breakage, pk=pk, venue=current_venue_or_404(request))
 
     if request.method == "POST":
         record_audit_event(
