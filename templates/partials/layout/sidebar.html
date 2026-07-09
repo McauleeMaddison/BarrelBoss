@@ -51,13 +51,6 @@
                     {{ membership.venue.name }}
                 </a>
                 {% endfor %}
-                <a
-                    class="nav-link{% if current == 'venue_setup' %} active{% endif %}"
-                    href="{% url 'venue_setup' %}"
-                    data-nav-icon="VS"
-                >
-                    Set up venue
-                </a>
                 {% if is_management %}
                 <a
                     class="nav-link{% if current == 'venue_invites' %} active{% endif %}"
