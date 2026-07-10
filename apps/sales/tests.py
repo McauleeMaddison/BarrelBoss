@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 
@@ -37,18 +38,18 @@ class SalesSnapshotModelTests(TestCase):
         self.assertEqual(snapshot.spend_per_cover, Decimal("15.00"))
 
 
-class SalesAccessTests(TestCase):
+class SalesAccessTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(
+        super().setUp()
+        self.staff_user = self.create_user(
             username="sales_staff",
             password="strong-pass-123",
         )
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="sales_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_sales_page_requires_management_access(self):
         self.client.login(username="sales_staff", password="strong-pass-123")
@@ -68,16 +69,17 @@ class SalesAccessTests(TestCase):
         self.assertContains(response, "Live Revenue With Cleaner Sync Control")
 
 
-class SalesListViewTests(TestCase):
+class SalesListViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.manager_user = User.objects.create_user(
+        super().setUp()
+        self.manager_user = self.create_user(
             username="sales_view_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
         StockItem.objects.create(
+            venue=self.venue,
             name="Service Lager Keg",
             category=StockItem.Category.BEER_BARRELS,
             quantity=1,
@@ -86,6 +88,7 @@ class SalesListViewTests(TestCase):
             cost="100.00",
         )
         StockItem.objects.create(
+            venue=self.venue,
             name="House Gin",
             category=StockItem.Category.SPIRITS,
             quantity=6,
@@ -94,6 +97,7 @@ class SalesListViewTests(TestCase):
             cost="22.00",
         )
         Shift.objects.create(
+            venue=self.venue,
             staff=self.manager_user,
             created_by=self.manager_user,
             shift_date=timezone.localdate(),
@@ -103,6 +107,7 @@ class SalesListViewTests(TestCase):
             notes="Sales shift",
         )
         SalesSnapshot.objects.create(
+            venue=self.venue,
             business_date=timezone.localdate(),
             source=SalesSnapshot.Source.TOAST,
             sync_mode=SalesSnapshot.SyncMode.LIVE,
@@ -126,6 +131,7 @@ class SalesListViewTests(TestCase):
             notes="Primary feed",
         )
         SalesSnapshot.objects.create(
+            venue=self.venue,
             business_date=timezone.localdate() - timedelta(days=1),
             source=SalesSnapshot.Source.MANUAL,
             sync_mode=SalesSnapshot.SyncMode.MANUAL,
@@ -149,6 +155,7 @@ class SalesListViewTests(TestCase):
             notes="Fallback close",
         )
         self.integration = PosIntegration.objects.create(
+            venue=self.venue,
             label="Toast Main Feed",
             provider=PosIntegration.Provider.TOAST,
             account_identifier="toast-main",
@@ -204,15 +211,16 @@ class SalesListViewTests(TestCase):
         self.assertIn("BarrelBoss Sales Export", response.content.decode("utf-8"))
 
 
-class SalesSyncCenterTests(TestCase):
+class SalesSyncCenterTests(VenueScopedTestCase):
     def setUp(self):
-        self.manager_user = User.objects.create_user(
+        super().setUp()
+        self.manager_user = self.create_user(
             username="sales_sync_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
         self.integration = PosIntegration.objects.create(
+            venue=self.venue,
             label="Square Garden Feed",
             provider=PosIntegration.Provider.SQUARE,
             account_identifier="square-garden",
@@ -298,14 +306,14 @@ class SalesSyncCenterTests(TestCase):
         )
 
 
-class SalesCrudViewTests(TestCase):
+class SalesCrudViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.manager_user = User.objects.create_user(
+        super().setUp()
+        self.manager_user = self.create_user(
             username="sales_crud_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_manager_can_create_sales_snapshot(self):
         self.client.login(username="sales_crud_manager", password="strong-pass-123")

@@ -26,6 +26,7 @@
     <div class="report-toolbar">
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'staff_add' %}">Create Staff Member</a>
+            <a class="table-action" href="{% url 'venue_invites' %}">Invite by Email</a>
             <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
         </div>
     </div>

@@ -71,52 +71,74 @@
 </section>
 
 <section class="staff-workspace-grid">
-    <article class="panel portal-panel">
+    <article class="panel portal-panel dashboard-collapsible" data-panel-storage-key="staff-quick-tools">
         <div class="panel-header">
             <div>
                 <h3>Quick tools</h3>
                 <p class="panel-subtitle">One clear route for the jobs bar staff do most often.</p>
             </div>
+            <button
+                type="button"
+                class="table-action panel-collapse-toggle"
+                data-panel-toggle
+                aria-expanded="true"
+                aria-controls="staff-quick-tools"
+            >
+                Collapse
+            </button>
         </div>
-        <div class="staff-tool-grid">
-            {% for action in quick_actions %}
-            <article class="action-tile staff-tool-card">
-                <div class="staff-tool-head">
-                    <p class="kicker">{{ action.label }}</p>
-                    <span class="filter-chip">{{ action.stat }}</span>
-                </div>
-                <strong>{{ action.title }}</strong>
-                <span>{{ action.copy }}</span>
-                {% if action.href %}
-                <a class="metric-action-link" href="{{ action.href }}">{{ action.action_label }}</a>
-                {% else %}
-                <a class="metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
-                    {{ action.action_label }}
-                </a>
-                {% endif %}
-            </article>
-            {% endfor %}
+        <div class="dashboard-collapsible-body" id="staff-quick-tools" data-panel-body>
+            <div class="staff-tool-grid">
+                {% for action in quick_actions %}
+                <article class="action-tile staff-tool-card">
+                    <div class="staff-tool-head">
+                        <p class="kicker">{{ action.label }}</p>
+                        <span class="filter-chip">{{ action.stat }}</span>
+                    </div>
+                    <strong>{{ action.title }}</strong>
+                    <span>{{ action.copy }}</span>
+                    {% if action.href %}
+                    <a class="metric-action-link" href="{{ action.href }}">{{ action.action_label }}</a>
+                    {% else %}
+                    <a class="metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
+                        {{ action.action_label }}
+                    </a>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
         </div>
     </article>
 
-    <article class="panel portal-panel">
+    <article class="panel portal-panel dashboard-collapsible" data-panel-storage-key="staff-recent-updates" data-panel-default-collapsed="true">
         <div class="panel-header">
             <div>
                 <h3>Recent updates</h3>
                 <p class="panel-subtitle">Only the latest changes tied to your shift work.</p>
             </div>
+            <button
+                type="button"
+                class="table-action panel-collapse-toggle"
+                data-panel-toggle
+                aria-expanded="true"
+                aria-controls="staff-recent-updates"
+            >
+                Collapse
+            </button>
         </div>
-        <ul class="activity-list staff-activity-list" id="activityList">
-            {% for item in activity|slice:":6" %}
-            <li>
-                <div>
-                    <strong>{{ item.time }}</strong>
-                    <small>{{ item.text }}</small>
-                </div>
-                <span class="activity-chip badge">{{ item.category|title }}</span>
-            </li>
-            {% endfor %}
-        </ul>
+        <div class="dashboard-collapsible-body" id="staff-recent-updates" data-panel-body>
+            <ul class="activity-list staff-activity-list" id="activityList">
+                {% for item in activity|slice:":6" %}
+                <li>
+                    <div>
+                        <strong>{{ item.time }}</strong>
+                        <small>{{ item.text }}</small>
+                    </div>
+                    <span class="activity-chip badge">{{ item.category|title }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </article>
 </section>
 </div>

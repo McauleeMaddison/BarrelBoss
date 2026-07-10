@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 from apps.stock.models import StockItem
 
 from .models import Supplier
@@ -14,16 +15,16 @@ class SupplierModelTests(TestCase):
         self.assertEqual(str(supplier), "Brewline")
 
 
-class SupplierAccessTests(TestCase):
+class SupplierAccessTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(username="supp_staff", password="strong-pass-123")
+        super().setUp()
+        self.staff_user = self.create_user(username="supp_staff", password="strong-pass-123")
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="supp_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_suppliers_list_requires_management_role(self):
         self.client.login(username="supp_staff", password="strong-pass-123")
@@ -40,16 +41,17 @@ class SupplierAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class SupplierCrudTests(TestCase):
+class SupplierCrudTests(VenueScopedTestCase):
     def setUp(self):
-        self.manager_user = User.objects.create_user(
+        super().setUp()
+        self.manager_user = self.create_user(
             username="supp_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
         self.supplier = Supplier.objects.create(
+            venue=self.venue,
             name="Brewline",
             contact_name="Siobhan Reed",
             phone="01234567890",
@@ -94,6 +96,7 @@ class SupplierCrudTests(TestCase):
 
     def test_delete_supplier_sets_stock_supplier_to_null(self):
         item = StockItem.objects.create(
+            venue=self.venue,
             name="Carling 50L",
             category=StockItem.Category.BEER_BARRELS,
             quantity=3,
@@ -113,6 +116,7 @@ class SupplierCrudTests(TestCase):
 
     def test_supplier_list_search_filters_rows(self):
         Supplier.objects.create(
+            venue=self.venue,
             name="North Wines",
             category_supplied=Supplier.CategorySupplied.WINE,
         )

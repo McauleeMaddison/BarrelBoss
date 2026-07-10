@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 
 from .models import Shift
 
@@ -25,21 +26,22 @@ class ShiftModelTests(TestCase):
         self.assertEqual(shift.duration_hours, 6.5)
 
 
-class ShiftViewTests(TestCase):
+class ShiftViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(username="shift_staff", password="strong-pass-123")
-        self.other_staff = User.objects.create_user(username="shift_other", password="strong-pass-123")
+        super().setUp()
+        self.staff_user = self.create_user(username="shift_staff", password="strong-pass-123")
+        self.other_staff = self.create_user(username="shift_other", password="strong-pass-123")
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="shift_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
         today = timezone.localdate()
 
         self.staff_shift = Shift.objects.create(
+            venue=self.venue,
             staff=self.staff_user,
             shift_date=today,
             start_time=time(16, 0),
@@ -49,6 +51,7 @@ class ShiftViewTests(TestCase):
             created_by=self.manager_user,
         )
         self.other_shift = Shift.objects.create(
+            venue=self.venue,
             staff=self.other_staff,
             shift_date=today,
             start_time=time(10, 0),

@@ -8,11 +8,39 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.checklists.models import Checklist, ChecklistTemplate
+from apps.stock.models import StockItem
 
 from .models import Organisation, StaffProfile, Venue, VenueInvite, VenueMembership
 
 
 User = get_user_model()
+
+
+def _normalize_choice_alias(raw_value):
+    return slugify(str(raw_value or "")).replace("-", "_").upper()
+
+
+def _choice_alias_map(choices):
+    aliases = {}
+    for value, label in choices:
+        aliases[_normalize_choice_alias(value)] = value
+        aliases[_normalize_choice_alias(label)] = value
+    return aliases
+
+
+def _unique_slug(model, seed, *, scope_filters=None):
+    base_slug = slugify(seed) or model._meta.model_name
+    slug = base_slug
+    suffix = 2
+    queryset = model.objects.all()
+    if scope_filters:
+        queryset = queryset.filter(**scope_filters)
+
+    while queryset.filter(slug=slug).exists():
+        slug = f"{base_slug}-{suffix}"
+        suffix += 1
+
+    return slug
 
 
 class StaffCreateForm(forms.Form):
@@ -200,13 +228,37 @@ class VenueSetupForm(forms.Form):
     organisation_name = forms.CharField(max_length=180)
     venue_name = forms.CharField(max_length=180)
     venue_slug = forms.SlugField(max_length=180, required=False)
+    dashboard_focus = forms.ChoiceField(
+        choices=Venue.DashboardFocus.choices,
+        initial=Venue.DashboardFocus.OPERATIONS,
+    )
     default_shift_start_time = forms.TimeField(required=False)
     default_shift_end_time = forms.TimeField(required=False)
     low_stock_buffer_percent = forms.IntegerField(min_value=0, max_value=300, initial=50)
+    opening_handover_prompt = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        initial="Opening checks complete and cellar/service prep confirmed.",
+    )
+    closing_handover_prompt = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        initial="Closing checks complete and handover notes recorded.",
+    )
     supplier_names = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
         help_text="One supplier name per line.",
+    )
+    manager_invite_emails = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="One manager email per line.",
+    )
+    staff_invite_emails = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="One staff email per line.",
     )
     opening_checklist_items = forms.CharField(
         required=False,
@@ -218,6 +270,105 @@ class VenueSetupForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 4}),
         help_text="One closing task per line.",
     )
+    delivery_checklist_items = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="One delivery-receive or stocktake task per line.",
+    )
+    stock_seed_items = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 5}),
+        help_text=(
+            "Use one line per item in the format: Item name | category | unit | minimum level. "
+            "Example: Guinness 50L | Beer Barrels | Barrels | 4"
+        ),
+    )
+
+    def _clean_email_lines(self, field_name):
+        raw_value = self.cleaned_data.get(field_name, "")
+        validator = forms.EmailField()
+        emails = []
+        seen = set()
+        for line_number, raw_line in enumerate(raw_value.splitlines(), start=1):
+            email = raw_line.strip().lower()
+            if not email:
+                continue
+            try:
+                normalized_email = validator.clean(email)
+            except forms.ValidationError as exc:
+                raise forms.ValidationError(
+                    f"Line {line_number}: {exc.messages[0]}"
+                ) from exc
+            if normalized_email not in seen:
+                seen.add(normalized_email)
+                emails.append(normalized_email)
+        return emails
+
+    def clean_manager_invite_emails(self):
+        return self._clean_email_lines("manager_invite_emails")
+
+    def clean_staff_invite_emails(self):
+        return self._clean_email_lines("staff_invite_emails")
+
+    def clean_stock_seed_items(self):
+        raw_value = self.cleaned_data.get("stock_seed_items", "")
+        if not raw_value.strip():
+            return []
+
+        category_aliases = _choice_alias_map(StockItem.Category.choices)
+        unit_aliases = _choice_alias_map(StockItem.Unit.choices)
+        parsed_items = []
+        errors = []
+
+        for line_number, raw_line in enumerate(raw_value.splitlines(), start=1):
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            parts = [part.strip() for part in line.split("|")]
+            if len(parts) != 4:
+                errors.append(
+                    f"Line {line_number}: use Item name | category | unit | minimum level."
+                )
+                continue
+
+            name, raw_category, raw_unit, raw_minimum = parts
+            category = category_aliases.get(_normalize_choice_alias(raw_category))
+            unit = unit_aliases.get(_normalize_choice_alias(raw_unit))
+
+            if not name:
+                errors.append(f"Line {line_number}: item name is required.")
+                continue
+            if category is None:
+                errors.append(f"Line {line_number}: '{raw_category}' is not a valid stock category.")
+                continue
+            if unit is None:
+                errors.append(f"Line {line_number}: '{raw_unit}' is not a valid stock unit.")
+                continue
+
+            try:
+                minimum_level = int(raw_minimum)
+            except (TypeError, ValueError):
+                errors.append(f"Line {line_number}: minimum level must be a whole number.")
+                continue
+
+            if minimum_level < 0:
+                errors.append(f"Line {line_number}: minimum level cannot be negative.")
+                continue
+
+            parsed_items.append(
+                {
+                    "name": name,
+                    "category": category,
+                    "unit": unit,
+                    "minimum_level": minimum_level,
+                }
+            )
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        return parsed_items
 
     def save(self, *, user, organisation=None):
         organisation_name = self.cleaned_data["organisation_name"].strip()
@@ -225,17 +376,28 @@ class VenueSetupForm(forms.Form):
         if organisation is None:
             organisation = Organisation.objects.create(
                 name=organisation_name,
-                slug=slugify(organisation_name) or "organisation",
+                slug=_unique_slug(Organisation, organisation_name),
             )
         venue = Venue.objects.create(
             organisation=organisation,
             name=venue_name,
-            slug=self.cleaned_data.get("venue_slug") or slugify(venue_name) or "venue",
+            slug=_unique_slug(
+                Venue,
+                self.cleaned_data.get("venue_slug") or venue_name,
+                scope_filters={"organisation": organisation},
+            ),
             default_shift_start_time=self.cleaned_data.get("default_shift_start_time"),
             default_shift_end_time=self.cleaned_data.get("default_shift_end_time"),
             low_stock_buffer_percent=self.cleaned_data["low_stock_buffer_percent"],
-            opening_handover_prompt="Opening checks complete and cellar/service prep confirmed.",
-            closing_handover_prompt="Closing checks complete and handover notes recorded.",
+            dashboard_focus=self.cleaned_data["dashboard_focus"],
+            opening_handover_prompt=(
+                self.cleaned_data.get("opening_handover_prompt", "").strip()
+                or "Opening checks complete and cellar/service prep confirmed."
+            ),
+            closing_handover_prompt=(
+                self.cleaned_data.get("closing_handover_prompt", "").strip()
+                or "Closing checks complete and handover notes recorded."
+            ),
         )
         VenueMembership.objects.create(
             venue=venue,
@@ -246,37 +408,66 @@ class VenueSetupForm(forms.Form):
             notify_on_shift_assignment=True,
             job_title=user.staff_profile.job_title,
         )
+        profile = user.staff_profile
+        profile.role = StaffProfile.Role.LANDLORD if user.is_superuser else StaffProfile.Role.MANAGER
+        profile.is_active = True
+        profile.notify_on_shift_assignment = True
+        profile.save(update_fields=["role", "is_active", "notify_on_shift_assignment", "updated_at"])
 
         for raw_name in self.cleaned_data.get("supplier_names", "").splitlines():
             supplier_name = raw_name.strip()
             if supplier_name:
                 venue.suppliers.create(name=supplier_name)
 
-        for sort_order, raw_title in enumerate(
-            self.cleaned_data.get("opening_checklist_items", "").splitlines(),
-            start=1,
-        ):
-            title = raw_title.strip()
-            if title:
-                ChecklistTemplate.objects.create(
+        checklist_seed_map = {
+            Checklist.ChecklistType.OPENING: self.cleaned_data.get("opening_checklist_items", ""),
+            Checklist.ChecklistType.CLOSING: self.cleaned_data.get("closing_checklist_items", ""),
+            Checklist.ChecklistType.DELIVERY: self.cleaned_data.get("delivery_checklist_items", ""),
+        }
+        for checklist_type, raw_seed in checklist_seed_map.items():
+            for sort_order, raw_title in enumerate(raw_seed.splitlines(), start=1):
+                title = raw_title.strip()
+                if title:
+                    ChecklistTemplate.objects.create(
+                        venue=venue,
+                        title=title,
+                        checklist_type=checklist_type,
+                        sort_order=sort_order,
+                    )
+
+        invite_specs = [
+            (self.cleaned_data.get("manager_invite_emails", []), StaffProfile.Role.MANAGER),
+            (self.cleaned_data.get("staff_invite_emails", []), StaffProfile.Role.STAFF),
+        ]
+        for emails, role in invite_specs:
+            for email in emails:
+                VenueInvite.objects.update_or_create(
                     venue=venue,
-                    title=title,
-                    checklist_type=Checklist.ChecklistType.OPENING,
-                    sort_order=sort_order,
+                    email=email,
+                    defaults={
+                        "role": role,
+                        "token": secrets.token_urlsafe(24),
+                        "is_active": True,
+                        "notify_on_shift_assignment": True,
+                        "invited_by": user,
+                        "expires_at": timezone.now() + timedelta(days=14),
+                        "accepted_by": None,
+                        "accepted_at": None,
+                    },
                 )
 
-        for sort_order, raw_title in enumerate(
-            self.cleaned_data.get("closing_checklist_items", "").splitlines(),
-            start=1,
-        ):
-            title = raw_title.strip()
-            if title:
-                ChecklistTemplate.objects.create(
-                    venue=venue,
-                    title=title,
-                    checklist_type=Checklist.ChecklistType.CLOSING,
-                    sort_order=sort_order,
-                )
+        for stock_seed in self.cleaned_data.get("stock_seed_items", []):
+            StockItem.objects.update_or_create(
+                venue=venue,
+                name=stock_seed["name"],
+                defaults={
+                    "category": stock_seed["category"],
+                    "unit": stock_seed["unit"],
+                    "minimum_level": stock_seed["minimum_level"],
+                    "quantity": 0,
+                    "is_active": True,
+                },
+            )
 
         return venue
 

@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 
 from .models import AuditEvent
 from .services import record_audit_event
@@ -30,22 +31,23 @@ class AuditEventServiceTests(TestCase):
         self.assertEqual(saved.summary, "Created sample record")
 
 
-class AuditLogPageTests(TestCase):
+class AuditLogPageTests(VenueScopedTestCase):
     def setUp(self):
-        self.manager_user = User.objects.create_user(
+        super().setUp()
+        self.manager_user = self.create_user(
             username="audit_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
-        self.staff_user = User.objects.create_user(
+        self.staff_user = self.create_user(
             username="audit_staff",
             password="strong-pass-123",
         )
 
         for index in range(30):
             AuditEvent.objects.create(
+                venue=self.venue,
                 actor=self.manager_user,
                 actor_username=self.manager_user.username,
                 actor_role=StaffProfile.Role.MANAGER,

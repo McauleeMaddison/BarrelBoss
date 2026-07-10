@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 
 from .models import Checklist
 
@@ -20,19 +21,20 @@ class ChecklistModelTests(TestCase):
         self.assertIn("Unlock stock room", str(task))
 
 
-class ChecklistViewTests(TestCase):
+class ChecklistViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(username="task_staff", password="strong-pass-123")
-        self.staff_two = User.objects.create_user(username="task_staff_two", password="strong-pass-123")
+        super().setUp()
+        self.staff_user = self.create_user(username="task_staff", password="strong-pass-123")
+        self.staff_two = self.create_user(username="task_staff_two", password="strong-pass-123")
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="task_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
         self.task_for_staff = Checklist.objects.create(
+            venue=self.venue,
             title="Restock fridges",
             checklist_type=Checklist.ChecklistType.OPENING,
             assigned_to=self.staff_user,
@@ -40,6 +42,7 @@ class ChecklistViewTests(TestCase):
             due_date=timezone.localdate(),
         )
         self.task_for_other = Checklist.objects.create(
+            venue=self.venue,
             title="Count till",
             checklist_type=Checklist.ChecklistType.CLOSING,
             assigned_to=self.staff_two,
@@ -47,6 +50,7 @@ class ChecklistViewTests(TestCase):
             due_date=timezone.localdate() + timedelta(days=1),
         )
         self.overdue_task = Checklist.objects.create(
+            venue=self.venue,
             title="Deep clean line",
             checklist_type=Checklist.ChecklistType.CLEANING,
             assigned_to=self.staff_user,

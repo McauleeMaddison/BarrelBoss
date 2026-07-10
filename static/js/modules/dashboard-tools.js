@@ -1,4 +1,56 @@
 (() => {
+    const panelStorageKey = "barrelboss-dashboard-panel-state";
+    const collapsiblePanels = document.querySelectorAll(".dashboard-collapsible[data-panel-storage-key]");
+
+    const readPanelState = () => {
+        try {
+            return JSON.parse(window.localStorage.getItem(panelStorageKey) || "{}");
+        } catch (_error) {
+            return {};
+        }
+    };
+
+    const writePanelState = (state) => {
+        try {
+            window.localStorage.setItem(panelStorageKey, JSON.stringify(state));
+        } catch (_error) {
+            // Ignore storage errors.
+        }
+    };
+
+    if (collapsiblePanels.length) {
+        const storedPanelState = readPanelState();
+
+        collapsiblePanels.forEach((panel) => {
+            const storageId = panel.dataset.panelStorageKey;
+            const toggle = panel.querySelector("[data-panel-toggle]");
+            const body = panel.querySelector("[data-panel-body]");
+
+            if (!storageId || !toggle || !body) {
+                return;
+            }
+
+            const hasStoredState = Object.prototype.hasOwnProperty.call(storedPanelState, storageId);
+            const defaultCollapsed = panel.dataset.panelDefaultCollapsed === "true";
+
+            const applyState = (isCollapsed) => {
+                body.hidden = isCollapsed;
+                toggle.setAttribute("aria-expanded", String(!isCollapsed));
+                toggle.textContent = isCollapsed ? "Expand" : "Collapse";
+                panel.classList.toggle("is-collapsed", isCollapsed);
+            };
+
+            applyState(hasStoredState ? Boolean(storedPanelState[storageId]) : defaultCollapsed);
+
+            toggle.addEventListener("click", () => {
+                const nextCollapsed = !panel.classList.contains("is-collapsed");
+                storedPanelState[storageId] = nextCollapsed;
+                writePanelState(storedPanelState);
+                applyState(nextCollapsed);
+            });
+        });
+    }
+
     const dashboardPanelButtons = document.querySelectorAll("[data-dashboard-panel-target]");
     const dashboardPanelGroups = document.querySelectorAll("[data-dashboard-panel-group]");
     const dashboardPanelSelect = document.querySelector("[data-dashboard-panel-select]");

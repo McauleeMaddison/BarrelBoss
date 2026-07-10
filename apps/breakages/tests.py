@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 
 from .models import Breakage
 
@@ -13,16 +14,16 @@ class BreakageModelTests(TestCase):
         self.assertIn("Pint Glass", str(record))
 
 
-class BreakageViewTests(TestCase):
+class BreakageViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(username="break_staff", password="strong-pass-123")
+        super().setUp()
+        self.staff_user = self.create_user(username="break_staff", password="strong-pass-123")
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="break_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_breakages_list_requires_login(self):
         response = self.client.get(reverse("breakages:list"))
@@ -47,6 +48,7 @@ class BreakageViewTests(TestCase):
 
     def test_staff_cannot_delete_breakage(self):
         record = Breakage.objects.create(
+            venue=self.venue,
             item_name="Tray",
             quantity=1,
             issue_type=Breakage.IssueType.DAMAGED,
@@ -65,6 +67,7 @@ class BreakageViewTests(TestCase):
 
     def test_manager_can_delete_breakage(self):
         record = Breakage.objects.create(
+            venue=self.venue,
             item_name="Bottle Opener",
             quantity=1,
             issue_type=Breakage.IssueType.MISSING,
@@ -79,12 +82,14 @@ class BreakageViewTests(TestCase):
 
     def test_breakages_search_filter(self):
         Breakage.objects.create(
+            venue=self.venue,
             item_name="Pint Glass",
             quantity=2,
             issue_type=Breakage.IssueType.BROKEN,
             reported_by=self.staff_user,
         )
         Breakage.objects.create(
+            venue=self.venue,
             item_name="Cleaning Cloth",
             quantity=1,
             issue_type=Breakage.IssueType.MISSING,

@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
 
@@ -25,23 +26,25 @@ class OrderModelTests(TestCase):
         self.assertEqual(order.reference, f"ORD-{order.pk:04d}")
 
 
-class OrderWorkflowTests(TestCase):
+class OrderWorkflowTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(username="order_staff", password="strong-pass-123")
+        super().setUp()
+        self.staff_user = self.create_user(username="order_staff", password="strong-pass-123")
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="order_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
         self.supplier = Supplier.objects.create(
+            venue=self.venue,
             name="Cellar Supply Co",
             category_supplied=Supplier.CategorySupplied.BEER_BARRELS,
         )
 
         self.stock_one = StockItem.objects.create(
+            venue=self.venue,
             name="Guinness 50L",
             category=StockItem.Category.BEER_BARRELS,
             quantity=8,
@@ -50,6 +53,7 @@ class OrderWorkflowTests(TestCase):
             cost=Decimal("114.00"),
         )
         self.stock_two = StockItem.objects.create(
+            venue=self.venue,
             name="Carling 50L",
             category=StockItem.Category.BEER_BARRELS,
             quantity=4,
@@ -112,6 +116,7 @@ class OrderWorkflowTests(TestCase):
 
     def test_staff_can_edit_their_own_draft(self):
         order = Order.objects.create(
+            venue=self.venue,
             supplier=self.supplier,
             created_by=self.staff_user,
             status=Order.Status.DRAFT,
@@ -143,6 +148,7 @@ class OrderWorkflowTests(TestCase):
 
     def test_staff_cannot_edit_non_draft_or_other_user_order(self):
         order = Order.objects.create(
+            venue=self.venue,
             supplier=self.supplier,
             created_by=self.manager_user,
             status=Order.Status.ORDERED,
@@ -156,6 +162,7 @@ class OrderWorkflowTests(TestCase):
 
     def test_manager_can_update_order_status(self):
         order = Order.objects.create(
+            venue=self.venue,
             supplier=self.supplier,
             created_by=self.manager_user,
             status=Order.Status.DRAFT,
@@ -173,6 +180,7 @@ class OrderWorkflowTests(TestCase):
 
     def test_staff_cannot_update_order_status(self):
         order = Order.objects.create(
+            venue=self.venue,
             supplier=self.supplier,
             created_by=self.staff_user,
             status=Order.Status.DRAFT,
@@ -219,6 +227,7 @@ class OrderWorkflowTests(TestCase):
 
     def test_orders_list_supports_overdue_preset(self):
         overdue_order = Order.objects.create(
+            venue=self.venue,
             supplier=self.supplier,
             created_by=self.manager_user,
             status=Order.Status.PENDING_DELIVERY,
@@ -228,6 +237,7 @@ class OrderWorkflowTests(TestCase):
         overdue_order.items.create(stock_item=self.stock_one, quantity=2)
 
         on_time_order = Order.objects.create(
+            venue=self.venue,
             supplier=self.supplier,
             created_by=self.manager_user,
             status=Order.Status.PENDING_DELIVERY,

@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
@@ -15,18 +16,18 @@ from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
 
 
-class DashboardAccessTests(TestCase):
+class DashboardAccessTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(
+        super().setUp()
+        self.staff_user = self.create_user(
             username="dash_staff",
             password="strong-pass-123",
         )
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="dash_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
     def test_dashboard_requires_login(self):
         response = self.client.get(reverse("dashboard:home"))
@@ -96,21 +97,22 @@ class DashboardAccessTests(TestCase):
         )
 
 
-class DashboardDataDrivenMetricsTests(TestCase):
+class DashboardDataDrivenMetricsTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(
+        super().setUp()
+        self.staff_user = self.create_user(
             username="metric_staff",
             password="strong-pass-123",
         )
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="metric_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
-        supplier = Supplier.objects.create(name="Metric Brewline")
+        supplier = Supplier.objects.create(name="Metric Brewline", venue=self.venue)
         stock_item = StockItem.objects.create(
+            venue=self.venue,
             name="Metric Lager Barrel",
             category=StockItem.Category.BEER_BARRELS,
             quantity=1,
@@ -120,6 +122,7 @@ class DashboardDataDrivenMetricsTests(TestCase):
             supplier=supplier,
         )
         order = Order.objects.create(
+            venue=self.venue,
             supplier=supplier,
             created_by=self.staff_user,
             status=Order.Status.DRAFT,
@@ -129,6 +132,7 @@ class DashboardDataDrivenMetricsTests(TestCase):
         OrderItem.objects.create(order=order, stock_item=stock_item, quantity=2)
 
         Shift.objects.create(
+            venue=self.venue,
             staff=self.staff_user,
             shift_date=timezone.localdate(),
             start_time=time(12, 0),
@@ -138,6 +142,7 @@ class DashboardDataDrivenMetricsTests(TestCase):
         )
 
         Checklist.objects.create(
+            venue=self.venue,
             title="Close till review",
             checklist_type=Checklist.ChecklistType.CLOSING,
             assigned_to=self.staff_user,
@@ -147,12 +152,14 @@ class DashboardDataDrivenMetricsTests(TestCase):
         )
 
         Breakage.objects.create(
+            venue=self.venue,
             item_name="Pint glass",
             quantity=1,
             issue_type=Breakage.IssueType.BROKEN,
             reported_by=self.staff_user,
         )
         SalesSnapshot.objects.create(
+            venue=self.venue,
             business_date=timezone.localdate(),
             source=SalesSnapshot.Source.TOAST,
             sync_mode=SalesSnapshot.SyncMode.LIVE,
@@ -175,6 +182,7 @@ class DashboardDataDrivenMetricsTests(TestCase):
             uploaded_by=self.manager_user,
         )
         integration = PosIntegration.objects.create(
+            venue=self.venue,
             label="Toast Control Feed",
             provider=PosIntegration.Provider.TOAST,
             account_identifier="toast-control",

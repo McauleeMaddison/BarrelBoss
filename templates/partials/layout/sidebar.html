@@ -44,6 +44,35 @@
                     </small>
                 </div>
             </div>
+
+            {% if available_venue_memberships %}
+            <details class="sidebar-venue-switcher">
+                <summary>
+                    <span>Venue access</span>
+                    <small>{{ available_venue_memberships|length }} venue{{ available_venue_memberships|length|pluralize }}</small>
+                </summary>
+                <div class="sidebar-venue-switcher-body">
+                    {% for membership in available_venue_memberships %}
+                    <a
+                        class="sidebar-venue-option{% if active_venue and membership.venue_id == active_venue.id %} active{% endif %}"
+                        href="{% url 'switch_venue' membership.venue_id %}"
+                    >
+                        <strong>{{ membership.venue.name }}</strong>
+                        <small>{{ membership.venue.organisation.name }} · {{ membership.get_role_display }}</small>
+                    </a>
+                    {% endfor %}
+
+                    {% if is_management %}
+                    <div class="sidebar-venue-switcher-actions">
+                        <a class="table-action" href="{% url 'venue_setup' %}">Create venue</a>
+                        {% if active_venue %}
+                        <a class="table-action" href="{% url 'venue_invites' %}">Staff invites</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </details>
+            {% endif %}
         </div>
 
         <button type="button" class="sidebar-close" aria-label="Close navigation">

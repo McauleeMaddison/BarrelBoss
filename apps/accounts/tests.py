@@ -1,4 +1,5 @@
 import json
+from datetime import time
 from io import StringIO
 from unittest.mock import patch
 
@@ -10,10 +11,11 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import PushSubscription, StaffProfile
-from .testing import VenueScopedTestCase
+from .models import PushSubscription, StaffProfile, Venue, VenueMembership
+from .tenancy import ACTIVE_VENUE_SESSION_KEY
+from .testing import VenueScopedTestCase, attach_user_to_venue, create_test_venue
 from apps.breakages.models import Breakage
-from apps.checklists.models import Checklist
+from apps.checklists.models import Checklist, ChecklistTemplate
 from apps.orders.models import Order, OrderItem
 from apps.sales.models import PosIntegration, PosLocationMapping, SalesSnapshot
 from apps.shifts.models import Shift
@@ -118,6 +120,12 @@ class StaffProfileSignalTests(TestCase):
             password="strong-pass-123",
         )
         self.assertEqual(user.staff_profile.role, StaffProfile.Role.LANDLORD)
+
+    def test_new_user_is_not_auto_attached_to_existing_venue(self):
+        create_test_venue()
+        user = User.objects.create_user(username="staff_b", password="strong-pass-123")
+
+        self.assertFalse(user.venue_memberships.exists())
 
 
 class RoleRoutingTests(VenueScopedTestCase):
@@ -256,6 +264,256 @@ class SettingsAndPushTests(VenueScopedTestCase):
                 endpoint="https://example.com/push/remove-me",
                 user=self.staff_user,
             ).exists()
+        )
+
+
+class VenueOnboardingFlowTests(TestCase):
+    def test_first_time_setup_creates_seeded_venue_configuration(self):
+        founder = User.objects.create_user(
+            username="founder",
+            password="strong-pass-123",
+            email="founder@barrelboss.test",
+        )
+        self.client.login(username="founder", password="strong-pass-123")
+        response = self.client.post(
+            reverse("venue_setup"),
+            {
+                "organisation_name": "North Star Group",
+                "venue_name": "River Bar",
+                "venue_slug": "",
+                "dashboard_focus": Venue.DashboardFocus.TRADE,
+                "default_shift_start_time": "10:00",
+                "default_shift_end_time": "23:00",
+                "low_stock_buffer_percent": 35,
+                "opening_handover_prompt": "Open, prep, and glassware checks completed.",
+                "closing_handover_prompt": "Close, cash, and cellar notes handed over.",
+                "supplier_names": "Brewline\nCellar Fresh",
+                "manager_invite_emails": "manager.one@example.com",
+                "staff_invite_emails": "staff.one@example.com\nstaff.two@example.com",
+                "opening_checklist_items": "Unlock cellar",
+                "closing_checklist_items": "Lock spirit cage",
+                "delivery_checklist_items": "Receive keg delivery",
+                "stock_seed_items": (
+                    "Guinness 50L | Beer Barrels | Barrels | 4\n"
+                    "House Gin | Spirits | Bottles | 3"
+                ),
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("dashboard:management_portal"),
+            fetch_redirect_response=False,
+        )
+        venue = Venue.objects.get(name="River Bar")
+        self.assertEqual(self.client.session[ACTIVE_VENUE_SESSION_KEY], venue.id)
+        self.assertEqual(venue.dashboard_focus, Venue.DashboardFocus.TRADE)
+        self.assertEqual(venue.low_stock_buffer_percent, 35)
+        self.assertEqual(venue.default_shift_start_time.strftime("%H:%M"), "10:00")
+        self.assertEqual(venue.default_shift_end_time.strftime("%H:%M"), "23:00")
+        self.assertEqual(
+            VenueMembership.objects.get(user=founder, venue=venue).role,
+            StaffProfile.Role.MANAGER,
+        )
+        self.assertEqual(venue.suppliers.count(), 2)
+        self.assertEqual(
+            set(
+                venue.checklist_templates.values_list("checklist_type", flat=True)
+            ),
+            {
+                Checklist.ChecklistType.OPENING,
+                Checklist.ChecklistType.CLOSING,
+                Checklist.ChecklistType.DELIVERY,
+            },
+        )
+        self.assertEqual(
+            venue.invites.filter(role=StaffProfile.Role.MANAGER).count(),
+            1,
+        )
+        self.assertEqual(
+            venue.invites.filter(role=StaffProfile.Role.STAFF).count(),
+            2,
+        )
+        self.assertTrue(
+            venue.stock_items.filter(
+                name="Guinness 50L",
+                category=StockItem.Category.BEER_BARRELS,
+                minimum_level=4,
+            ).exists()
+        )
+        self.assertTrue(
+            ChecklistTemplate.objects.filter(
+                venue=venue,
+                title="Receive keg delivery",
+                checklist_type=Checklist.ChecklistType.DELIVERY,
+            ).exists()
+        )
+
+
+class VenueSwitchingAndIsolationTests(VenueScopedTestCase):
+    def setUp(self):
+        super().setUp()
+        self.manager_user = self.create_user(
+            username="multi_manager",
+            password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
+        )
+        self.staff_user = self.create_user(
+            username="multi_staff",
+            password="strong-pass-123",
+        )
+        self.second_venue = Venue.objects.create(
+            organisation=self.venue.organisation,
+            name="Garden Bar",
+            slug="garden-bar",
+            low_stock_buffer_percent=30,
+            dashboard_focus=Venue.DashboardFocus.OPERATIONS,
+            opening_handover_prompt="Garden bar opening checks complete.",
+            closing_handover_prompt="Garden bar closing notes recorded.",
+        )
+        attach_user_to_venue(
+            self.manager_user,
+            self.second_venue,
+            role=StaffProfile.Role.MANAGER,
+            is_default=False,
+        )
+        attach_user_to_venue(
+            self.staff_user,
+            self.second_venue,
+            role=StaffProfile.Role.STAFF,
+            is_default=False,
+        )
+
+        self.main_supplier = Supplier.objects.create(name="Main Supplier", venue=self.venue)
+        self.garden_supplier = Supplier.objects.create(name="Garden Supplier", venue=self.second_venue)
+        self.main_stock = StockItem.objects.create(
+            venue=self.venue,
+            name="Main Lager",
+            category=StockItem.Category.BEER_BARRELS,
+            quantity=2,
+            minimum_level=4,
+            unit=StockItem.Unit.BARRELS,
+            cost="99.00",
+            supplier=self.main_supplier,
+        )
+        self.garden_stock = StockItem.objects.create(
+            venue=self.second_venue,
+            name="Garden Gin",
+            category=StockItem.Category.SPIRITS,
+            quantity=5,
+            minimum_level=2,
+            unit=StockItem.Unit.BOTTLES,
+            cost="24.00",
+            supplier=self.garden_supplier,
+        )
+        self.main_task = Checklist.objects.create(
+            venue=self.venue,
+            title="Main opening checks",
+            checklist_type=Checklist.ChecklistType.OPENING,
+            assigned_to=self.staff_user,
+            created_by=self.manager_user,
+            due_date=timezone.localdate(),
+        )
+        self.garden_task = Checklist.objects.create(
+            venue=self.second_venue,
+            title="Garden close checks",
+            checklist_type=Checklist.ChecklistType.CLOSING,
+            assigned_to=self.staff_user,
+            created_by=self.manager_user,
+            due_date=timezone.localdate(),
+        )
+        self.main_shift = Shift.objects.create(
+            venue=self.venue,
+            staff=self.staff_user,
+            shift_date=timezone.localdate(),
+            start_time=time(16, 0),
+            end_time=time(22, 0),
+            break_minutes=30,
+            notes="Main floor",
+            created_by=self.manager_user,
+        )
+        self.garden_shift = Shift.objects.create(
+            venue=self.second_venue,
+            staff=self.staff_user,
+            shift_date=timezone.localdate(),
+            start_time=time(12, 0),
+            end_time=time(18, 0),
+            break_minutes=30,
+            notes="Garden terrace",
+            created_by=self.manager_user,
+        )
+        self.main_order = Order.objects.create(
+            venue=self.venue,
+            supplier=self.main_supplier,
+            created_by=self.manager_user,
+            status=Order.Status.DRAFT,
+        )
+        OrderItem.objects.create(order=self.main_order, stock_item=self.main_stock, quantity=2)
+        self.garden_order = Order.objects.create(
+            venue=self.second_venue,
+            supplier=self.garden_supplier,
+            created_by=self.manager_user,
+            status=Order.Status.DRAFT,
+        )
+        OrderItem.objects.create(order=self.garden_order, stock_item=self.garden_stock, quantity=1)
+
+    def test_switch_venue_changes_visible_operational_scope(self):
+        self.client.login(username="multi_manager", password="strong-pass-123")
+
+        stock_response = self.client.get(reverse("stock:list"))
+        order_response = self.client.get(reverse("orders:list"))
+        checklist_response = self.client.get(reverse("checklists:list"))
+        shift_response = self.client.get(reverse("shifts:list"))
+
+        self.assertContains(stock_response, "Main Lager")
+        self.assertNotContains(stock_response, "Garden Gin")
+        self.assertContains(order_response, self.main_order.reference)
+        self.assertNotContains(order_response, self.garden_order.reference)
+        self.assertContains(checklist_response, "Main opening checks")
+        self.assertNotContains(checklist_response, "Garden close checks")
+        self.assertContains(shift_response, "Main floor")
+        self.assertNotContains(shift_response, "Garden terrace")
+
+        switch_response = self.client.get(reverse("switch_venue", args=[self.second_venue.id]))
+        self.assertRedirects(
+            switch_response,
+            reverse("dashboard:management_portal"),
+            fetch_redirect_response=False,
+        )
+
+        stock_response = self.client.get(reverse("stock:list"))
+        order_response = self.client.get(reverse("orders:list"))
+        checklist_response = self.client.get(reverse("checklists:list"))
+        shift_response = self.client.get(reverse("shifts:list"))
+
+        self.assertContains(stock_response, "Garden Gin")
+        self.assertNotContains(stock_response, "Main Lager")
+        self.assertContains(order_response, self.garden_order.reference)
+        self.assertNotContains(order_response, self.main_order.reference)
+        self.assertContains(checklist_response, "Garden close checks")
+        self.assertNotContains(checklist_response, "Main opening checks")
+        self.assertContains(shift_response, "Garden terrace")
+        self.assertNotContains(shift_response, "Main floor")
+
+    def test_active_venue_blocks_cross_venue_primary_key_access(self):
+        self.client.login(username="multi_manager", password="strong-pass-123")
+        self.client.get(reverse("switch_venue", args=[self.second_venue.id]))
+
+        self.assertEqual(
+            self.client.get(reverse("stock:edit", args=[self.main_stock.id])).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(reverse("checklists:edit", args=[self.main_task.id])).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(reverse("orders:edit", args=[self.main_order.id])).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(reverse("shifts:edit", args=[self.main_shift.id])).status_code,
+            404,
         )
 
 

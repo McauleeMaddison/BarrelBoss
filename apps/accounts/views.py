@@ -147,6 +147,20 @@ def accept_venue_invite(request, token):
                 "invited_by": invite.invited_by,
             },
         )
+        profile = request.user.staff_profile
+        profile.role = invite.role
+        profile.job_title = invite.job_title
+        profile.notify_on_shift_assignment = invite.notify_on_shift_assignment
+        profile.is_active = True
+        profile.save(
+            update_fields=[
+                "role",
+                "job_title",
+                "notify_on_shift_assignment",
+                "is_active",
+                "updated_at",
+            ]
+        )
         invite.accepted_by = request.user
         invite.accepted_at = timezone.now()
         invite.is_active = False

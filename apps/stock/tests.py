@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import StaffProfile
+from apps.accounts.testing import VenueScopedTestCase
 from apps.suppliers.models import Supplier
 
 from .models import StockItem
@@ -23,16 +24,19 @@ class StockItemModelTests(TestCase):
         self.assertTrue(item.is_low_stock)
 
 
-class StockListViewTests(TestCase):
+class StockListViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="stock_user", password="strong-pass-123")
+        super().setUp()
+        self.user = self.create_user(username="stock_user", password="strong-pass-123")
         self.supplier = Supplier.objects.create(
+            venue=self.venue,
             name="Brewline",
             contact_name="Siobhan Reed",
             category_supplied=Supplier.CategorySupplied.BEER_BARRELS,
         )
 
         StockItem.objects.create(
+            venue=self.venue,
             name="Carling 50L",
             category=StockItem.Category.BEER_BARRELS,
             quantity=1,
@@ -42,6 +46,7 @@ class StockListViewTests(TestCase):
             supplier=self.supplier,
         )
         StockItem.objects.create(
+            venue=self.venue,
             name="Jameson",
             category=StockItem.Category.SPIRITS,
             quantity=8,
@@ -105,6 +110,7 @@ class StockListViewTests(TestCase):
     def test_stock_list_paginates_filtered_results(self):
         for index in range(15):
             StockItem.objects.create(
+                venue=self.venue,
                 name=f"Filter Lager {index}",
                 category=StockItem.Category.BEER_BARRELS,
                 quantity=2,
@@ -127,23 +133,25 @@ class StockListViewTests(TestCase):
         self.assertEqual(response.context["pagination_query"], "category=BEER_BARRELS")
 
 
-class StockCrudViewTests(TestCase):
+class StockCrudViewTests(VenueScopedTestCase):
     def setUp(self):
-        self.staff_user = User.objects.create_user(username="stock_staff", password="strong-pass-123")
+        super().setUp()
+        self.staff_user = self.create_user(username="stock_staff", password="strong-pass-123")
 
-        self.manager_user = User.objects.create_user(
+        self.manager_user = self.create_user(
             username="stock_manager",
             password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
         )
-        self.manager_user.staff_profile.role = StaffProfile.Role.MANAGER
-        self.manager_user.staff_profile.save(update_fields=["role"])
 
         self.supplier = Supplier.objects.create(
+            venue=self.venue,
             name="Cellar Supply Co",
             category_supplied=Supplier.CategorySupplied.CLEANING,
         )
 
         self.item = StockItem.objects.create(
+            venue=self.venue,
             name="Sanitiser",
             category=StockItem.Category.CLEANING,
             quantity=6,
