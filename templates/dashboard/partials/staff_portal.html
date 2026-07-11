@@ -53,6 +53,29 @@
     </div>
 </section>
 
+<section class="staff-pulse-grid">
+    <article class="staff-pulse-card">
+        <span class="staff-pulse-label">Hours this week</span>
+        <strong>{{ staff_snapshot.hours_this_week }}h</strong>
+        <p>Keep your planned weekly hours visible before the rota shifts again.</p>
+    </article>
+    <article class="staff-pulse-card">
+        <span class="staff-pulse-label">Due today</span>
+        <strong>{{ staff_snapshot.tasks_due_today }}</strong>
+        <p>These are the tasks that should be cleared before your shift handover.</p>
+    </article>
+    <article class="staff-pulse-card">
+        <span class="staff-pulse-label">Overdue</span>
+        <strong>{{ staff_snapshot.tasks_overdue }}</strong>
+        <p>Any overdue item needs attention before service gets busier.</p>
+    </article>
+    <article class="staff-pulse-card">
+        <span class="staff-pulse-label">Next shift note</span>
+        <strong>{{ staff_snapshot.next_shift_note }}</strong>
+        <p>Double-check your next start time and task queue before you travel in.</p>
+    </article>
+</section>
+
 <section class="staff-summary-grid">
     {% for card in metrics %}
     <article class="staff-summary-card">
@@ -68,6 +91,30 @@
         {% endif %}
     </article>
     {% endfor %}
+</section>
+
+<section class="panel staff-throughput-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Your week rhythm</h3>
+            <p class="panel-subtitle">Relative rota load against your own completed tasks over the last seven days.</p>
+        </div>
+        <span class="badge">Personal view</span>
+    </div>
+    <div class="throughput-grid" aria-label="Your recent week rhythm">
+        {% for point in throughput %}
+        <div class="throughput-column">
+            <div class="throughput-bar-wrap">
+                <div class="throughput-stack">
+                    <span class="throughput-bar throughput-bar-service" style="height: {{ point.value }}%"></span>
+                    <span class="throughput-bar throughput-bar-task" style="height: {{ point.task_value }}%"></span>
+                </div>
+            </div>
+            <strong>{{ point.label }}</strong>
+            <small>Rota and tasks</small>
+        </div>
+        {% endfor %}
+    </div>
 </section>
 
 <section class="staff-workspace-grid">

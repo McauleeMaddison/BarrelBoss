@@ -1,0 +1,25 @@
+<section class="workspace-bar" aria-label="Workspace shortcuts">
+    <div class="workspace-bar-copy">
+        <p class="workspace-bar-kicker">{{ workspace_bar_title }}</p>
+        <strong>{{ workspace_active_label }}</strong>
+        <span>{{ workspace_bar_copy }}</span>
+    </div>
+
+    <div class="workspace-link-row">
+        {% for link in workspace_primary_links %}
+        <a class="workspace-link{% if link.active %} active{% endif %}" href="{{ link.url }}">
+            <span class="workspace-link-label">{{ link.label }}</span>
+            <small>{{ link.description }}</small>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="workspace-action-row">
+        {% for action in workspace_quick_actions %}
+        <a class="workspace-action-chip{% if action.emphasis == 'primary' %} workspace-action-chip-primary{% endif %}" href="{{ action.url }}">
+            <strong>{{ action.label }}</strong>
+            <small>{{ action.copy }}</small>
+        </a>
+        {% endfor %}
+    </div>
+</section>

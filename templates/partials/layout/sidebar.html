@@ -76,166 +76,46 @@
         </div>
 
         <button type="button" class="sidebar-close" aria-label="Close navigation">
-            ✕
+            Close
         </button>
     </div>
 
     <nav class="nav-links" aria-label="Main menu">
         <div class="nav-section nav-section-operations">
-            <p class="nav-section-title">Everyday work</p>
-
-            <a
-                class="nav-link{% if current == 'dashboard:home' or current == 'dashboard:staff_portal' or current == 'dashboard:management_portal' %} active{% endif %}"
-                href="{% url role_home_url_name %}"
-                data-nav-icon="HM"
-            >
-                Home
+            <p class="nav-section-title">Core workflow</p>
+            {% for link in workspace_primary_links %}
+            <a class="nav-link{% if link.active %} active{% endif %}" href="{{ link.url }}">
+                <span class="nav-link-copy">
+                    <strong>{{ link.label }}</strong>
+                    <small>{{ link.description }}</small>
+                </span>
             </a>
-
-            {% if is_management %}
-                <a
-                    class="nav-link{% if current == 'stock:list' %} active{% endif %}"
-                    href="{% url 'stock:list' %}"
-                    data-nav-icon="ST"
-                >
-                    Stock
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'orders:list' or current == 'orders:add' or current == 'orders:edit' %} active{% endif %}"
-                    href="{% url 'orders:list' %}"
-                    data-nav-icon="OR"
-                >
-                    Stock requests &amp; orders
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'breakages:list' %} active{% endif %}"
-                    href="{% url 'breakages:list' %}"
-                    data-nav-icon="BR"
-                >
-                    Breakages
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'checklists:list' %} active{% endif %}"
-                    href="{% url 'checklists:list' %}"
-                    data-nav-icon="TK"
-                >
-                    Tasks &amp; checks
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'shifts:list' %} active{% endif %}"
-                    href="{% url 'shifts:list' %}"
-                    data-nav-icon="RT"
-                >
-                    Rota
-                </a>
-            {% else %}
-                <a
-                    class="nav-link{% if current == 'checklists:list' %} active{% endif %}"
-                    href="{% url 'checklists:list' %}"
-                    data-nav-icon="TK"
-                >
-                    My tasks
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'stock:list' %} active{% endif %}"
-                    href="{% url 'stock:list' %}"
-                    data-nav-icon="ST"
-                >
-                    Stock
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'shifts:list' %} active{% endif %}"
-                    href="{% url 'shifts:list' %}"
-                    data-nav-icon="RT"
-                >
-                    My rota
-                </a>
-            {% endif %}
+            {% endfor %}
         </div>
 
-        {% if is_management %}
-            <div class="nav-section nav-section-management">
-                <p class="nav-section-title">Management</p>
-
-                <a
-                    class="nav-link{% if current == 'suppliers:list' %} active{% endif %}"
-                    href="{% url 'suppliers:list' %}"
-                    data-nav-icon="SU"
-                >
-                    Suppliers
+        <div class="nav-section nav-section-quick-actions">
+            <p class="nav-section-title">Quick actions</p>
+            <div class="sidebar-shortcut-grid">
+                {% for action in workspace_quick_actions %}
+                <a class="sidebar-shortcut{% if action.emphasis == 'primary' %} sidebar-shortcut-primary{% endif %}" href="{{ action.url }}">
+                    <strong>{{ action.label }}</strong>
+                    <small>{{ action.copy }}</small>
                 </a>
-
-                <a
-                    class="nav-link{% if current == 'staff' %} active{% endif %}"
-                    href="{% url 'staff' %}"
-                    data-nav-icon="SF"
-                >
-                    Staff
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'reports' %} active{% endif %}"
-                    href="{% url 'reports' %}"
-                    data-nav-icon="RP"
-                >
-                    Reports
-                </a>
+                {% endfor %}
             </div>
+        </div>
 
-            <div class="nav-section nav-section-advanced">
-                <p class="nav-section-title">Advanced setup</p>
-
-                <a
-                    class="nav-link{% if current == 'sales:list' or current == 'sales:add' or current == 'sales:edit' %} active{% endif %}"
-                    href="{% url 'sales:list' %}"
-                    data-nav-icon="TL"
-                >
-                    Till &amp; daily takings
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'audit:list' %} active{% endif %}"
-                    href="{% url 'audit:list' %}"
-                    data-nav-icon="AU"
-                >
-                    Activity history
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'settings' %} active{% endif %}"
-                    href="{% url 'settings' %}"
-                    data-nav-icon="SE"
-                >
-                    Settings
-                </a>
-            </div>
-        {% else %}
-            <div class="nav-section nav-section-staff-send">
-                <p class="nav-section-title">Quick send</p>
-
-                <a
-                    class="nav-link{% if current == 'orders:add' %} active{% endif %}"
-                    href="{% url 'orders:add' %}"
-                    data-nav-icon="RQ"
-                >
-                    Request stock
-                </a>
-
-                <a
-                    class="nav-link{% if current == 'breakages:add' %} active{% endif %}"
-                    href="{% url 'breakages:add' %}"
-                    data-nav-icon="BR"
-                >
-                    Report breakage
-                </a>
-            </div>
-        {% endif %}
+        <div class="nav-section nav-section-management">
+            <p class="nav-section-title">{% if is_management %}Extended tools{% else %}More tools{% endif %}</p>
+            {% for link in workspace_secondary_links %}
+            <a class="nav-link{% if link.active %} active{% endif %}" href="{{ link.url }}">
+                <span class="nav-link-copy">
+                    <strong>{{ link.label }}</strong>
+                    <small>{{ link.description }}</small>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
     </nav>
 
     <form action="{% url 'logout' %}" method="post" class="logout-form">

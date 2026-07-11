@@ -1,0 +1,36 @@
+<button
+    class="command-sheet-backdrop"
+    type="button"
+    aria-label="Close quick actions"
+    aria-hidden="true"
+    data-command-close
+></button>
+
+<aside
+    class="mobile-command-sheet"
+    id="mobile-command-sheet"
+    aria-hidden="true"
+    aria-label="{{ mobile_command_title }}"
+>
+    <div class="mobile-command-head">
+        <div>
+            <p class="kicker">{{ mobile_command_title }}</p>
+            <p class="mobile-command-copy">{{ mobile_command_copy }}</p>
+        </div>
+        <button type="button" class="sidebar-close mobile-command-close" aria-label="Close quick actions" data-command-close>
+            Close
+        </button>
+    </div>
+
+    <div class="mobile-command-grid">
+        {% for action in workspace_quick_actions %}
+        <a
+            class="mobile-command-link{% if action.emphasis == 'primary' %} mobile-command-link-primary{% endif %}"
+            href="{{ action.url }}"
+        >
+            <strong>{{ action.label }}</strong>
+            <small>{{ action.copy }}</small>
+        </a>
+        {% endfor %}
+    </div>
+</aside>

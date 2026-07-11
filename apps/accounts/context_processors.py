@@ -1,3 +1,4 @@
+from .navigation import build_workspace_navigation
 from .models import StaffProfile
 from .permissions import get_user_role, is_management, role_home_name
 from .tenancy import venue_memberships_for_user
@@ -23,4 +24,5 @@ def role_context(request):
         "active_organisation": getattr(request, "active_organisation", None),
         "active_membership": getattr(request, "active_membership", None),
         "available_venue_memberships": memberships,
+        **build_workspace_navigation(request),
     }

@@ -37,6 +37,16 @@
     </div>
 </section>
 
+<section class="dashboard-command-grid">
+    {% for action in workspace_quick_actions %}
+    <a class="dashboard-command-card" href="{{ action.url }}">
+        <span class="kicker">Quick action</span>
+        <strong>{{ action.label }}</strong>
+        <p>{{ action.copy }}</p>
+    </a>
+    {% endfor %}
+</section>
+
 <section class="metric-grid">
     {% for card in metrics %}
     <article class="metric-card {{ card.tone }}">
@@ -83,6 +93,57 @@
         </div>
     </article>
     {% endfor %}
+</section>
+
+<section class="dashboard-rhythm-grid">
+    <article class="panel dashboard-rhythm-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Operational rhythm</h3>
+                <p class="panel-subtitle">Relative service pressure versus task output over the last seven days.</p>
+            </div>
+            <span class="badge">7 day view</span>
+        </div>
+        <div class="throughput-grid" aria-label="Operational rhythm">
+            {% for point in throughput %}
+            <div class="throughput-column">
+                <div class="throughput-bar-wrap">
+                    <div class="throughput-stack">
+                        <span class="throughput-bar throughput-bar-service" style="height: {{ point.value }}%"></span>
+                        <span class="throughput-bar throughput-bar-task" style="height: {{ point.task_value }}%"></span>
+                    </div>
+                </div>
+                <strong>{{ point.label }}</strong>
+                <small>Service and standards</small>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel dashboard-rhythm-side">
+        <div class="panel-header">
+            <div>
+                <h3>How to read it</h3>
+                <p class="panel-subtitle">Use the rhythm panel to spot when the floor is busier than standards work can realistically keep up with.</p>
+            </div>
+        </div>
+        <div class="dashboard-rhythm-legend">
+            <div class="dashboard-rhythm-key">
+                <span class="throughput-key throughput-key-service"></span>
+                <div>
+                    <strong>Service load</strong>
+                    <small>Orders raised and rota pressure in the same daily frame.</small>
+                </div>
+            </div>
+            <div class="dashboard-rhythm-key">
+                <span class="throughput-key throughput-key-task"></span>
+                <div>
+                    <strong>Standards output</strong>
+                    <small>Completed tasks and logged breakages moving through handover.</small>
+                </div>
+            </div>
+        </div>
+    </article>
 </section>
 
 <section class="overview-board">
