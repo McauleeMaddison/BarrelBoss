@@ -482,6 +482,13 @@ body.nav-open .sidebar {
     background: rgba(240, 199, 119, 0.1);
 }
 
+.metric-state-neutral,
+.badge-due-upcoming {
+    color: var(--info);
+    border-color: rgba(143, 183, 255, 0.32);
+    background: rgba(143, 183, 255, 0.1);
+}
+
 .quick-action-link,
 .table-action,
 .action-btn,
@@ -1306,9 +1313,22 @@ body.nav-open .sidebar {
     color: var(--muted);
 }
 
+.dashboard-record-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-left: auto;
+}
+
 .dashboard-record-note {
     font-size: 0.82rem;
     line-height: 1.45;
+}
+
+.dashboard-record-row-actionable {
+    align-items: center;
 }
 
 .dashboard-view-staff,
@@ -1732,6 +1752,35 @@ body.nav-open .sidebar {
 
 .inline-action-form button {
     width: auto;
+}
+
+.task-primary-block,
+.task-due-cell {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.task-inline-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.task-note-preview {
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.task-primary-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    width: 100%;
 }
 
 code {
@@ -2203,6 +2252,16 @@ body.command-open .mobile-command-sheet {
     .portal-hero,
     .portal-hero {
         border-radius: 1.1rem;
+    }
+
+    .dashboard-record-row-actionable {
+        align-items: flex-start;
+    }
+
+    .dashboard-record-actions,
+    .task-primary-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .topbar-end,

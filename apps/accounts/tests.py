@@ -178,6 +178,42 @@ class RoleRoutingTests(VenueScopedTestCase):
         response = self.client.get(reverse("suppliers:list"))
         self.assertEqual(response.status_code, 200)
 
+    def test_management_mobile_dock_uses_operational_deep_links(self):
+        self.client.login(username="manager_member", password="strong-pass-123")
+        response = self.client.get(reverse("dashboard:management_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [link["label"] for link in response.context["mobile_dock_links"]],
+            ["Today", "Sign-off", "Cellar", "Deliveries"],
+        )
+        self.assertEqual(
+            response.context["mobile_dock_links"][1]["url"],
+            f"{reverse('checklists:list')}?preset=today&status=pending",
+        )
+        self.assertEqual(
+            response.context["workspace_quick_actions"][0]["label"],
+            "Today sign-off",
+        )
+
+    def test_staff_mobile_dock_uses_shift_deep_links(self):
+        self.client.login(username="staff_member", password="strong-pass-123")
+        response = self.client.get(reverse("dashboard:staff_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [link["label"] for link in response.context["mobile_dock_links"]],
+            ["Today", "Tasks", "Service", "Requests"],
+        )
+        self.assertEqual(
+            response.context["mobile_dock_links"][2]["url"],
+            f"{reverse('stock:list')}?focus=service",
+        )
+        self.assertEqual(
+            response.context["workspace_quick_actions"][0]["label"],
+            "Open today tasks",
+        )
+
 
 class SettingsAndPushTests(VenueScopedTestCase):
     def setUp(self):

@@ -7,6 +7,86 @@
 {% include 'partials/modules/command_panel.html' %}
 {% include 'partials/modules/snapshot_grid.html' %}
 
+<section class="hero-signal-bar order-runway-grid">
+    <article class="hero-signal hero-signal-alert">
+        <span class="hero-signal-label">Overdue</span>
+        <strong>{{ overdue_delivery_count }}</strong>
+        <small>Orders that have missed their expected delivery date and need chasing first.</small>
+    </article>
+    <article class="hero-signal hero-signal-warn">
+        <span class="hero-signal-label">Due Today</span>
+        <strong>{{ due_today_count }}</strong>
+        <small>Deliveries that should land today and stay visible until they hit stock.</small>
+    </article>
+    <article class="hero-signal hero-signal-neutral">
+        <span class="hero-signal-label">Due Tomorrow</span>
+        <strong>{{ due_tomorrow_count }}</strong>
+        <small>Tomorrow’s delivery pressure so the cellar can prep before the rush.</small>
+    </article>
+    <article class="hero-signal hero-signal-ok">
+        <span class="hero-signal-label">Delivered 7d</span>
+        <strong>{{ delivered_recent_count }}</strong>
+        <small>Orders closed as delivered in the last seven days.</small>
+    </article>
+</section>
+
+<section class="overview-board order-workboard">
+    <article class="panel">
+        <div class="panel-header">
+            <div>
+                <h3>Runway and follow-up</h3>
+                <p class="panel-subtitle">Work through the next supplier or draft conversations without hunting through the full table first.</p>
+            </div>
+        </div>
+        {% if runway_rows %}
+        <ul class="dashboard-record-list">
+            {% for row in runway_rows %}
+            <li class="dashboard-record-row">
+                <div class="dashboard-record-copy">
+                    <strong>{{ row.title }}</strong>
+                    <small>{{ row.meta }}</small>
+                    <span class="dashboard-record-note">{{ row.note }}</span>
+                </div>
+                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No open orders or draft requests are showing in this queue.</p>
+        {% endif %}
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <div>
+                <h3>Queue pressure</h3>
+                <p class="panel-subtitle">Use the lane totals to decide whether you should approve drafts, chase suppliers, or close delivered stock first.</p>
+            </div>
+        </div>
+        <div class="dashboard-section-stats">
+            <article class="dashboard-section-stat">
+                <span>Open queue</span>
+                <strong>{{ open_order_count }}</strong>
+            </article>
+            <article class="dashboard-section-stat">
+                <span>Pending delivery</span>
+                <strong>{{ pending_count }}</strong>
+            </article>
+            <article class="dashboard-section-stat">
+                <span>Units in view</span>
+                <strong>{{ total_units_in_view }}</strong>
+            </article>
+        </div>
+        <div class="metric-actions">
+            <a class="table-action metric-action-link" href="{% url 'orders:list' %}?preset=drafts">Open drafts</a>
+            <a class="table-action metric-action-link" href="{% url 'orders:list' %}?preset=overdue">Open overdue</a>
+            {% if management_view %}
+            <a class="table-action metric-action-link" href="{% url 'suppliers:list' %}">Open suppliers</a>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
 <section class="panel module-table-panel module-queue-panel">
     <div class="panel-header">
         <div>
@@ -119,6 +199,10 @@
                                         <span>{{ order.supplier.name }}</span>
                                     </div>
                                     <div class="detail-drawer-row">
+                                        <strong>Supplier contact</strong>
+                                        <span>{{ order.supplier_contact_summary }}</span>
+                                    </div>
+                                    <div class="detail-drawer-row">
                                         <strong>Order date</strong>
                                         <span>{{ order.order_date }}</span>
                                     </div>
@@ -141,9 +225,11 @@
                                 <p class="detail-drawer-label">Actions</p>
                                 <div class="detail-drawer-form-stack">
                                     {% if management_view %}
+                                    <a class="table-action" href="{% url 'suppliers:list' %}?q={{ order.supplier.name|urlencode }}">Open supplier</a>
                                     <a class="table-action" href="{% url 'orders:edit' order.pk %}">Edit order</a>
                                     <form method="post" action="{% url 'orders:status' order.pk %}" class="detail-drawer-inline-form">
                                         {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ return_path }}">
                                         <div class="detail-drawer-actions">
                                             <select name="status">
                                                 {% for value, label in status_choices %}

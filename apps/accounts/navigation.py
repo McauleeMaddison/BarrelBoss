@@ -209,32 +209,67 @@ def build_workspace_navigation(request):
         ]
         quick_actions = [
             _action_item(
-                label="Create order",
-                url_name="orders:add",
-                copy="Raise a new supplier order or convert a request.",
+                label="Today sign-off",
+                url_name="checklists:list",
+                query="preset=today&status=pending",
+                copy="Jump straight into the tasks that should close before the day rolls over.",
                 emphasis="primary",
             ),
             _action_item(
-                label="Assign task",
-                url_name="checklists:add",
-                copy="Create a checklist item for the team.",
+                label="Count queue",
+                url_name="stock:list",
+                query="focus=uncounted",
+                copy="Work through cellar lines that still need a fresh stock count.",
             ),
             _action_item(
-                label="Schedule shift",
-                url_name="shifts:add",
-                copy="Update rota coverage for the next service window.",
+                label="Pending deliveries",
+                url_name="orders:list",
+                query="preset=pending",
+                copy="Track what is in transit before the cellar starts making assumptions.",
             ),
             _action_item(
-                label="Log sales",
-                url_name="sales:add",
-                copy="Record a daily close or fill a sales gap.",
+                label="Create order",
+                url_name="orders:add",
+                copy="Raise a new supplier order once the live blockers are under control.",
             ),
         ]
         bar_title = "Management workspace"
-        bar_copy = "Keep the live queues, rota, and trade actions one jump away."
+        bar_copy = "Keep sign-off, cellar counts, and supplier follow-up one jump away."
         command_title = "Management actions"
-        command_copy = "Create or update the records that move service forward."
-        mobile_dock_links = primary_links[:4]
+        command_copy = "Use fast actions to close tasks, clear stock risk, and keep deliveries moving."
+        mobile_dock_links = [
+            _nav_item(
+                current,
+                label="Today",
+                url_name=home_url_name,
+                group="home",
+                description="Control board",
+            ),
+            _nav_item(
+                current,
+                label="Sign-off",
+                url_name="checklists:list",
+                group="checklists",
+                query="preset=today&status=pending",
+                description="Due now",
+            ),
+            _nav_item(
+                current,
+                label="Cellar",
+                url_name="stock:list",
+                group="stock",
+                query="focus=cellar",
+                description="Counts & gaps",
+            ),
+            _nav_item(
+                current,
+                label="Deliveries",
+                url_name="orders:list",
+                group="orders",
+                query="preset=pending",
+                description="In transit",
+            ),
+        ]
     else:
         primary_links = [
             _nav_item(
@@ -291,33 +326,65 @@ def build_workspace_navigation(request):
         ]
         quick_actions = [
             _action_item(
+                label="Open today tasks",
+                url_name="checklists:list",
+                query="preset=today&status=pending",
+                copy="Jump straight into the tasks due in the current shift window.",
+                emphasis="primary",
+            ),
+            _action_item(
+                label="Service stock",
+                url_name="stock:list",
+                query="focus=service",
+                copy="Check glassware, cleaning, and support lines before service gets busy.",
+            ),
+            _action_item(
                 label="Request stock",
                 url_name="orders:add",
                 copy="Send a stock request to management before service slips.",
-                emphasis="primary",
             ),
             _action_item(
                 label="Report breakage",
                 url_name="breakages:add",
-                copy="Log breakages or spillages before handover.",
-            ),
-            _action_item(
-                label="Open today tasks",
-                url_name="checklists:list",
-                query="preset=today",
-                copy="Jump straight into the tasks due this shift.",
-            ),
-            _action_item(
-                label="Review my rota",
-                url_name="shifts:list",
-                copy="Check your next shift and this week's hours.",
+                copy="Log spillages or breakages before handover loses the detail.",
             ),
         ]
         bar_title = "Shift workspace"
         bar_copy = "Surface the tasks, stock, and handover actions bar staff need most."
         command_title = "Shift actions"
         command_copy = "Use fast actions for the updates management needs from the floor."
-        mobile_dock_links = primary_links[:4]
+        mobile_dock_links = [
+            _nav_item(
+                current,
+                label="Today",
+                url_name=home_url_name,
+                group="home",
+                description="Shift board",
+            ),
+            _nav_item(
+                current,
+                label="Tasks",
+                url_name="checklists:list",
+                group="checklists",
+                query="status=pending",
+                description="My queue",
+            ),
+            _nav_item(
+                current,
+                label="Service",
+                url_name="stock:list",
+                group="stock",
+                query="focus=service",
+                description="Bar support",
+            ),
+            _nav_item(
+                current,
+                label="Requests",
+                url_name="orders:list",
+                group="orders",
+                description="My orders",
+            ),
+        ]
 
     active_label = next(
         (link["label"] for link in [*primary_links, *secondary_links] if link["active"]),

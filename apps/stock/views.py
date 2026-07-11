@@ -1,10 +1,14 @@
 import csv
+from collections import defaultdict
+from datetime import timedelta
 
 from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import active_venue_required, is_management, management_required
@@ -17,13 +21,128 @@ from .forms import StockItemForm
 from .models import StockItem
 
 
+STOCK_FOCUS_GROUPS = {
+    "cellar": {
+        "label": "Cellar",
+        "categories": (
+            StockItem.Category.BEER_BARRELS,
+            StockItem.Category.SOFT_DRINKS,
+            StockItem.Category.MIXERS,
+        ),
+        "copy": "Beer, packaged softs, and mixers that can stop service fastest.",
+    },
+    "backbar": {
+        "label": "Back Bar",
+        "categories": (
+            StockItem.Category.SPIRITS,
+            StockItem.Category.WINE,
+            StockItem.Category.GARNISHES,
+        ),
+        "copy": "Spirits, wine, and bar garnish lines that shape the back-bar offer.",
+    },
+    "service": {
+        "label": "Service Kit",
+        "categories": (
+            StockItem.Category.GLASSWARE,
+            StockItem.Category.CLEANING,
+            StockItem.Category.SNACKS,
+        ),
+        "copy": "Glassware, cleaning, and service support lines needed to keep the floor moving.",
+    },
+}
+
+
+def _stock_focus_url(value):
+    return f"{reverse('stock:list')}?focus={value}" if value else reverse("stock:list")
+
+
+def _supplier_contact_summary(supplier):
+    if not supplier:
+        return "Supplier not linked"
+
+    parts = []
+    if supplier.contact_name:
+        parts.append(supplier.contact_name)
+    if supplier.phone:
+        parts.append(supplier.phone)
+    elif supplier.email:
+        parts.append(supplier.email)
+
+    return " · ".join(parts) if parts else "Contact details missing"
+
+
+def _count_status_payload(item, *, now):
+    if not item.last_counted_at:
+        return {
+            "count_status_key": "missing",
+            "count_status_label": "Never counted",
+            "count_status_badge_class": "badge-stock-critical",
+            "count_status_note": "No stock count has been recorded for this line yet.",
+            "last_counted_label": "Never counted",
+        }
+
+    local_count = timezone.localtime(item.last_counted_at)
+    age_days = max((now.date() - local_count.date()).days, 0)
+    if age_days >= 7:
+        status_key = "stale"
+        status_label = "Count overdue"
+        badge_class = "badge-stock-low"
+        status_note = f"Last counted {age_days} day(s) ago."
+    elif age_days >= 3:
+        status_key = "watch"
+        status_label = "Count due soon"
+        badge_class = "badge-stock-watch"
+        status_note = f"Last counted {age_days} day(s) ago."
+    else:
+        status_key = "fresh"
+        status_label = "Recently counted"
+        badge_class = "badge-stock-healthy"
+        status_note = f"Counted {age_days} day(s) ago."
+
+    return {
+        "count_status_key": status_key,
+        "count_status_label": status_label,
+        "count_status_badge_class": badge_class,
+        "count_status_note": status_note,
+        "last_counted_label": local_count.strftime("%d %b %Y %H:%M"),
+    }
+
+
+def _safe_next_url(request, fallback):
+    redirect_to = request.POST.get("next") or request.GET.get("next")
+    if redirect_to and url_has_allowed_host_and_scheme(
+        redirect_to,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect_to
+    return fallback
+
+
 @active_venue_required
 def list_items(request):
+    selected_focus = request.GET.get("focus", "")
     selected_category = request.GET.get("category", "")
     selected_urgency = request.GET.get("urgency", "all")
     query = (request.GET.get("q") or "").strip()
     management_view = is_management(request.user, request=request)
     venue = current_venue_or_404(request)
+    now = timezone.now()
+    today = timezone.localdate()
+    stale_count_cutoff = now - timedelta(days=7)
+
+    focus_choices = [
+        ("", "All Zones"),
+        *[
+            (key, config["label"])
+            for key, config in STOCK_FOCUS_GROUPS.items()
+        ],
+        ("uncounted", "Needs Count"),
+        ("unlinked", "Needs Supplier"),
+    ]
+    allowed_focus_values = {value for value, _label in focus_choices}
+    if selected_focus not in allowed_focus_values:
+        selected_focus = ""
 
     urgency_choices = [
         ("all", "All Urgency Bands"),
@@ -40,6 +159,17 @@ def list_items(request):
         is_active=True,
         venue=venue,
     )
+
+    if selected_focus in STOCK_FOCUS_GROUPS:
+        items_qs = items_qs.filter(
+            category__in=STOCK_FOCUS_GROUPS[selected_focus]["categories"]
+        )
+    elif selected_focus == "uncounted":
+        items_qs = items_qs.filter(
+            Q(last_counted_at__isnull=True) | Q(last_counted_at__lt=stale_count_cutoff)
+        )
+    elif selected_focus == "unlinked":
+        items_qs = items_qs.filter(supplier__isnull=True)
 
     if selected_category and selected_category in StockItem.Category.values:
         items_qs = items_qs.filter(category=selected_category)
@@ -66,10 +196,17 @@ def list_items(request):
         "watch": "badge-stock-watch",
         "healthy": "badge-stock-healthy",
     }
+    count_status_counts = {
+        "missing": 0,
+        "stale": 0,
+        "watch": 0,
+        "fresh": 0,
+    }
     urgency_counts = {key: 0 for key in urgency_labels}
     total_units = 0
     stock_value_estimate = 0
     restock_gap_units = 0
+    recently_restocked_count = 0
 
     for item in inventory_items:
         minimum_level = max(item.minimum_level or 0, 0)
@@ -101,9 +238,21 @@ def list_items(request):
         item.stock_gap = stock_gap
         item.minimum_display = minimum_level
         item.value_estimate = item.quantity * item.cost
+        item.last_restocked_label = (
+            item.last_restocked.strftime("%d %b %Y")
+            if item.last_restocked
+            else "Not recorded"
+        )
+        count_payload = _count_status_payload(item, now=now)
+        for key, value in count_payload.items():
+            setattr(item, key, value)
+        item.supplier_contact_summary = _supplier_contact_summary(item.supplier)
         urgency_counts[stock_band] += 1
+        count_status_counts[item.count_status_key] += 1
         if stock_band in {"critical", "low"}:
             restock_gap_units += stock_gap
+        if item.last_restocked and (today - item.last_restocked).days <= 7:
+            recently_restocked_count += 1
 
     urgency_priority = {"critical": 0, "low": 1, "watch": 2, "healthy": 3}
     inventory_items.sort(key=lambda item: (urgency_priority[item.stock_band], item.name.lower()))
@@ -118,7 +267,21 @@ def list_items(request):
         response["Content-Disposition"] = 'attachment; filename="barrelboss-stock.csv"'
         writer = csv.writer(response)
         writer.writerow(["BarrelBoss Stock Export"])
-        writer.writerow(["Item", "Category", "Quantity", "Unit", "Minimum", "Stock Gap", "Urgency", "Supplier", "Cost", "Estimated Value"])
+        writer.writerow(
+            [
+                "Item",
+                "Category",
+                "Quantity",
+                "Unit",
+                "Minimum",
+                "Stock Gap",
+                "Urgency",
+                "Count Status",
+                "Supplier",
+                "Cost",
+                "Estimated Value",
+            ]
+        )
         for item in items:
             writer.writerow(
                 [
@@ -129,6 +292,7 @@ def list_items(request):
                     item.minimum_display,
                     item.stock_gap,
                     item.stock_band_label,
+                    item.count_status_label,
                     item.supplier.name if item.supplier else "-",
                     f"{item.cost:.2f}",
                     f"{item.value_estimate:.2f}",
@@ -139,14 +303,16 @@ def list_items(request):
     page_obj = paginate_collection(request, items, per_page=12)
     filter_query = build_query_string(request, exclude_keys={"export"})
     category_labels = dict(StockItem.Category.choices)
+    focus_labels = dict(focus_choices)
     urgency_label_map = dict(urgency_choices)
-    filters_active = bool(query or selected_category or selected_urgency != "all")
+    filters_active = bool(query or selected_focus or selected_category or selected_urgency != "all")
     filter_presets = [
         {"label": "All Stock", "query": "", "active": not filters_active},
-        {"label": "Critical Risk", "query": "urgency=critical", "active": selected_urgency == "critical" and not query and not selected_category},
-        {"label": "Low Stock", "query": "urgency=low", "active": selected_urgency == "low" and not query and not selected_category},
-        {"label": "Watch List", "query": "urgency=watch", "active": selected_urgency == "watch" and not query and not selected_category},
-        {"label": "Healthy", "query": "urgency=healthy", "active": selected_urgency == "healthy" and not query and not selected_category},
+        {"label": "Cellar", "query": "focus=cellar", "active": selected_focus == "cellar" and not query and not selected_category and selected_urgency == "all"},
+        {"label": "Back Bar", "query": "focus=backbar", "active": selected_focus == "backbar" and not query and not selected_category and selected_urgency == "all"},
+        {"label": "Service Kit", "query": "focus=service", "active": selected_focus == "service" and not query and not selected_category and selected_urgency == "all"},
+        {"label": "Critical Risk", "query": "urgency=critical", "active": selected_urgency == "critical" and not query and not selected_category and not selected_focus},
+        {"label": "Needs Count", "query": "focus=uncounted", "active": selected_focus == "uncounted" and not query and not selected_category and selected_urgency == "all"},
     ]
     attention_items = []
     if urgency_counts["critical"]:
@@ -212,6 +378,13 @@ def list_items(request):
         )
         primary_url = f"{reverse('stock:list')}?urgency=low"
         primary_label = "Open low stock"
+    elif count_status_counts["missing"] or count_status_counts["stale"]:
+        primary_title = "Tighten stock count discipline"
+        primary_copy = (
+            f"{count_status_counts['missing'] + count_status_counts['stale']} line(s) need a fresh count before the board can be trusted cleanly."
+        )
+        primary_url = f"{reverse('stock:list')}?focus=uncounted"
+        primary_label = "Open count queue"
     elif management_view:
         primary_title = "Add or tidy inventory"
         primary_copy = (
@@ -246,6 +419,11 @@ def list_items(request):
                 if management_view
                 else []
             ),
+            *(
+                [build_module_link("Supplier directory", reverse("suppliers:list"))]
+                if management_view
+                else []
+            ),
             build_module_link(
                 "Export CSV",
                 f"{reverse('stock:list')}?{filter_query}&export=csv"
@@ -256,7 +434,7 @@ def list_items(request):
         toolbar_notes=[
             f"{display_item_count} shown",
             f"{total_units} units",
-            f"{restock_gap_units} gap",
+            f"{count_status_counts['missing'] + count_status_counts['stale']} count due",
         ],
     )
     module_snapshots = [
@@ -295,16 +473,115 @@ def list_items(request):
             ),
         ),
         build_module_snapshot(
-            label="Stable stock",
-            state=f"{urgency_counts['healthy']} healthy",
-            tone="ok",
-            value=urgency_counts["watch"],
-            copy=(
-                "Lines on the watch list that still have buffer left, but are close enough to need monitoring before they become urgent."
+            label="Count discipline",
+            state=(
+                f"{count_status_counts['missing']} missing"
+                if count_status_counts["missing"]
+                else ("Overdue" if count_status_counts["stale"] else "In cycle")
             ),
-            action_label="Open watch list",
-            action_url=f"{reverse('stock:list')}?urgency=watch",
+            tone="alert" if count_status_counts["missing"] else ("warn" if count_status_counts["stale"] else "ok"),
+            value=count_status_counts["missing"] + count_status_counts["stale"],
+            copy=(
+                "Lines with no recent count record, which is often where cellar decisions become guesswork."
+            ),
+            action_label="Open count queue",
+            action_url=f"{reverse('stock:list')}?focus=uncounted",
         ),
+    ]
+
+    scoped_items = items
+
+    focus_zone_cards = []
+    for focus_key, config in STOCK_FOCUS_GROUPS.items():
+        zone_items = [
+            item
+            for item in scoped_items
+            if item.category in config["categories"]
+        ]
+        urgent_count = sum(
+            1 for item in zone_items if item.stock_band in {"critical", "low"}
+        )
+        critical_count = sum(1 for item in zone_items if item.stock_band == "critical")
+        zone_gap_units = sum(item.stock_gap for item in zone_items)
+        focus_zone_cards.append(
+            {
+                "label": config["label"],
+                "copy": config["copy"],
+                "value": f"{urgent_count} urgent",
+                "note": (
+                    f"{critical_count} critical · {zone_gap_units} unit gap"
+                    if zone_items
+                    else "No lines in scope"
+                ),
+                "tone": "alert" if critical_count else ("warn" if urgent_count else "ok"),
+                "url": _stock_focus_url(focus_key),
+            }
+        )
+
+    supplier_actions = defaultdict(
+        lambda: {"title": "", "meta": "", "note": "", "gap": 0, "lines": 0, "critical": 0}
+    )
+    unlinked_urgent_items = []
+    for item in scoped_items:
+        if item.stock_band not in {"critical", "low"}:
+            continue
+
+        if item.supplier:
+            entry = supplier_actions[item.supplier_id]
+            entry["title"] = item.supplier.name
+            entry["meta"] = item.supplier_contact_summary
+            entry["gap"] += item.stock_gap
+            entry["lines"] += 1
+            entry["critical"] += 1 if item.stock_band == "critical" else 0
+            entry["note"] = item.name if not entry["note"] else entry["note"]
+        else:
+            unlinked_urgent_items.append(item)
+
+    supplier_action_rows = [
+        {
+            "title": entry["title"],
+            "meta": entry["meta"],
+            "note": f"{entry['lines']} line(s) short · {entry['gap']} unit gap",
+            "badge": "Call now" if entry["critical"] else "Queue order",
+            "tone": "alert" if entry["critical"] else "warn",
+        }
+        for entry in sorted(
+            supplier_actions.values(),
+            key=lambda row: (-row["critical"], -row["gap"], row["title"].lower()),
+        )[:4]
+    ]
+    if unlinked_urgent_items:
+        supplier_action_rows.append(
+            {
+                "title": "Unlinked urgent stock",
+                "meta": "Catalogue cleanup needed",
+                "note": ", ".join(item.name for item in unlinked_urgent_items[:3]),
+                "badge": "Assign supplier",
+                "tone": "alert",
+            }
+        )
+
+    count_priority = {"missing": 0, "stale": 1, "watch": 2}
+    count_discipline_rows = [
+        {
+            "title": item.name,
+            "meta": f"{item.get_category_display()} · {item.count_status_label}",
+            "note": (
+                f"{item.count_status_note} · Restocked {item.last_restocked_label}."
+                if item.last_restocked
+                else item.count_status_note
+            ),
+            "badge": "Count now" if item.count_status_key in {"missing", "stale"} else "Review",
+            "tone": "alert" if item.count_status_key == "missing" else "warn",
+        }
+        for item in sorted(
+            [
+                item
+                for item in scoped_items
+                if item.count_status_key in {"missing", "stale", "watch"}
+            ],
+            key=lambda item: (count_priority[item.count_status_key], item.name.lower()),
+        )[:4]
     ]
 
     context = {
@@ -322,6 +599,16 @@ def list_items(request):
         "total_units": total_units,
         "stock_value_estimate": stock_value_estimate,
         "restock_gap_units": restock_gap_units,
+        "focus_choices": focus_choices,
+        "selected_focus": selected_focus,
+        "selected_focus_label": focus_labels.get(selected_focus, ""),
+        "missing_count_count": count_status_counts["missing"],
+        "stale_count_count": count_status_counts["stale"],
+        "watch_count_count": count_status_counts["watch"],
+        "recently_restocked_count": recently_restocked_count,
+        "supplier_action_rows": supplier_action_rows,
+        "count_discipline_rows": count_discipline_rows,
+        "focus_zone_cards": focus_zone_cards,
         "category_choices": StockItem.Category.choices,
         "selected_category": selected_category,
         "selected_urgency": selected_urgency,
@@ -331,6 +618,7 @@ def list_items(request):
         "active_filter_count": sum(
             [
                 bool(query),
+                bool(selected_focus),
                 bool(selected_category),
                 selected_urgency != "all",
             ]
@@ -341,6 +629,7 @@ def list_items(request):
             (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
             "",
         ),
+        "return_path": request.get_full_path(),
         "filter_presets": filter_presets,
         "attention_items": attention_items,
         "module_panel": module_panel,
@@ -439,3 +728,22 @@ def delete_item(request, pk):
         return redirect("stock:list")
 
     return render(request, "stock/confirm_delete.html", {"item": item})
+
+
+@management_required
+def mark_counted(request, pk):
+    item = get_object_or_404(StockItem, pk=pk, venue=current_venue_or_404(request))
+
+    if request.method == "POST":
+        item.last_counted_at = timezone.now()
+        item.save(update_fields=["last_counted_at", "updated_at"])
+        record_audit_event(
+            request,
+            action=AuditEvent.Action.UPDATE,
+            target=item,
+            summary=f"Marked stock item {item.name} as counted",
+            details={"last_counted_at": timezone.localtime(item.last_counted_at).isoformat()},
+        )
+        messages.success(request, f"{item.name} marked as counted.")
+
+    return redirect(_safe_next_url(request, reverse("stock:list")))

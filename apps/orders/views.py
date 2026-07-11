@@ -5,6 +5,7 @@ from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import active_venue_required, is_management, management_required
@@ -18,6 +19,17 @@ from .forms import OrderForm, OrderItemFormSet
 from .models import Order
 
 
+def _safe_next_url(request, fallback):
+    redirect_to = request.POST.get("next") or request.GET.get("next")
+    if redirect_to and url_has_allowed_host_and_scheme(
+        redirect_to,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect_to
+    return fallback
+
+
 def _can_edit_order(user, order, *, management_view):
     return (
         management_view
@@ -27,6 +39,54 @@ def _can_edit_order(user, order, *, management_view):
             and order.status == Order.Status.DRAFT
         )
     )
+
+
+def _order_supplier_contact_copy(supplier):
+    parts = []
+    if supplier.contact_name:
+        parts.append(supplier.contact_name)
+    if supplier.phone:
+        parts.append(supplier.phone)
+    elif supplier.email:
+        parts.append(supplier.email)
+    return " · ".join(parts) if parts else "Contact details missing"
+
+
+def _delivery_runway_row(order, *, today, management_view):
+    if order.status == Order.Status.DRAFT:
+        badge = "Approve" if management_view else "Draft"
+        tone = "warn"
+    elif order.delivery_date and order.delivery_date < today:
+        badge = "Overdue"
+        tone = "alert"
+    elif order.delivery_date == today:
+        badge = "Due today"
+        tone = "warn"
+    elif order.delivery_date == today + timedelta(days=1):
+        badge = "Tomorrow"
+        tone = "neutral"
+    elif order.status == Order.Status.PENDING_DELIVERY:
+        badge = "Pending"
+        tone = "neutral"
+    elif order.status == Order.Status.ORDERED:
+        badge = "Ordered"
+        tone = "ok"
+    else:
+        badge = order.get_status_display()
+        tone = "neutral"
+
+    delivery_copy = (
+        f"Due {order.delivery_date:%d %b}"
+        if order.delivery_date
+        else "No delivery date"
+    )
+    return {
+        "title": order.reference,
+        "meta": f"{order.supplier.name} · {_order_supplier_contact_copy(order.supplier)}",
+        "note": f"{delivery_copy} · {order.total_units or 0} units",
+        "badge": badge,
+        "tone": tone,
+    }
 
 
 def _order_context_base(
@@ -61,6 +121,7 @@ def _order_context_base(
         )
         order.status_badge_class = status_badge_classes.get(order.status, "")
         order.total_units_display = order.total_units or 0
+        order.supplier_contact_summary = _order_supplier_contact_copy(order.supplier)
         order.created_by_display = (
             "You"
             if order.created_by_id and order.created_by_id == request_user_id
@@ -73,6 +134,14 @@ def _order_context_base(
     delivered_count = metrics_qs.filter(status=Order.Status.DELIVERED).count()
     cancelled_count = metrics_qs.filter(status=Order.Status.CANCELLED).count()
     open_order_count = draft_count + ordered_count + pending_count
+    due_today_count = metrics_qs.filter(
+        delivery_date=today,
+        status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
+    ).count()
+    due_tomorrow_count = metrics_qs.filter(
+        delivery_date=today + timedelta(days=1),
+        status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
+    ).count()
     overdue_delivery_count = metrics_qs.filter(
         delivery_date__lt=today,
         status__in=[Order.Status.ORDERED, Order.Status.PENDING_DELIVERY],
@@ -83,6 +152,17 @@ def _order_context_base(
     ).count()
     total_units_in_view = (
         display_qs.aggregate(total=Sum("items__quantity")).get("total") or 0
+    )
+    runway_orders = list(
+        display_qs.filter(
+            status__in=[
+                Order.Status.DRAFT,
+                Order.Status.ORDERED,
+                Order.Status.PENDING_DELIVERY,
+            ]
+        )
+        .annotate(total_units=Sum("items__quantity"))
+        .order_by("delivery_date", "created_at")[:6]
     )
 
     return {
@@ -96,9 +176,19 @@ def _order_context_base(
         "delivered_count": delivered_count,
         "cancelled_count": cancelled_count,
         "open_order_count": open_order_count,
+        "due_today_count": due_today_count,
+        "due_tomorrow_count": due_tomorrow_count,
         "overdue_delivery_count": overdue_delivery_count,
         "stale_draft_count": stale_draft_count,
         "total_units_in_view": total_units_in_view,
+        "runway_rows": [
+            _delivery_runway_row(
+                order,
+                today=today,
+                management_view=management_view,
+            )
+            for order in runway_orders
+        ],
         "delivered_recent_count": metrics_qs.filter(
             status=Order.Status.DELIVERED,
             updated_at__date__gte=week_start,
@@ -366,6 +456,7 @@ def list_orders(request):
                 (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
                 preset_labels.get(selected_preset, ""),
             ),
+            "return_path": request.get_full_path(),
             "filter_presets": filter_presets,
             "attention_items": attention_items,
             "module_panel": module_panel,
@@ -516,4 +607,4 @@ def update_order_status(request, pk):
         else:
             messages.error(request, "Invalid order status.")
 
-    return redirect("orders:list")
+    return redirect(_safe_next_url(request, reverse("orders:list")))

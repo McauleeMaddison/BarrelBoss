@@ -97,6 +97,30 @@ class ChecklistViewTests(VenueScopedTestCase):
         self.assertEqual(response.context["module_panel"]["badge"], "Operations Checklist")
         self.assertEqual(len(response.context["module_snapshots"]), 3)
 
+    def test_checklist_context_exposes_signoff_panels_and_return_path(self):
+        Checklist.objects.create(
+            venue=self.venue,
+            title="Signed off cellar clean",
+            checklist_type=Checklist.ChecklistType.CLEANING,
+            assigned_to=self.staff_user,
+            created_by=self.manager_user,
+            due_date=timezone.localdate() - timedelta(days=1),
+            completed=True,
+            completed_at=timezone.now(),
+        )
+
+        self.client.login(username="task_manager", password="strong-pass-123")
+        response = self.client.get(reverse("checklists:list"), {"status": "pending"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["completion_lane_cards"]), 4)
+        self.assertTrue(response.context["signoff_tasks"])
+        self.assertTrue(response.context["recent_signoff_rows"])
+        self.assertEqual(
+            response.context["return_path"],
+            f"{reverse('checklists:list')}?status=pending",
+        )
+
     def test_checklist_overdue_preset_filters_queue(self):
         self.client.login(username="task_manager", password="strong-pass-123")
         response = self.client.get(reverse("checklists:list"), {"preset": "overdue"})
@@ -146,6 +170,16 @@ class ChecklistViewTests(VenueScopedTestCase):
         self.task_for_staff.refresh_from_db()
         self.assertTrue(self.task_for_staff.completed)
         self.assertIsNotNone(self.task_for_staff.completed_at)
+
+    def test_toggle_complete_redirects_back_to_filtered_queue(self):
+        self.client.login(username="task_staff", password="strong-pass-123")
+        next_url = f"{reverse('checklists:list')}?preset=today&status=pending"
+        response = self.client.post(
+            reverse("checklists:toggle", args=[self.task_for_staff.pk]),
+            {"next": next_url},
+        )
+
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
 
     def test_staff_cannot_toggle_other_users_task(self):
         self.client.login(username="task_staff", password="strong-pass-123")

@@ -178,6 +178,26 @@ class OrderWorkflowTests(VenueScopedTestCase):
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.PENDING_DELIVERY)
 
+    def test_manager_status_update_redirects_back_to_filtered_queue(self):
+        order = Order.objects.create(
+            venue=self.venue,
+            supplier=self.supplier,
+            created_by=self.manager_user,
+            status=Order.Status.DRAFT,
+        )
+
+        self.client.login(username="order_manager", password="strong-pass-123")
+        next_url = f"{reverse('orders:list')}?preset=pending"
+        response = self.client.post(
+            reverse("orders:status", args=[order.pk]),
+            {
+                "status": Order.Status.PENDING_DELIVERY,
+                "next": next_url,
+            },
+        )
+
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
+
     def test_staff_cannot_update_order_status(self):
         order = Order.objects.create(
             venue=self.venue,

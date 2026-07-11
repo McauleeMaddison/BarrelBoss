@@ -257,6 +257,18 @@ class StockCrudViewTests(VenueScopedTestCase):
         self.item.refresh_from_db()
         self.assertFalse(self.item.is_active)
 
+    def test_mark_counted_redirects_back_to_filtered_queue(self):
+        self.client.login(username="stock_manager", password="strong-pass-123")
+        next_url = f"{reverse('stock:list')}?focus=uncounted"
+        response = self.client.post(
+            reverse("stock:mark_counted", args=[self.item.pk]),
+            {"next": next_url},
+        )
+
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
+        self.item.refresh_from_db()
+        self.assertIsNotNone(self.item.last_counted_at)
+
     def test_staff_cannot_delete_item(self):
         self.client.login(username="stock_staff", password="strong-pass-123")
         response = self.client.post(reverse("stock:delete", args=[self.item.pk]))
