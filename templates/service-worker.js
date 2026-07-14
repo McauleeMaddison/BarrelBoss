@@ -1,4 +1,4 @@
-const CACHE_NAME = "barrelboss-shell-v12";
+const CACHE_NAME = "barrelboss-shell-v13";
 const APP_SHELL = [
     "/static/css/app.css",
     "/static/css/layouts.css",
@@ -7,6 +7,7 @@ const APP_SHELL = [
     "/static/js/modules/screen-tools.js",
     "/static/js/modules/push-settings.js",
     "/static/js/pwa.js",
+    "/static/images/favicon.svg",
     "/static/images/barrelboss-logo.png",
     "/static/images/pwa-192.png",
     "/static/images/pwa-512.png"

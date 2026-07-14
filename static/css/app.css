@@ -30,6 +30,7 @@
     --dashboard-card-padding: clamp(0.82rem, 1.15vw, 0.98rem);
     --dashboard-motion: cubic-bezier(0.22, 1, 0.36, 1);
     --dashboard-hover-shadow: 0 22px 44px rgba(0, 0, 0, 0.26);
+    --dashboard-glow-duration: 15s;
 }
 
 *,
@@ -78,6 +79,23 @@ body {
 
     100% {
         box-shadow: 0 18px 36px rgba(0, 0, 0, 0.26), 0 0 0 rgba(214, 167, 86, 0);
+    }
+}
+
+@keyframes dashboard-glow-drift {
+    0% {
+        opacity: 0.56;
+        transform: translate3d(-2%, 1%, 0) scale(0.98);
+    }
+
+    50% {
+        opacity: 0.92;
+        transform: translate3d(3%, -4%, 0) scale(1.06);
+    }
+
+    100% {
+        opacity: 0.56;
+        transform: translate3d(-2%, 1%, 0) scale(0.98);
     }
 }
 
@@ -224,12 +242,28 @@ img {
     min-height: 100dvh;
     max-height: 100dvh;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: calc(1rem+env(safe-area-inset-top, 0px)) 1rem calc(1rem+env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, rgba(14, 19, 29, 0.98), rgba(7, 10, 16, 0.98));
+    background: radial-gradient(280px 180px at 112% -8%, rgba(240, 199, 119, 0.14), transparent 62%), linear-gradient(180deg, rgba(14, 19, 29, 0.98), rgba(7, 10, 16, 0.98));
     border-right: 1px solid var(--panel-border);
     box-shadow: var(--shadow-strong);
     transform: translateX(calc(-100% - 24px));
-    transition: transform 0.24s ease;
+    transition: transform 0.28s var(--dashboard-motion);
+}
+
+.sidebar::before {
+    content: "";
+    position: absolute;
+    inset: -8% -34% auto 50%;
+    height: 300px;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(240, 199, 119, 0.16) 0%, rgba(240, 199, 119, 0) 70%);
+    animation: dashboard-glow-drift var(--dashboard-glow-duration) ease-in-out infinite;
+}
+
+.sidebar > * {
+    position: relative;
+    z-index: 1;
 }
 
 body.nav-open {
@@ -270,8 +304,9 @@ body.nav-open .sidebar {
     object-fit: contain;
     border-radius: 1rem;
     padding: 0.35rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--panel-border);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(214, 167, 86, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 16px 34px rgba(0, 0, 0, 0.24);
 }
 
 .brand-subtitle,
@@ -351,6 +386,7 @@ body.nav-open .sidebar {
 
 .nav-link,
 .nav-link {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -363,7 +399,35 @@ body.nav-open .sidebar {
     font-weight: 700;
     border: 1px solid rgba(214, 167, 86, 0.08);
     background: rgba(255, 255, 255, 0.025);
-    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    overflow: hidden;
+    transition:
+        transform 0.24s var(--dashboard-motion),
+        border-color 0.24s var(--dashboard-motion),
+        background 0.24s var(--dashboard-motion),
+        box-shadow 0.24s var(--dashboard-motion);
+}
+
+.nav-link::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f0c777, #8fb7ff);
+    opacity: 0;
+    transform: scaleY(0.35);
+    transform-origin: center;
+    transition: opacity 0.24s var(--dashboard-motion), transform 0.24s var(--dashboard-motion);
+}
+
+.nav-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 48%);
+    opacity: 0;
+    transition: opacity 0.24s var(--dashboard-motion);
 }
 
 .nav-link:hover,
@@ -374,6 +438,18 @@ body.nav-open .sidebar {
     transform: translateY(-1px);
     background: rgba(214, 167, 86, 0.08);
     border-color: rgba(214, 167, 86, 0.24);
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.18);
+}
+
+.nav-link:hover::before,
+.nav-link.active::before {
+    opacity: 1;
+    transform: scaleY(1);
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+    opacity: 1;
 }
 
 .nav-link-copy {
@@ -410,14 +486,41 @@ body.nav-open .sidebar {
 .topbar {
     display: grid;
     gap: 0.8rem;
-    position: static;
+    position: relative;
     margin-bottom: 0.9rem;
     padding: 0.95rem;
     border-radius: var(--radius-xl);
-    background: linear-gradient(145deg, rgba(18, 24, 36, 0.94), rgba(10, 14, 22, 0.94));
+    overflow: hidden;
+    isolation: isolate;
+    background: radial-gradient(360px 180px at 100% 0%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(18, 24, 36, 0.94), rgba(10, 14, 22, 0.94));
     border: 1px solid var(--panel-border);
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
     backdrop-filter: blur(14px);
+}
+
+.topbar::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(240, 199, 119, 0), rgba(240, 199, 119, 0.72), rgba(143, 183, 255, 0.22), rgba(240, 199, 119, 0));
+    opacity: 0.92;
+}
+
+.topbar::after {
+    content: "";
+    position: absolute;
+    inset: auto -12% -80px 58%;
+    width: 220px;
+    height: 220px;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(240, 199, 119, 0.12) 0%, rgba(240, 199, 119, 0) 72%);
+    animation: dashboard-glow-drift calc(var(--dashboard-glow-duration) + 2s) ease-in-out infinite;
+}
+
+.topbar > * {
+    position: relative;
+    z-index: 1;
 }
 
 .topbar-primary,
@@ -679,15 +782,45 @@ body.nav-open .sidebar {
 
 .portal-hero,
 .portal-hero {
+    display: grid;
+    gap: var(--dashboard-gap);
     padding: clamp(1rem, 2vw, 1.35rem);
     border-radius: var(--radius-xl);
     border: 1px solid rgba(214, 167, 86, 0.22);
     background: radial-gradient(520px 240px at 88% 0%, rgba(214, 167, 86, 0.16), transparent 58%), linear-gradient(145deg, rgba(22, 29, 43, 0.96), rgba(8, 12, 20, 0.96));
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 24px 54px rgba(0, 0, 0, 0.3);
     transition:
         border-color 0.28s var(--dashboard-motion),
         box-shadow 0.28s var(--dashboard-motion),
         background 0.28s var(--dashboard-motion);
+}
+
+.portal-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 34%),
+        linear-gradient(90deg, rgba(240, 199, 119, 0.48), rgba(143, 183, 255, 0.18) 48%, rgba(100, 214, 163, 0.22));
+    background-repeat: no-repeat;
+    background-size: 100% 100%, 100% 2px;
+    background-position: 0 0, 0 0;
+}
+
+.portal-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -14% -56% 42%;
+    height: 260px;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(240, 199, 119, 0.2) 0%, rgba(240, 199, 119, 0) 72%);
+    animation: dashboard-glow-drift calc(var(--dashboard-glow-duration) + 4s) ease-in-out infinite;
+}
+
+.portal-badge {
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .portal-hero-title,
@@ -696,6 +829,7 @@ body.nav-open .sidebar {
     max-width: 28ch;
     font-size: clamp(1.45rem, 2.4vw, 2.3rem);
     line-height: 1.05;
+    text-wrap: balance;
 }
 
 .portal-hero-copy,
@@ -703,6 +837,7 @@ body.nav-open .sidebar {
     margin: 0.65rem 0 0;
     max-width: 68ch;
     color: var(--muted);
+    font-size: clamp(0.98rem, 1.15vw, 1.06rem);
 }
 
 .metric-grid,
@@ -971,6 +1106,8 @@ body.nav-open .sidebar {
     padding: 0.82rem 0.9rem;
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-md);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .sidebar-presence-dot {
@@ -998,7 +1135,8 @@ body.nav-open .sidebar {
 .sidebar-venue-switcher {
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.035);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     overflow: hidden;
 }
 
@@ -1044,7 +1182,11 @@ body.nav-open .sidebar {
     background: rgba(255, 255, 255, 0.025);
     color: var(--muted-strong);
     text-decoration: none;
-    transition: 0.18s ease;
+    transition:
+        transform 0.24s var(--dashboard-motion),
+        border-color 0.24s var(--dashboard-motion),
+        background 0.24s var(--dashboard-motion),
+        box-shadow 0.24s var(--dashboard-motion);
 }
 
 .sidebar-venue-option small {
@@ -1054,8 +1196,10 @@ body.nav-open .sidebar {
 .sidebar-venue-option:hover,
 .sidebar-venue-option.active {
     color: var(--text);
+    transform: translateY(-1px);
     border-color: rgba(214, 167, 86, 0.24);
     background: rgba(214, 167, 86, 0.1);
+    box-shadow: 0 14px 26px rgba(0, 0, 0, 0.16);
 }
 
 .sidebar-venue-switcher-actions {
@@ -1227,6 +1371,8 @@ body.nav-open .sidebar {
     padding: var(--dashboard-panel-padding);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-lg);
+    background: radial-gradient(220px 120px at 100% 0%, rgba(240, 199, 119, 0.08), transparent 66%), linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.03));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .dashboard-command-grid {
@@ -1245,6 +1391,61 @@ body.nav-open .sidebar {
 
 .portal-command-grid {
     margin-top: 1rem;
+}
+
+.portal-panel {
+    transition:
+        transform 0.28s var(--dashboard-motion),
+        border-color 0.28s var(--dashboard-motion),
+        background 0.28s var(--dashboard-motion),
+        box-shadow 0.28s var(--dashboard-motion);
+    background: radial-gradient(260px 160px at 100% 0%, rgba(214, 167, 86, 0.08), transparent 62%), linear-gradient(145deg, rgba(18, 25, 38, 0.94), rgba(9, 13, 21, 0.94));
+}
+
+.portal-panel:hover {
+    transform: translateY(-2px);
+    border-color: rgba(214, 167, 86, 0.22);
+    box-shadow: var(--dashboard-hover-shadow);
+}
+
+.dashboard-view-management .portal-hero {
+    background: radial-gradient(440px 220px at 86% 0%, rgba(143, 183, 255, 0.16), transparent 60%), radial-gradient(360px 180px at 12% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(20, 28, 42, 0.98), rgba(8, 12, 20, 0.98));
+}
+
+.dashboard-view-management .portal-badge {
+    color: #bdd0fb;
+    border-color: rgba(143, 183, 255, 0.34);
+    background: rgba(143, 183, 255, 0.12);
+}
+
+.dashboard-view-staff .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(100, 214, 163, 0.14), transparent 60%), radial-gradient(360px 180px at 12% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(19, 29, 38, 0.98), rgba(7, 12, 18, 0.98));
+}
+
+.dashboard-view-staff .portal-badge {
+    color: #7ed6b5;
+    border-color: rgba(100, 214, 163, 0.34);
+    background: rgba(100, 214, 163, 0.12);
+}
+
+.module-view .portal-badge {
+    color: var(--gold-strong);
+}
+
+.module-view-stock .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(85, 204, 191, 0.15), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(18, 30, 36, 0.98), rgba(8, 12, 20, 0.98));
+}
+
+.module-view-orders .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(143, 183, 255, 0.16), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(18, 26, 39, 0.98), rgba(8, 12, 20, 0.98));
+}
+
+.module-view-shifts .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(110, 196, 183, 0.15), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(143, 183, 255, 0.1), transparent 62%), linear-gradient(145deg, rgba(17, 28, 37, 0.98), rgba(8, 12, 20, 0.98));
+}
+
+.module-view-checklists .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(240, 199, 119, 0.18), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(100, 214, 163, 0.1), transparent 62%), linear-gradient(145deg, rgba(22, 29, 40, 0.98), rgba(8, 12, 20, 0.98));
 }
 
 .dashboard-command-card,
@@ -1346,6 +1547,7 @@ body.nav-open .sidebar {
 
 .dashboard-hero-card-compact {
     gap: 0.78rem;
+    align-content: start;
 }
 
 .dashboard-priority-preview {
@@ -1539,6 +1741,15 @@ body.nav-open .sidebar {
 .dashboard-accordion-card.is-open .dashboard-accordion-metric {
     border-color: rgba(214, 167, 86, 0.2);
     background: linear-gradient(180deg, rgba(214, 167, 86, 0.12), rgba(255, 255, 255, 0.03));
+    transform: translateY(-1px);
+}
+
+.dashboard-accordion-card.is-open .dashboard-accordion-label {
+    color: #f1d69a;
+}
+
+.dashboard-accordion-card.is-open .dashboard-accordion-summary strong {
+    color: #fff7df;
 }
 
 .dashboard-accordion-metric strong {
@@ -2189,7 +2400,8 @@ body.nav-open .sidebar {
     padding: var(--dashboard-card-padding);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.035);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.03));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .throughput-grid,
@@ -2261,7 +2473,8 @@ body.nav-open .sidebar {
     padding: 0.45rem;
     border-radius: 1rem;
     border: 1px solid var(--panel-border);
-    background: rgba(255, 255, 255, 0.035);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .metric-chart-bar.is-latest {
@@ -3452,6 +3665,9 @@ body.command-open .mobile-command-sheet {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .sidebar::before,
+    .topbar::after,
+    .portal-hero::after,
     .app-shell .page-shell > *,
     .login-submit-btn,
     .dashboard-command-card,
@@ -3519,6 +3735,38 @@ html[data-theme="light"] .error-card {
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.96));
 }
 
+html[data-theme="light"] .topbar {
+    background: radial-gradient(360px 180px at 100% 0%, rgba(240, 199, 119, 0.14), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.96));
+}
+
+html[data-theme="light"] .portal-panel {
+    background: radial-gradient(240px 160px at 100% 0%, rgba(240, 199, 119, 0.08), transparent 64%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.96));
+}
+
+html[data-theme="light"] .dashboard-view-management .portal-hero {
+    background: radial-gradient(440px 220px at 86% 0%, rgba(143, 183, 255, 0.18), transparent 60%), radial-gradient(360px 180px at 12% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 247, 252, 0.96));
+}
+
+html[data-theme="light"] .dashboard-view-staff .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(100, 214, 163, 0.14), transparent 60%), radial-gradient(360px 180px at 12% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 248, 250, 0.96));
+}
+
+html[data-theme="light"] .module-view-stock .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(85, 204, 191, 0.16), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 248, 250, 0.96));
+}
+
+html[data-theme="light"] .module-view-orders .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(143, 183, 255, 0.16), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(240, 199, 119, 0.12), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 247, 252, 0.96));
+}
+
+html[data-theme="light"] .module-view-shifts .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(110, 196, 183, 0.16), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(143, 183, 255, 0.12), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 247, 251, 0.96));
+}
+
+html[data-theme="light"] .module-view-checklists .portal-hero {
+    background: radial-gradient(460px 220px at 88% 0%, rgba(240, 199, 119, 0.16), transparent 60%), radial-gradient(360px 180px at 8% 100%, rgba(100, 214, 163, 0.1), transparent 62%), linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.96));
+}
+
 html[data-theme="light"] .sidebar-presence,
 html[data-theme="light"] .dashboard-hero-card,
 html[data-theme="light"] .dashboard-accordion-card,
@@ -3540,6 +3788,11 @@ html[data-theme="light"] .sidebar-shortcut,
 html[data-theme="light"] .mobile-command-link,
 html[data-theme="light"] .nav-link {
     background: rgba(255, 255, 255, 0.72);
+}
+
+html[data-theme="light"] .sidebar-venue-switcher,
+html[data-theme="light"] .portal-badge {
+    background: rgba(255, 255, 255, 0.78);
 }
 
 html[data-theme="light"] .login-value-card,
