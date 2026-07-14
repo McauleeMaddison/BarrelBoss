@@ -7,7 +7,7 @@
             </div>
             <h3 class="portal-hero-title">{{ module_panel.title }}</h3>
             <p class="portal-hero-copy">{{ module_panel.copy }}</p>
-            {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+            {% include 'partials/attention_rail.html' with attention_items=attention_items|slice:":1" %}
         </div>
 
         <aside class="dashboard-hero-card module-action-panel">

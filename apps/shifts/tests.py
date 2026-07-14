@@ -70,8 +70,10 @@ class ShiftViewTests(VenueScopedTestCase):
         self.client.login(username="shift_staff", password="strong-pass-123")
         response = self.client.get(reverse("shifts:list"))
 
+        self.assertContains(response, "Rota Workspace")
         self.assertContains(response, "Main floor")
         self.assertNotContains(response, "Cellar delivery")
+        self.assertNotContains(response, "Schedule shift")
         self.assertEqual(response.context["hours_this_week"], 5.5)
 
     def test_weekly_chart_context_is_present(self):
@@ -87,8 +89,10 @@ class ShiftViewTests(VenueScopedTestCase):
         self.client.login(username="shift_manager", password="strong-pass-123")
         response = self.client.get(reverse("shifts:list"))
 
+        self.assertContains(response, "Rota Workspace")
         self.assertContains(response, "Main floor")
         self.assertContains(response, "Cellar delivery")
+        self.assertContains(response, "Schedule shift")
         self.assertEqual(response.context["total_shifts"], 2)
 
     def test_manager_can_create_shift(self):

@@ -67,15 +67,19 @@ class ChecklistViewTests(VenueScopedTestCase):
         self.client.login(username="task_staff", password="strong-pass-123")
         response = self.client.get(reverse("checklists:list"))
 
+        self.assertContains(response, "Task Workspace")
         self.assertContains(response, "Restock fridges")
         self.assertNotContains(response, "Count till")
+        self.assertNotContains(response, "Assign task")
 
     def test_manager_sees_all_tasks(self):
         self.client.login(username="task_manager", password="strong-pass-123")
         response = self.client.get(reverse("checklists:list"))
 
+        self.assertContains(response, "Task Workspace")
         self.assertContains(response, "Restock fridges")
         self.assertContains(response, "Count till")
+        self.assertContains(response, "Assign task")
 
     def test_checklist_context_exposes_filter_summary_and_module_shell(self):
         self.client.login(username="task_manager", password="strong-pass-123")

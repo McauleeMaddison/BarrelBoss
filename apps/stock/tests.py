@@ -28,6 +28,11 @@ class StockListViewTests(VenueScopedTestCase):
     def setUp(self):
         super().setUp()
         self.user = self.create_user(username="stock_user", password="strong-pass-123")
+        self.manager_user = self.create_user(
+            username="stock_manager_list",
+            password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
+        )
         self.supplier = Supplier.objects.create(
             venue=self.venue,
             name="Brewline",
@@ -65,12 +70,22 @@ class StockListViewTests(VenueScopedTestCase):
         response = self.client.get(reverse("stock:list"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Inventory Workspace")
         self.assertContains(response, "Carling 50L")
         self.assertContains(response, "Jameson")
+        self.assertNotContains(response, "Create order")
         self.assertEqual(response.context["total_items"], 2)
         self.assertEqual(response.context["low_stock_count"], 1)
         self.assertEqual(response.context["module_panel"]["badge"], "Stock Control")
         self.assertEqual(len(response.context["module_snapshots"]), 3)
+
+    def test_management_stock_view_shows_management_actions(self):
+        self.client.login(username="stock_manager_list", password="strong-pass-123")
+        response = self.client.get(reverse("stock:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create order")
+        self.assertContains(response, "Open suppliers")
 
     def test_stock_list_filters_by_category(self):
         self.client.login(username="stock_user", password="strong-pass-123")

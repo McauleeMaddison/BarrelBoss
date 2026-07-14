@@ -1623,6 +1623,7 @@ body.nav-open .sidebar {
 }
 
 .dashboard-view-staff,
+.module-view,
 .staff-command-main,
 .staff-priority-grid,
 .staff-pulse-grid,
@@ -1632,6 +1633,7 @@ body.nav-open .sidebar {
 .staff-focus-list,
 .staff-summary-card,
 .staff-focus-copy,
+.module-board-shell,
 .module-command-main,
 .module-action-panel,
 .module-action-stack,
@@ -1640,6 +1642,18 @@ body.nav-open .sidebar {
 .module-snapshot-copy {
     display: grid;
     gap: 1rem;
+}
+
+.module-workspace-panel {
+    gap: 1rem;
+}
+
+.module-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.module-chart-shell {
+    align-items: start;
 }
 
 .staff-command-shell,

@@ -4,283 +4,426 @@
 {% block page_title %}Inventory{% endblock %}
 
 {% block content %}
+<div class="dashboard-view module-view module-view-stock">
 {% include 'partials/modules/command_panel.html' %}
-{% include 'partials/modules/snapshot_grid.html' %}
 
-<section class="dashboard-command-grid inventory-zone-grid">
-    {% for zone in focus_zone_cards %}
-    <a class="dashboard-command-card" href="{{ zone.url }}">
-        <span class="kicker">{{ zone.label }}</span>
-        <strong>{{ zone.value }}</strong>
-        <p>{{ zone.copy }}</p>
-        <small class="panel-subtitle">{{ zone.note }}</small>
-    </a>
-    {% endfor %}
-</section>
-
-<section class="overview-board inventory-workboard">
-    <article class="panel">
+<section class="dashboard-stack dashboard-priority-stack">
+    <article class="panel portal-panel module-workspace-panel">
         <div class="panel-header">
             <div>
-                <h3>Supplier action board</h3>
-                <p class="panel-subtitle">Go straight from urgent shortages to the supplier or catalogue fix that clears them.</p>
+                <h3>Inventory Workspace</h3>
+                <p class="panel-subtitle">Keep urgent stock pressure, the live inventory board, and count discipline in one consistent workspace.</p>
             </div>
         </div>
-        {% if supplier_action_rows %}
-        <ul class="dashboard-record-list">
-            {% for row in supplier_action_rows %}
-            <li class="dashboard-record-row">
-                <div class="dashboard-record-copy">
-                    <strong>{{ row.title }}</strong>
-                    <small>{{ row.meta }}</small>
-                    <span class="dashboard-record-note">{{ row.note }}</span>
+
+        <div class="dashboard-accordion-group" data-dashboard-accordion-group="stock-workspace">
+            <article class="dashboard-accordion-card is-open" data-dashboard-accordion-item data-dashboard-accordion-key="suppliers" data-dashboard-accordion-default-open="true">
+                <button
+                    type="button"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="true"
+                    aria-controls="stock-section-suppliers"
+                >
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">Urgent queue</p>
+                        <span class="dashboard-accordion-label">Supplier action</span>
+                        <strong>Supplier action board</strong>
+                        <small>Go straight from shortages to the supplier or replenishment step that clears them without digging through the full table.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ critical_stock_count }}</strong>
+                            <small>Critical</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ low_stock_count }}</strong>
+                            <small>Urgent</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ restock_gap_units }}</strong>
+                            <small>Gap</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="dashboard-accordion-body" id="stock-section-suppliers" data-dashboard-accordion-body>
+                    <div class="dashboard-accordion-content">
+                        {% if supplier_action_rows %}
+                        <ul class="dashboard-record-list">
+                            {% for row in supplier_action_rows %}
+                            <li class="dashboard-record-row">
+                                <div class="dashboard-record-copy">
+                                    <strong>{{ row.title }}</strong>
+                                    <small>{{ row.meta }}</small>
+                                    <span class="dashboard-record-note">{{ row.note }}</span>
+                                </div>
+                                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="empty-state">No urgent supplier follow-up is showing in the current stock scope.</p>
+                        {% endif %}
+                        <div class="metric-actions dashboard-section-actions">
+                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?urgency=critical">Open critical stock</a>
+                            {% if is_management %}
+                            <a class="table-action metric-action-link" href="{% url 'suppliers:list' %}">Open suppliers</a>
+                            <a class="table-action metric-action-link" href="{% url 'orders:add' %}">Create order</a>
+                            {% else %}
+                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?urgency=low">Open low stock</a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="empty-state">No urgent supplier follow-up is showing in the current stock scope.</p>
-        {% endif %}
-        <div class="metric-actions">
-            {% if is_management %}
-            <a class="table-action metric-action-link" href="{% url 'suppliers:list' %}">Open suppliers</a>
-            <a class="table-action metric-action-link" href="{% url 'orders:add' %}">Create order</a>
-            {% endif %}
+            </article>
+
+            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="board">
+                <button
+                    type="button"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="stock-section-board"
+                >
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">Live board</p>
+                        <span class="dashboard-accordion-label">Inventory queue</span>
+                        <strong>Inventory board</strong>
+                        <small>Filter the live stock list, inspect counts and supplier links, and review detail from one consistent board.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ display_item_count }}</strong>
+                            <small>Shown</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ total_units }}</strong>
+                            <small>Units</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ watch_stock_count }}</strong>
+                            <small>Watch</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="dashboard-accordion-body" id="stock-section-board" data-dashboard-accordion-body hidden>
+                    <div class="dashboard-accordion-content module-board-shell">
+                        <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+                            <div class="filter-preset-row">
+                                {% for preset in filter_presets %}
+                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'stock:list' %}{% endif %}">{{ preset.label }}</a>
+                                {% endfor %}
+                            </div>
+                            <div class="filter-summary-bar">
+                                <div class="filter-chip-row">
+                                    {% if filters_active %}
+                                    <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                                    {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                                    {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
+                                    {% if selected_focus_label %}<span class="filter-chip">{{ selected_focus_label }}</span>{% endif %}
+                                    {% if selected_category_label %}<span class="filter-chip">{{ selected_category_label }}</span>{% endif %}
+                                    {% if selected_urgency_label %}<span class="filter-chip">{{ selected_urgency_label }}</span>{% endif %}
+                                    {% else %}
+                                    <span class="filter-chip filter-chip-muted">All active inventory in view</span>
+                                    {% endif %}
+                                </div>
+                                <button
+                                    class="table-action filter-toggle-btn"
+                                    type="button"
+                                    data-filter-toggle
+                                    aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+                                >
+                                    Filters
+                                </button>
+                            </div>
+
+                            <form method="get" class="stock-filter-form" data-filter-form>
+                                <div class="filter-field">
+                                    <label for="focus">Zone</label>
+                                    <select id="focus" name="focus">
+                                        {% for value, label in focus_choices %}
+                                        <option value="{{ value }}" {% if selected_focus == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="q">Search</label>
+                                    <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
+                                </div>
+                                <div class="filter-field">
+                                    <label for="category">Category</label>
+                                    <select id="category" name="category">
+                                        <option value="">All Categories</option>
+                                        {% for value, label in category_choices %}
+                                        <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="filter-field">
+                                    <label for="urgency">Urgency</label>
+                                    <select id="urgency" name="urgency">
+                                        {% for value, label in urgency_choices %}
+                                        <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button class="action-btn" type="submit">Apply filters</button>
+                                <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
+                            </form>
+                        </div>
+
+                        {% if items %}
+                        <div class="report-table-wrap">
+                            <table class="js-sortable data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Minimum</th>
+                                        <th>Gap</th>
+                                        <th>Supplier</th>
+                                        <th>Unit Cost</th>
+                                        <th>Est. Value</th>
+                                        <th>Urgency</th>
+                                        <th data-sort="off">Review</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td data-label="Item">
+                                            <strong>{{ item.name }}</strong>
+                                            <div class="task-inline-meta">
+                                                <small class="panel-subtitle">{{ item.stock_note }}</small>
+                                                <span class="badge {{ item.count_status_badge_class }}">{{ item.count_status_label }}</span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Category">{{ item.get_category_display }}</td>
+                                        <td data-label="Quantity">{{ item.quantity }} {{ item.get_unit_display }}</td>
+                                        <td data-label="Minimum">{{ item.minimum_display }}</td>
+                                        <td data-label="Gap">{{ item.stock_gap }}</td>
+                                        <td data-label="Supplier">{{ item.supplier.name|default:'-' }}</td>
+                                        <td data-label="Unit Cost">£{{ item.cost|floatformat:2 }}</td>
+                                        <td data-label="Est. Value">£{{ item.value_estimate|floatformat:2 }}</td>
+                                        <td data-label="Urgency">
+                                            <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
+                                        </td>
+                                        <td class="stock-actions-cell mobile-action-cell" data-label="Review">
+                                            <button
+                                                class="table-action"
+                                                type="button"
+                                                data-detail-trigger
+                                                data-detail-template="stock-detail-{{ item.pk }}"
+                                                data-detail-kicker="Inventory item"
+                                                data-detail-title="{{ item.name }}"
+                                                data-detail-meta="{{ item.get_category_display }} · {{ item.stock_band_label }}"
+                                            >
+                                                Review
+                                            </button>
+                                            <template id="stock-detail-{{ item.pk }}">
+                                                <section class="detail-drawer-card">
+                                                    <div class="detail-drawer-card-head">
+                                                        <p class="detail-drawer-label">Stock status</p>
+                                                        <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
+                                                    </div>
+                                                    <p class="detail-drawer-copy">{{ item.stock_note }}</p>
+                                                    <div class="detail-drawer-grid">
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Supplier</strong>
+                                                            <span>{{ item.supplier.name|default:"-" }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Supplier contact</strong>
+                                                            <span>{{ item.supplier_contact_summary }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Quantity</strong>
+                                                            <span>{{ item.quantity }} {{ item.get_unit_display }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Minimum</strong>
+                                                            <span>{{ item.minimum_display }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Restock gap</strong>
+                                                            <span>{{ item.stock_gap }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Estimated value</strong>
+                                                            <span>£{{ item.value_estimate|floatformat:2 }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Count status</strong>
+                                                            <span>{{ item.count_status_label }} · {{ item.last_counted_label }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Last restocked</strong>
+                                                            <span>{{ item.last_restocked_label }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <p class="detail-drawer-copy">{{ item.count_status_note }}</p>
+                                                </section>
+                                                {% if is_management %}
+                                                <section class="detail-drawer-section">
+                                                    <p class="detail-drawer-label">Actions</p>
+                                                    <div class="detail-drawer-actions">
+                                                        <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="detail-drawer-inline-form">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="next" value="{{ return_path }}">
+                                                            <button class="action-btn" type="submit">Mark counted now</button>
+                                                        </form>
+                                                        {% if item.supplier %}
+                                                        <a class="table-action" href="{% url 'suppliers:list' %}?q={{ item.supplier.name|urlencode }}">Open supplier</a>
+                                                        {% endif %}
+                                                        <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit item</a>
+                                                        <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete item</a>
+                                                    </div>
+                                                </section>
+                                                {% endif %}
+                                            </template>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
+                        {% else %}
+                        <p class="empty-state">No inventory items match this filter.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+
+            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="counts">
+                <button
+                    type="button"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="stock-section-counts"
+                >
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">Stock trust</p>
+                        <span class="dashboard-accordion-label">Count discipline</span>
+                        <strong>Count queue</strong>
+                        <small>Keep count recency visible so stock decisions are grounded in current numbers rather than guesswork.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ missing_count_count }}</strong>
+                            <small>Missing</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ stale_count_count }}</strong>
+                            <small>Overdue</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ recently_restocked_count }}</strong>
+                            <small>Restocked 7d</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="dashboard-accordion-body" id="stock-section-counts" data-dashboard-accordion-body hidden>
+                    <div class="dashboard-accordion-content">
+                        {% if count_discipline_rows %}
+                        <ul class="dashboard-record-list">
+                            {% for row in count_discipline_rows %}
+                            <li class="dashboard-record-row">
+                                <div class="dashboard-record-copy">
+                                    <strong>{{ row.title }}</strong>
+                                    <small>{{ row.meta }}</small>
+                                    <span class="dashboard-record-note">{{ row.note }}</span>
+                                </div>
+                                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="empty-state">All visible lines have recent stock counts recorded.</p>
+                        {% endif %}
+                        <div class="metric-actions dashboard-section-actions">
+                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?focus=uncounted">Open count queue</a>
+                            {% if is_management %}
+                            <a class="table-action metric-action-link" href="{% url 'stock:add' %}">Add stock item</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="zones">
+                <button
+                    type="button"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="stock-section-zones"
+                >
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">By area</p>
+                        <span class="dashboard-accordion-label">Zones</span>
+                        <strong>Zone view</strong>
+                        <small>Open cellar, back bar, or service-kit stock from one consistent control row instead of separate pages.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ critical_stock_count }}</strong>
+                            <small>Critical</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ watch_stock_count }}</strong>
+                            <small>Watch</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ healthy_stock_count }}</strong>
+                            <small>Healthy</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="dashboard-accordion-body" id="stock-section-zones" data-dashboard-accordion-body hidden>
+                    <div class="dashboard-accordion-content">
+                        <div class="dashboard-command-grid module-card-grid">
+                            {% for zone in focus_zone_cards %}
+                            <a class="dashboard-command-card" href="{{ zone.url }}">
+                                <span class="kicker">{{ zone.label }}</span>
+                                <strong>{{ zone.value }}</strong>
+                                <p>{{ zone.copy }}</p>
+                                <small class="panel-subtitle">{{ zone.note }}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </article>
         </div>
     </article>
 
-    <article class="panel">
+    <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="stock-snapshot-panel" data-panel-default-collapsed="true">
         <div class="panel-header">
             <div>
-                <h3>Count discipline</h3>
-                <p class="panel-subtitle">Cellar stock is only trustworthy when count recency stays visible.</p>
-            </div>
-        </div>
-        <div class="dashboard-section-stats">
-            <article class="dashboard-section-stat">
-                <span>Never counted</span>
-                <strong>{{ missing_count_count }}</strong>
-            </article>
-            <article class="dashboard-section-stat">
-                <span>Count overdue</span>
-                <strong>{{ stale_count_count }}</strong>
-            </article>
-            <article class="dashboard-section-stat">
-                <span>Restocked 7d</span>
-                <strong>{{ recently_restocked_count }}</strong>
-            </article>
-        </div>
-        {% if count_discipline_rows %}
-        <ul class="dashboard-record-list">
-            {% for row in count_discipline_rows %}
-            <li class="dashboard-record-row">
-                <div class="dashboard-record-copy">
-                    <strong>{{ row.title }}</strong>
-                    <small>{{ row.meta }}</small>
-                    <span class="dashboard-record-note">{{ row.note }}</span>
-                </div>
-                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="empty-state">All visible lines have recent stock counts recorded.</p>
-        {% endif %}
-    </article>
-</section>
-
-<section class="panel module-table-panel module-queue-panel">
-    <div class="panel-header">
-        <div>
-            <h3>Inventory queue</h3>
-            <p class="panel-subtitle">Filter the live stock board to surface what needs action first, then review item detail from the table.</p>
-        </div>
-    </div>
-
-    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
-        <div class="filter-preset-row">
-            {% for preset in filter_presets %}
-            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'stock:list' %}{% endif %}">{{ preset.label }}</a>
-            {% endfor %}
-        </div>
-        <div class="filter-summary-bar">
-            <div class="filter-chip-row">
-                {% if filters_active %}
-                <span class="panel-header-meta">{{ active_filter_count }} active</span>
-                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
-                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
-                {% if selected_focus_label %}<span class="filter-chip">{{ selected_focus_label }}</span>{% endif %}
-                {% if selected_category_label %}<span class="filter-chip">{{ selected_category_label }}</span>{% endif %}
-                {% if selected_urgency_label %}<span class="filter-chip">{{ selected_urgency_label }}</span>{% endif %}
-                {% else %}
-                <span class="filter-chip filter-chip-muted">All active inventory in view</span>
-                {% endif %}
+                <h3>Inventory Snapshot</h3>
+                <p class="panel-subtitle">Open the wider inventory metrics only when you need the broader stock picture.</p>
             </div>
             <button
-                class="table-action filter-toggle-btn"
                 type="button"
-                data-filter-toggle
-                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+                class="table-action panel-collapse-toggle"
+                data-panel-toggle
+                aria-expanded="false"
+                aria-controls="stock-snapshot-panel"
             >
-                Filters
+                Expand
             </button>
         </div>
-
-        <form method="get" class="stock-filter-form" data-filter-form>
-            <div class="filter-field">
-                <label for="focus">Zone</label>
-                <select id="focus" name="focus">
-                    {% for value, label in focus_choices %}
-                    <option value="{{ value }}" {% if selected_focus == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filter-field">
-                <label for="q">Search</label>
-                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
-            </div>
-            <div class="filter-field">
-                <label for="category">Category</label>
-                <select id="category" name="category">
-                    <option value="">All Categories</option>
-                    {% for value, label in category_choices %}
-                    <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="filter-field">
-                <label for="urgency">Urgency</label>
-                <select id="urgency" name="urgency">
-                    {% for value, label in urgency_choices %}
-                    <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button class="action-btn" type="submit">Apply filters</button>
-            <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
-        </form>
-    </div>
-
-    {% if items %}
-    <div class="report-table-wrap">
-        <table class="js-sortable data-table">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>Category</th>
-                    <th>Quantity</th>
-                    <th>Minimum</th>
-                    <th>Gap</th>
-                    <th>Supplier</th>
-                    <th>Unit Cost</th>
-                    <th>Est. Value</th>
-                    <th>Urgency</th>
-                    <th data-sort="off">Review</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in items %}
-                <tr>
-                    <td data-label="Item">
-                        <strong>{{ item.name }}</strong>
-                        <div class="task-inline-meta">
-                            <small class="panel-subtitle">{{ item.stock_note }}</small>
-                            <span class="badge {{ item.count_status_badge_class }}">{{ item.count_status_label }}</span>
-                        </div>
-                    </td>
-                    <td data-label="Category">{{ item.get_category_display }}</td>
-                    <td data-label="Quantity">{{ item.quantity }} {{ item.get_unit_display }}</td>
-                    <td data-label="Minimum">{{ item.minimum_display }}</td>
-                    <td data-label="Gap">{{ item.stock_gap }}</td>
-                    <td data-label="Supplier">{{ item.supplier.name|default:'-' }}</td>
-                    <td data-label="Unit Cost">£{{ item.cost|floatformat:2 }}</td>
-                    <td data-label="Est. Value">£{{ item.value_estimate|floatformat:2 }}</td>
-                    <td data-label="Urgency">
-                        <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
-                    </td>
-                    <td class="stock-actions-cell mobile-action-cell" data-label="Review">
-                        <button
-                            class="table-action"
-                            type="button"
-                            data-detail-trigger
-                            data-detail-template="stock-detail-{{ item.pk }}"
-                            data-detail-kicker="Inventory item"
-                            data-detail-title="{{ item.name }}"
-                            data-detail-meta="{{ item.get_category_display }} · {{ item.stock_band_label }}"
-                        >
-                            Review
-                        </button>
-                        <template id="stock-detail-{{ item.pk }}">
-                            <section class="detail-drawer-card">
-                                <div class="detail-drawer-card-head">
-                                    <p class="detail-drawer-label">Stock status</p>
-                                    <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
-                                </div>
-                                <p class="detail-drawer-copy">{{ item.stock_note }}</p>
-                                <div class="detail-drawer-grid">
-                                    <div class="detail-drawer-row">
-                                        <strong>Supplier</strong>
-                                        <span>{{ item.supplier.name|default:"-" }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Supplier contact</strong>
-                                        <span>{{ item.supplier_contact_summary }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Quantity</strong>
-                                        <span>{{ item.quantity }} {{ item.get_unit_display }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Minimum</strong>
-                                        <span>{{ item.minimum_display }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Restock gap</strong>
-                                        <span>{{ item.stock_gap }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Estimated value</strong>
-                                        <span>£{{ item.value_estimate|floatformat:2 }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Count status</strong>
-                                        <span>{{ item.count_status_label }} · {{ item.last_counted_label }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Last restocked</strong>
-                                        <span>{{ item.last_restocked_label }}</span>
-                                    </div>
-                                </div>
-                                <p class="detail-drawer-copy">{{ item.count_status_note }}</p>
-                            </section>
-                            {% if is_management %}
-                            <section class="detail-drawer-section">
-                                <p class="detail-drawer-label">Actions</p>
-                                <div class="detail-drawer-actions">
-                                    <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="detail-drawer-inline-form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ return_path }}">
-                                        <button class="action-btn" type="submit">Mark counted now</button>
-                                    </form>
-                                    {% if item.supplier %}
-                                    <a class="table-action" href="{% url 'suppliers:list' %}?q={{ item.supplier.name|urlencode }}">Open supplier</a>
-                                    {% endif %}
-                                    <a class="table-action" href="{% url 'stock:edit' item.pk %}">Edit item</a>
-                                    <a class="table-action table-action-danger" href="{% url 'stock:delete' item.pk %}">Delete item</a>
-                                </div>
-                            </section>
-                            {% endif %}
-                        </template>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
-    {% else %}
-    <p class="empty-state">No inventory items match this filter.</p>
-    {% endif %}
+        <div class="dashboard-collapsible-body" id="stock-snapshot-panel" data-panel-body hidden>
+            {% include 'partials/modules/snapshot_grid.html' %}
+        </div>
+    </article>
 </section>
+</div>
 {% endblock %}

@@ -4,315 +4,384 @@
 {% block page_title %}Shifts{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero shifts-hero">
-    <div class="portal-hero-head">
-        <p class="kicker">{% if is_management %}Workforce Planning{% else %}My Shift Schedule{% endif %}</p>
-        <span class="badge portal-badge">{% if is_management %}Team Planner{% else %}Schedule View{% endif %}</span>
-    </div>
-    <h3 class="portal-hero-title">{% if is_management %}Shift Coverage and Hours Performance{% else %}Shift Hours and Upcoming Timeline{% endif %}</h3>
-    <p class="portal-hero-copy">
-        {% if is_management %}
-        Allocate shifts, monitor weekly capacity, and keep payroll visibility clear across the team.
-        {% else %}
-        Track your upcoming shifts, worked-hour totals, and this week’s schedule at a glance.
-        {% endif %}
-    </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        <article class="hero-signal hero-signal-ok">
-            <span class="hero-signal-label">Hours This Week</span>
-            <strong>{{ hours_this_week|floatformat:2 }} hours</strong>
-            <small>Scheduled coverage for the current Monday to Sunday operating window.</small>
-        </article>
-        <article class="hero-signal hero-signal-warn">
-            <span class="hero-signal-label">Upcoming Shifts</span>
-            <strong>{{ upcoming_shift_count }} scheduled</strong>
-            <small>Visible future shifts still coming up from today onward in this current scope.</small>
-        </article>
-        <article class="hero-signal hero-signal-neutral">
-            <span class="hero-signal-label">Week Window</span>
-            <strong>{{ week_window_label }}</strong>
-            <small>Use the weekly chart and planner below to inspect load and handover balance.</small>
-        </article>
-    </div>
-    <div class="report-toolbar">
-        {% if is_management %}
-        <a class="action-btn action-link" href="{% url 'shifts:add' %}">Schedule Shift</a>
-        {% endif %}
-        <div class="dashboard-controls">
-            <span class="panel-header-meta">Week: {{ week_window_label }}</span>
-            <span class="panel-header-meta">Upcoming: {{ upcoming_shift_count }}</span>
-            <span class="panel-header-meta">Visible: {{ total_shifts }}</span>
-        </div>
-    </div>
-</section>
+<div class="dashboard-view module-view module-view-shifts">
+{% include 'partials/modules/command_panel.html' %}
 
-<section class="metric-grid">
-    <article class="metric-card ok shift-metric-card">
-        <div class="metric-card-head">
-            <h3>Hours This Week</h3>
-            <span class="metric-state metric-state-ok">Current week</span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ hours_this_week|floatformat:2 }}</p>
-            <span class="metric-summary">Monday to Sunday scheduled hours across the currently visible shift scope.</span>
-            <span class="metric-note">Best for seeing immediate labor commitment rather than full month accumulation.</span>
-        </div>
-    </article>
-    <article class="metric-card warn shift-metric-card">
-        <div class="metric-card-head">
-            <h3>Hours This Month</h3>
-            <span class="metric-state metric-state-warn">Monthly load</span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ hours_this_month|floatformat:2 }}</p>
-            <span class="metric-summary">Scheduled hours already booked in the current calendar month.</span>
-            <span class="metric-note">Useful for spotting whether the rota is front-loaded or still light later in the period.</span>
-        </div>
-    </article>
-    <article class="metric-card neutral shift-metric-card">
-        <div class="metric-card-head">
-            <h3>Upcoming Shifts</h3>
-            <span class="metric-state metric-state-neutral">Forward view</span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ upcoming_shift_count }}</p>
-            <span class="metric-summary">Total shifts on or after today in the current visible team or personal range.</span>
-            <span class="metric-note">This is the best quick count for remaining schedule pressure still ahead.</span>
-        </div>
-    </article>
-    <article class="metric-card alert shift-metric-card">
-        <div class="metric-card-head">
-            <h3>Next Shift</h3>
-            <span class="metric-state metric-state-{% if next_shift %}alert{% else %}neutral{% endif %}">
-                {% if next_shift %}Next up{% else %}Unscheduled{% endif %}
-            </span>
-        </div>
-        <div class="metric-card-body">
-            {% if next_shift %}
-            <p>{{ next_shift.shift_date|date:"D j M" }}</p>
-            <span class="metric-summary">{{ next_shift.start_time|time:"H:i" }} - {{ next_shift.end_time|time:"H:i" }}</span>
-            <span class="metric-note">Keep task and handover work clear ahead of this next service window.</span>
-            {% else %}
-            <p>-</p>
-            <span class="metric-summary">No upcoming shifts are scheduled in this current view.</span>
-            <span class="metric-note">If this is unexpected, open the planner and widen the selected date range.</span>
-            {% endif %}
-        </div>
-    </article>
-</section>
-
-<section class="shifts-analytics">
-    <article class="panel shift-chart-panel">
+<section class="dashboard-stack dashboard-priority-stack">
+    <article class="panel portal-panel module-workspace-panel">
         <div class="panel-header">
-            <h3>Weekly Hours Chart</h3>
-            <span class="badge">{{ week_window_label }}</span>
+            <div>
+                <h3>Rota Workspace</h3>
+                <p class="panel-subtitle">Use one consistent rota board for upcoming coverage, weekly load, and the full shift list.</p>
+            </div>
         </div>
-        <div class="shift-chart-grid" aria-label="Weekly shift hours">
-            {% for point in weekly_chart %}
-            <div class="shift-chart-column">
+
+        <div class="dashboard-accordion-group" data-dashboard-accordion-group="shifts-workspace">
+            <article class="dashboard-accordion-card is-open" data-dashboard-accordion-item data-dashboard-accordion-key="upcoming" data-dashboard-accordion-default-open="true">
                 <button
                     type="button"
-                    class="shift-chart-bar{% if peak_day and point.full_date == peak_day.full_date %} active{% endif %}"
-                    data-shift-day="{{ point.label }}"
-                    data-shift-date="{{ point.full_date }}"
-                    data-shift-hours="{{ point.pretty_hours }}"
-                    aria-label="{{ point.full_date }} {{ point.pretty_hours }}"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="true"
+                    aria-controls="shifts-section-upcoming"
                 >
-                    <span class="shift-chart-fill" style="height: {{ point.height }}%"></span>
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">Next coverage</p>
+                        <span class="dashboard-accordion-label">Upcoming queue</span>
+                        <strong>{% if is_management %}Upcoming coverage{% else %}My next shifts{% endif %}</strong>
+                        <small>Keep the next live service windows visible first, then open the wider rota board only when you need to inspect more dates.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ upcoming_shift_count }}</strong>
+                            <small>Upcoming</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ hours_this_week|floatformat:2 }}h</strong>
+                            <small>This week</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ total_shifts }}</strong>
+                            <small>Visible</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
                 </button>
-                <strong>{{ point.label }}</strong>
-                <small>{{ point.hours|floatformat:2 }}h</small>
-            </div>
-            {% endfor %}
+                <div class="dashboard-accordion-body" id="shifts-section-upcoming" data-dashboard-accordion-body>
+                    <div class="dashboard-accordion-content">
+                        {% if priority_shifts %}
+                        <ul class="dashboard-record-list">
+                            {% for shift in priority_shifts %}
+                            <li class="dashboard-record-row dashboard-record-row-actionable">
+                                <div class="dashboard-record-copy">
+                                    <strong>
+                                        {% if is_management %}{{ shift.staff.username }}{% else %}{{ shift.shift_date|date:"D j M" }}{% endif %}
+                                    </strong>
+                                    <small>{{ shift.shift_date|date:"D j M Y" }} · {{ shift.start_time|time:"H:i" }} - {{ shift.end_time|time:"H:i" }}</small>
+                                    <span class="dashboard-record-note">{{ shift.notes|default:"No shift note recorded." }}</span>
+                                </div>
+                                <div class="dashboard-record-actions">
+                                    {% if shift.shift_date == today %}
+                                    <span class="metric-state metric-state-warn">Today</span>
+                                    {% elif shift.shift_date < today %}
+                                    <span class="metric-state metric-state-neutral">Past</span>
+                                    {% else %}
+                                    <span class="metric-state metric-state-ok">Upcoming</span>
+                                    {% endif %}
+                                    {% if is_management %}
+                                    <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit shift</a>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="empty-state">No shifts are showing in the current rota view.</p>
+                        {% endif %}
+                        <div class="metric-actions dashboard-section-actions">
+                            <a class="table-action metric-action-link" href="{% url 'shifts:list' %}?range=upcoming">Open upcoming</a>
+                            <a class="table-action metric-action-link" href="{% url 'shifts:list' %}?range=this_week">Open this week</a>
+                            {% if is_management %}
+                            <a class="table-action metric-action-link" href="{% url 'shifts:add' %}">Schedule shift</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="board">
+                <button
+                    type="button"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="shifts-section-board"
+                >
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">Live board</p>
+                        <span class="dashboard-accordion-label">Rota queue</span>
+                        <strong>{% if is_management %}Team shift planner{% else %}My shift board{% endif %}</strong>
+                        <small>Filter by range and, for management, by staff, while keeping the full rota list inside the same board.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ total_shifts }}</strong>
+                            <small>Visible</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ hours_this_month|floatformat:2 }}h</strong>
+                            <small>This month</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ selected_range_label|default:"Upcoming" }}</strong>
+                            <small>Range</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="dashboard-accordion-body" id="shifts-section-board" data-dashboard-accordion-body hidden>
+                    <div class="dashboard-accordion-content module-board-shell">
+                        <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+                            <div class="filter-preset-row">
+                                {% for preset in filter_presets %}
+                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+                                {% endfor %}
+                            </div>
+                            <div class="filter-summary-bar">
+                                <div class="filter-chip-row">
+                                    {% if filters_active %}
+                                    <span class="panel-header-meta">{{ active_filter_count }} active</span>
+                                    {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
+                                    {% if selected_staff_label %}<span class="filter-chip">{{ selected_staff_label }}</span>{% endif %}
+                                    {% if selected_range_label %}<span class="filter-chip">{{ selected_range_label }}</span>{% endif %}
+                                    {% else %}
+                                    <span class="filter-chip filter-chip-muted">Upcoming shifts in view</span>
+                                    {% endif %}
+                                </div>
+                                <button
+                                    class="table-action filter-toggle-btn"
+                                    type="button"
+                                    data-filter-toggle
+                                    aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+                                >
+                                    Filters
+                                </button>
+                            </div>
+
+                            <form method="get" class="stock-filter-form" data-filter-form>
+                                {% if is_management %}
+                                <div class="filter-field">
+                                    <label for="staff">Staff</label>
+                                    <select id="staff" name="staff">
+                                        <option value="">All Staff</option>
+                                        {% for team_member in team_members %}
+                                        <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endif %}
+
+                                <div class="filter-field">
+                                    <label for="range">Range</label>
+                                    <select id="range" name="range">
+                                        {% for value, label in range_choices %}
+                                        <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <button class="action-btn" type="submit">Apply</button>
+                                <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>
+                            </form>
+                        </div>
+
+                        {% if shifts %}
+                        <div class="report-table-wrap">
+                            <table class="shifts-table js-sortable data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Timeline</th>
+                                        {% if is_management %}<th>Staff</th>{% endif %}
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th>Break</th>
+                                        <th>Hours</th>
+                                        <th>Notes</th>
+                                        <th data-sort="off">Review</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for shift in shifts %}
+                                    <tr class="shift-row{% if shift.shift_date == today %} shift-row-today{% elif shift.shift_date < today %} shift-row-past{% endif %}">
+                                        <td>{{ shift.shift_date|date:"D, j M Y" }}</td>
+                                        <td>
+                                            {% if shift.shift_date == today %}
+                                            <span class="shift-timeline-pill shift-timeline-today">Today</span>
+                                            {% elif shift.shift_date < today %}
+                                            <span class="shift-timeline-pill shift-timeline-past">Past</span>
+                                            {% else %}
+                                            <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
+                                            {% endif %}
+                                        </td>
+                                        {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
+                                        <td>{{ shift.start_time|time:"H:i" }}</td>
+                                        <td>{{ shift.end_time|time:"H:i" }}</td>
+                                        <td>{{ shift.break_minutes }} min</td>
+                                        <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
+                                        <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
+                                        <td class="stock-actions-cell mobile-action-cell">
+                                            <button
+                                                class="table-action"
+                                                type="button"
+                                                data-detail-trigger
+                                                data-detail-template="shift-detail-{{ shift.pk }}"
+                                                data-detail-kicker="Shift"
+                                                data-detail-title="{{ shift.shift_date|date:'D j M Y' }}"
+                                                data-detail-meta="{% if is_management %}{{ shift.staff.username }} · {% endif %}{{ shift.start_time|time:'H:i' }} - {{ shift.end_time|time:'H:i' }}"
+                                            >
+                                                Review
+                                            </button>
+                                            <template id="shift-detail-{{ shift.pk }}">
+                                                <section class="detail-drawer-card">
+                                                    <div class="detail-drawer-card-head">
+                                                        <p class="detail-drawer-label">Shift timeline</p>
+                                                        {% if shift.shift_date == today %}
+                                                        <span class="shift-timeline-pill shift-timeline-today">Today</span>
+                                                        {% elif shift.shift_date < today %}
+                                                        <span class="shift-timeline-pill shift-timeline-past">Past</span>
+                                                        {% else %}
+                                                        <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="detail-drawer-grid">
+                                                        {% if is_management %}
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Staff</strong>
+                                                            <span>{{ shift.staff.username }}</span>
+                                                        </div>
+                                                        {% endif %}
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Start</strong>
+                                                            <span>{{ shift.start_time|time:"H:i" }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>End</strong>
+                                                            <span>{{ shift.end_time|time:"H:i" }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Break</strong>
+                                                            <span>{{ shift.break_minutes }} min</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Hours</strong>
+                                                            <span>{{ shift.duration_hours|floatformat:2 }}h</span>
+                                                        </div>
+                                                    </div>
+                                                    <p class="detail-drawer-copy">{{ shift.notes|default:"No notes recorded for this shift." }}</p>
+                                                </section>
+                                                {% if is_management %}
+                                                <section class="detail-drawer-section">
+                                                    <p class="detail-drawer-label">Actions</p>
+                                                    <div class="detail-drawer-actions">
+                                                        <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit shift</a>
+                                                        <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete shift</a>
+                                                    </div>
+                                                </section>
+                                                {% endif %}
+                                            </template>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
+                        {% else %}
+                        <p class="empty-state">No shifts found for this view.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+
+            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="weekly-load">
+                <button
+                    type="button"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="false"
+                    aria-controls="shifts-section-weekly-load"
+                >
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">Weekly load</p>
+                        <span class="dashboard-accordion-label">Hours profile</span>
+                        <strong>Weekly load view</strong>
+                        <small>Inspect the current week’s labor pattern without cluttering the main rota queue.</small>
+                    </div>
+                    <div class="dashboard-accordion-metrics">
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ week_window_label }}</strong>
+                            <small>Window</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{% if peak_day %}{{ peak_day.pretty_hours }}{% else %}0h{% endif %}</strong>
+                            <small>Peak day</small>
+                        </span>
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ days_with_cover }}</strong>
+                            <small>Days covered</small>
+                        </span>
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="dashboard-accordion-body" id="shifts-section-weekly-load" data-dashboard-accordion-body hidden>
+                    <div class="dashboard-accordion-content">
+                        <section class="shifts-analytics module-chart-shell">
+                            <article class="panel shift-chart-panel">
+                                <div class="panel-header">
+                                    <h3>Weekly hours chart</h3>
+                                    <span class="badge">{{ week_window_label }}</span>
+                                </div>
+                                <div class="shift-chart-grid" aria-label="Weekly shift hours">
+                                    {% for point in weekly_chart %}
+                                    <div class="shift-chart-column">
+                                        <button
+                                            type="button"
+                                            class="shift-chart-bar{% if peak_day and point.full_date == peak_day.full_date %} active{% endif %}"
+                                            data-shift-day="{{ point.label }}"
+                                            data-shift-date="{{ point.full_date }}"
+                                            data-shift-hours="{{ point.pretty_hours }}"
+                                            aria-label="{{ point.full_date }} {{ point.pretty_hours }}"
+                                        >
+                                            <span class="shift-chart-fill" style="height: {{ point.height }}%"></span>
+                                        </button>
+                                        <strong>{{ point.label }}</strong>
+                                        <small>{{ point.hours|floatformat:2 }}h</small>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </article>
+
+                            <article class="panel shift-chart-insight" id="shiftChartInsight">
+                                <p class="kicker">Focused Day</p>
+                                {% if peak_day %}
+                                <h3 id="shiftChartDay">{{ peak_day.label }}</h3>
+                                <p class="shift-chart-hours" id="shiftChartHours">{{ peak_day.pretty_hours }}</p>
+                                <p class="shift-chart-date" id="shiftChartDate">{{ peak_day.full_date }}</p>
+                                <span class="metric-note">Tap or click a bar to inspect that day.</span>
+                                {% else %}
+                                <h3 id="shiftChartDay">-</h3>
+                                <p class="shift-chart-hours" id="shiftChartHours">0h</p>
+                                <p class="shift-chart-date" id="shiftChartDate">No shifts this week</p>
+                                {% endif %}
+                            </article>
+                        </section>
+                    </div>
+                </div>
+            </article>
         </div>
     </article>
 
-    <article class="panel shift-chart-insight" id="shiftChartInsight">
-        <p class="kicker">Focused Day</p>
-        {% if peak_day %}
-        <h3 id="shiftChartDay">{{ peak_day.label }}</h3>
-        <p class="shift-chart-hours" id="shiftChartHours">{{ peak_day.pretty_hours }}</p>
-        <p class="shift-chart-date" id="shiftChartDate">{{ peak_day.full_date }}</p>
-        <span class="metric-note">Tap or click a bar to inspect that day.</span>
-        {% else %}
-        <h3 id="shiftChartDay">-</h3>
-        <p class="shift-chart-hours" id="shiftChartHours">0h</p>
-        <p class="shift-chart-date" id="shiftChartDate">No shifts this week</p>
-        {% endif %}
-    </article>
-</section>
-
-<section class="panel">
-    <div class="panel-header">
-        <div>
-            {% if is_management %}
-            <h3>Team Shift Planner</h3>
-            {% else %}
-            <h3>My Shift Hours</h3>
-            {% endif %}
-            <p class="panel-subtitle">Filter by staff and date range to inspect workload.</p>
-        </div>
-    </div>
-
-    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
-        <div class="filter-preset-row">
-            {% for preset in filter_presets %}
-            <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
-            {% endfor %}
-        </div>
-        <div class="filter-summary-bar">
-            <div class="filter-chip-row">
-                {% if filters_active %}
-                <span class="panel-header-meta">{{ active_filter_count }} active</span>
-                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
-                {% if selected_staff_label %}<span class="filter-chip">{{ selected_staff_label }}</span>{% endif %}
-                {% if selected_range_label %}<span class="filter-chip">{{ selected_range_label }}</span>{% endif %}
-                {% else %}
-                <span class="filter-chip filter-chip-muted">Upcoming shifts in view</span>
-                {% endif %}
+    <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="shifts-snapshot-panel" data-panel-default-collapsed="true">
+        <div class="panel-header">
+            <div>
+                <h3>Rota Snapshot</h3>
+                <p class="panel-subtitle">Open the broader hours and coverage metrics only when you need the bigger rota picture.</p>
             </div>
             <button
-                class="table-action filter-toggle-btn"
                 type="button"
-                data-filter-toggle
-                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
+                class="table-action panel-collapse-toggle"
+                data-panel-toggle
+                aria-expanded="false"
+                aria-controls="shifts-snapshot-panel"
             >
-                Filters
+                Expand
             </button>
         </div>
-
-        <form method="get" class="stock-filter-form" data-filter-form>
-            {% if is_management %}
-            <div class="filter-field">
-                <label for="staff">Staff</label>
-                <select id="staff" name="staff">
-                    <option value="">All Staff</option>
-                    {% for team_member in team_members %}
-                    <option value="{{ team_member.id }}" {% if selected_staff == team_member.id|stringformat:'s' %}selected{% endif %}>{{ team_member.username }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endif %}
-
-            <div class="filter-field">
-                <label for="range">Range</label>
-                <select id="range" name="range">
-                    {% for value, label in range_choices %}
-                    <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <button class="action-btn" type="submit">Apply</button>
-            <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>
-        </form>
-    </div>
-
-    {% if shifts %}
-    <div class="report-table-wrap">
-        <table class="shifts-table js-sortable data-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Timeline</th>
-                    {% if is_management %}<th>Staff</th>{% endif %}
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Break</th>
-                    <th>Hours</th>
-                    <th>Notes</th>
-                    <th data-sort="off">Review</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for shift in shifts %}
-                <tr class="shift-row{% if shift.shift_date == today %} shift-row-today{% elif shift.shift_date < today %} shift-row-past{% endif %}">
-                    <td>{{ shift.shift_date|date:"D, j M Y" }}</td>
-                    <td>
-                        {% if shift.shift_date == today %}
-                        <span class="shift-timeline-pill shift-timeline-today">Today</span>
-                        {% elif shift.shift_date < today %}
-                        <span class="shift-timeline-pill shift-timeline-past">Past</span>
-                        {% else %}
-                        <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
-                        {% endif %}
-                    </td>
-                    {% if is_management %}<td>{{ shift.staff.username }}</td>{% endif %}
-                    <td>{{ shift.start_time|time:"H:i" }}</td>
-                    <td>{{ shift.end_time|time:"H:i" }}</td>
-                    <td>{{ shift.break_minutes }} min</td>
-                    <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
-                    <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
-                    <td class="stock-actions-cell mobile-action-cell">
-                        <button
-                            class="table-action"
-                            type="button"
-                            data-detail-trigger
-                            data-detail-template="shift-detail-{{ shift.pk }}"
-                            data-detail-kicker="Shift"
-                            data-detail-title="{{ shift.shift_date|date:'D j M Y' }}"
-                            data-detail-meta="{% if is_management %}{{ shift.staff.username }} · {% endif %}{{ shift.start_time|time:'H:i' }} - {{ shift.end_time|time:'H:i' }}"
-                        >
-                            Review
-                        </button>
-                        <template id="shift-detail-{{ shift.pk }}">
-                            <section class="detail-drawer-card">
-                                <div class="detail-drawer-card-head">
-                                    <p class="detail-drawer-label">Shift timeline</p>
-                                    {% if shift.shift_date == today %}
-                                    <span class="shift-timeline-pill shift-timeline-today">Today</span>
-                                    {% elif shift.shift_date < today %}
-                                    <span class="shift-timeline-pill shift-timeline-past">Past</span>
-                                    {% else %}
-                                    <span class="shift-timeline-pill shift-timeline-upcoming">Upcoming</span>
-                                    {% endif %}
-                                </div>
-                                <div class="detail-drawer-grid">
-                                    {% if is_management %}
-                                    <div class="detail-drawer-row">
-                                        <strong>Staff</strong>
-                                        <span>{{ shift.staff.username }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="detail-drawer-row">
-                                        <strong>Start</strong>
-                                        <span>{{ shift.start_time|time:"H:i" }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>End</strong>
-                                        <span>{{ shift.end_time|time:"H:i" }}</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Break</strong>
-                                        <span>{{ shift.break_minutes }} min</span>
-                                    </div>
-                                    <div class="detail-drawer-row">
-                                        <strong>Hours</strong>
-                                        <span>{{ shift.duration_hours|floatformat:2 }}h</span>
-                                    </div>
-                                </div>
-                                <p class="detail-drawer-copy">{{ shift.notes|default:"No notes recorded for this shift." }}</p>
-                            </section>
-                            {% if is_management %}
-                            <section class="detail-drawer-section">
-                                <p class="detail-drawer-label">Actions</p>
-                                <div class="detail-drawer-actions">
-                                    <a class="table-action" href="{% url 'shifts:edit' shift.pk %}">Edit shift</a>
-                                    <a class="table-action table-action-danger" href="{% url 'shifts:delete' shift.pk %}">Delete shift</a>
-                                </div>
-                            </section>
-                            {% endif %}
-                        </template>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% include 'partials/pagination.html' with page_obj=page_obj pagination_query=pagination_query %}
-    {% else %}
-    <p class="empty-state">No shifts found for this view.</p>
-    {% endif %}
+        <div class="dashboard-collapsible-body" id="shifts-snapshot-panel" data-panel-body hidden>
+            {% include 'partials/modules/snapshot_grid.html' %}
+        </div>
+    </article>
 </section>
+</div>
 {% endblock %}

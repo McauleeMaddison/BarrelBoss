@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.scoping import current_venue_or_404, venue_users
@@ -11,6 +12,7 @@ from apps.accounts.permissions import active_venue_required, is_management, mana
 from apps.accounts.push import send_shift_push_notification
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
+from taptrack.module_ui import build_module_link, build_module_panel, build_module_snapshot
 from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import ShiftForm
@@ -111,9 +113,121 @@ def list_shifts(request):
         .order_by("shift_date", "start_time")
         .first()
     )
+    priority_shifts = list(ordered_shifts_qs[:5])
+    total_shifts = visible_qs.count()
+    hours_this_week = _sum_hours(
+        visible_qs.filter(shift_date__range=(week_start, week_end)).order_by("shift_date")
+    )
+    hours_this_month = _sum_hours(
+        visible_qs.filter(shift_date__range=(month_start, month_end)).order_by("shift_date")
+    )
+    upcoming_shift_count = visible_qs.filter(shift_date__gte=today).count()
+    days_with_cover = sum(1 for point in weekly_chart if point["hours"] > 0)
+
+    if management_view and upcoming_shift_count == 0:
+        primary_title = "Schedule the next shift"
+        primary_copy = (
+            "No upcoming coverage is showing, so the rota should be extended before service planning goes stale."
+        )
+        primary_url = reverse("shifts:add")
+        primary_label = "Schedule shift"
+    elif selected_range != "upcoming":
+        primary_title = "Return to upcoming coverage"
+        primary_copy = (
+            "Use the live upcoming queue as the main working view, then widen the range only when you need history."
+        )
+        primary_url = f"{reverse('shifts:list')}?range=upcoming"
+        primary_label = "Open upcoming shifts"
+    elif management_view:
+        primary_title = "Keep the rota moving"
+        primary_copy = (
+            "Stay inside one clean schedule board, then adjust people and hours only where coverage actually needs it."
+        )
+        primary_url = reverse("shifts:add")
+        primary_label = "Schedule shift"
+    else:
+        primary_title = "Review your next shifts"
+        primary_copy = (
+            "Stay focused on your upcoming service windows and only open wider history when you need to check worked hours."
+        )
+        primary_url = f"{reverse('shifts:list')}?range=upcoming"
+        primary_label = "Open upcoming shifts"
+
+    module_panel = build_module_panel(
+        hero_class="shifts-hero",
+        kicker="Rota Management" if management_view else "My Rota",
+        badge="Team Planner" if management_view else "Schedule View",
+        title=(
+            "Keep coverage, hours, and the next live shift easy to scan."
+            if management_view
+            else "See your next shifts and this week's hours without digging through the rota."
+        ),
+        copy=(
+            "Use one rota board for immediate coverage, weekly load, and the full shift list so the team is not bouncing between duplicate views."
+            if management_view
+            else "Use one clean schedule board for your next shifts, weekly hours, and the full rota without extra clutter."
+        ),
+        primary_title=primary_title,
+        primary_copy=primary_copy,
+        primary_url=primary_url,
+        primary_label=primary_label,
+        utility_links=[
+            *([build_module_link("Schedule shift", reverse("shifts:add"))] if management_view else []),
+            build_module_link("This week", f"{reverse('shifts:list')}?range=this_week"),
+            build_module_link("All shifts", f"{reverse('shifts:list')}?range=all"),
+        ],
+        toolbar_notes=[
+            week_start.strftime("%d %b") + " - " + week_end.strftime("%d %b"),
+            f"{upcoming_shift_count} upcoming",
+            f"{total_shifts} visible",
+        ],
+    )
+    module_snapshots = [
+        build_module_snapshot(
+            label="Hours this week",
+            state="Current week",
+            tone="ok",
+            value=f"{hours_this_week:.2f}h",
+            copy="Scheduled hours inside the current Monday to Sunday operating window.",
+            action_label="Open week",
+            action_url=f"{reverse('shifts:list')}?range=this_week",
+        ),
+        build_module_snapshot(
+            label="Hours this month",
+            state="Monthly load",
+            tone="neutral",
+            value=f"{hours_this_month:.2f}h",
+            copy="Booked hours across the current calendar month in the visible rota scope.",
+            action_label="Open all shifts",
+            action_url=f"{reverse('shifts:list')}?range=all",
+        ),
+        build_module_snapshot(
+            label="Upcoming shifts",
+            state="Forward view" if upcoming_shift_count else "Clear",
+            tone="warn" if upcoming_shift_count else "ok",
+            value=upcoming_shift_count,
+            copy="Future shifts from today onward, which is the fastest read on remaining rota pressure.",
+            action_label="Open upcoming",
+            action_url=f"{reverse('shifts:list')}?range=upcoming",
+        ),
+        build_module_snapshot(
+            label="Days with cover",
+            state=peak_day["label"] if peak_day else "No peak",
+            tone="neutral",
+            value=days_with_cover,
+            copy=(
+                f"Peak day {peak_day['full_date']} at {peak_day['pretty_hours']}."
+                if peak_day
+                else "No scheduled hours are showing in the current week window."
+            ),
+            action_label="View week load",
+            action_url=f"{reverse('shifts:list')}?range=this_week",
+        ),
+    ]
 
     context = {
         "shifts": shifts,
+        "priority_shifts": priority_shifts,
         "page_obj": page_obj,
         "is_paginated": page_obj.has_other_pages(),
         "pagination_query": build_query_string(request),
@@ -121,19 +235,16 @@ def list_shifts(request):
         "selected_range": selected_range,
         "range_choices": range_choices,
         "team_members": venue_users(request).order_by("username"),
-        "total_shifts": visible_qs.count(),
-        "hours_this_week": _sum_hours(
-            visible_qs.filter(shift_date__range=(week_start, week_end)).order_by("shift_date")
-        ),
-        "hours_this_month": _sum_hours(
-            visible_qs.filter(shift_date__range=(month_start, month_end)).order_by("shift_date")
-        ),
+        "total_shifts": total_shifts,
+        "hours_this_week": hours_this_week,
+        "hours_this_month": hours_this_month,
         "weekly_chart": weekly_chart,
         "peak_day": peak_day,
         "week_window_label": f"{week_start:%d %b} - {week_end:%d %b}",
-        "upcoming_shift_count": visible_qs.filter(shift_date__gte=today).count(),
+        "upcoming_shift_count": upcoming_shift_count,
         "today": today,
         "next_shift": next_shift,
+        "days_with_cover": days_with_cover,
         "filters_active": bool(
             (management_view and selected_staff)
             or selected_range != "upcoming"
@@ -232,6 +343,8 @@ def list_shifts(request):
             }
         )
     context["attention_items"] = attention_items
+    context["module_panel"] = module_panel
+    context["module_snapshots"] = module_snapshots
     return render(request, "shifts/list.html", context)
 
 
