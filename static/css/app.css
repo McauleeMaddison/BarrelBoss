@@ -99,6 +99,18 @@ body {
     }
 }
 
+@keyframes dashboard-bar-rise {
+    0% {
+        opacity: 0.2;
+        transform: scaleY(0.08);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
 a {
     color: inherit;
 }
@@ -1340,6 +1352,19 @@ body.nav-open .sidebar {
     letter-spacing: 0.08em;
 }
 
+.status-chip-time {
+    color: var(--text);
+    border-color: rgba(214, 167, 86, 0.18);
+    background: rgba(255, 255, 255, 0.055);
+}
+
+.topbar-mode-chip {
+    color: var(--text);
+    border-color: rgba(214, 167, 86, 0.22);
+    background: linear-gradient(135deg, rgba(240, 199, 119, 0.14), rgba(255, 255, 255, 0.04));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 .dashboard-hero-grid,
 .hero-signal-bar,
 .overview-board {
@@ -1858,7 +1883,41 @@ body.nav-open .sidebar {
 }
 
 .panel-collapse-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     white-space: nowrap;
+    padding-right: 2.2rem;
+    transition:
+        transform 0.24s var(--dashboard-motion),
+        border-color 0.24s var(--dashboard-motion),
+        background 0.24s var(--dashboard-motion),
+        box-shadow 0.24s var(--dashboard-motion),
+        color 0.24s var(--dashboard-motion);
+}
+
+.panel-collapse-toggle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0.88rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: translateY(-62%) rotate(45deg);
+    transition: transform 0.24s var(--dashboard-motion);
+}
+
+.panel-collapse-toggle[aria-expanded="true"] {
+    border-color: rgba(240, 199, 119, 0.52);
+    background: linear-gradient(135deg, rgba(240, 199, 119, 0.18), rgba(185, 133, 52, 0.14));
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.panel-collapse-toggle[aria-expanded="true"]::after {
+    transform: translateY(-38%) rotate(-135deg);
 }
 
 .overview-board {
@@ -2414,6 +2473,8 @@ body.nav-open .sidebar {
 
 .throughput-bar-wrap,
 .shift-chart-bar {
+    position: relative;
+    overflow: hidden;
     min-height: 130px;
     display: flex;
     align-items: flex-end;
@@ -2421,6 +2482,16 @@ body.nav-open .sidebar {
     border-radius: 1rem;
     border: 1px solid var(--panel-border);
     background: rgba(255, 255, 255, 0.035);
+}
+
+.throughput-bar-wrap::before,
+.shift-chart-bar::before,
+.metric-chart::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 46%);
 }
 
 .throughput-column {
@@ -2452,6 +2523,8 @@ body.nav-open .sidebar {
     min-height: 4px;
     border-radius: 999px 999px 0.35rem 0.35rem;
     background: linear-gradient(180deg, #f0c777, #a06b24);
+    transform-origin: bottom;
+    animation: dashboard-bar-rise 0.66s var(--dashboard-motion) both;
 }
 
 .throughput-bar-task {
@@ -3675,6 +3748,9 @@ body.command-open .mobile-command-sheet {
     .metric-card,
     .attention-card,
     .hero-signal,
+    .throughput-bar,
+    .shift-chart-fill,
+    .metric-chart-bar,
     .dashboard-hero-card,
     .staff-summary-card,
     .staff-pulse-card,
@@ -3793,6 +3869,11 @@ html[data-theme="light"] .nav-link {
 html[data-theme="light"] .sidebar-venue-switcher,
 html[data-theme="light"] .portal-badge {
     background: rgba(255, 255, 255, 0.78);
+}
+
+html[data-theme="light"] .status-chip-time,
+html[data-theme="light"] .topbar-mode-chip {
+    background: rgba(255, 255, 255, 0.82);
 }
 
 html[data-theme="light"] .login-value-card,

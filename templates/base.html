@@ -27,11 +27,8 @@
             document.documentElement.style.colorScheme = theme;
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready6">
-    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}?v=20260714-public-ready6">
-    <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}?v=20260714-public-ready6">
-    <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
-    <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready7">
+    {% include 'partials/head/branding_links.html' %}
 </head>
 <body class="app-shell {% block body_class %}{% endblock %}">
 <button class="nav-overlay" type="button" aria-label="Close navigation" aria-hidden="true"></button>
@@ -53,7 +50,7 @@
                     >
                         <img
                             class="menu-btn-logo"
-                            src="{% static 'images/barrelboss-logo.png' %}"
+                            src="{% static 'images/branding/barrelboss-logo.png' %}"
                             alt="Open navigation"
                         >
                         <span class="menu-btn-label">Menu</span>
@@ -120,9 +117,9 @@
 </div>
 {% include 'partials/detail_drawer.html' %}
 <script src="{% static 'js/pwa.js' %}" defer></script>
-<script src="{% static 'js/core/app-shell.js' %}?v=20260714-public-ready6" defer></script>
-<script src="{% static 'js/modules/dashboard-tools.js' %}?v=20260714-public-ready6" defer></script>
-<script src="{% static 'js/modules/screen-tools.js' %}?v=20260714-public-ready6" defer></script>
-<script src="{% static 'js/modules/push-settings.js' %}?v=20260714-public-ready6" defer></script>
+<script src="{% static 'js/core/app-shell.js' %}?v=20260714-public-ready7" defer></script>
+<script src="{% static 'js/modules/dashboard-tools.js' %}?v=20260714-public-ready7" defer></script>
+<script src="{% static 'js/modules/screen-tools.js' %}?v=20260714-public-ready7" defer></script>
+<script src="{% static 'js/modules/push-settings.js' %}?v=20260714-public-ready7" defer></script>
 </body>
 </html>

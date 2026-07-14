@@ -70,8 +70,8 @@ def _build_shift_push_payload(shift, actor_name, event_type):
     return {
         "title": "BarrelBoss Shift Update",
         "body": body,
-        "icon": "/static/images/pwa-192.png",
-        "badge": "/static/images/pwa-192.png",
+        "icon": "/static/images/branding/pwa-192.png",
+        "badge": "/static/images/branding/pwa-192.png",
         "url": reverse("shifts:list"),
         "tag": f"shift-{shift.pk}",
         "renotify": True,

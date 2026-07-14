@@ -1,4 +1,4 @@
-const CACHE_NAME = "barrelboss-shell-v13";
+const CACHE_NAME = "barrelboss-shell-v14";
 const APP_SHELL = [
     "/static/css/app.css",
     "/static/css/layouts.css",
@@ -7,10 +7,10 @@ const APP_SHELL = [
     "/static/js/modules/screen-tools.js",
     "/static/js/modules/push-settings.js",
     "/static/js/pwa.js",
-    "/static/images/favicon.svg",
-    "/static/images/barrelboss-logo.png",
-    "/static/images/pwa-192.png",
-    "/static/images/pwa-512.png"
+    "/static/images/branding/favicon.svg",
+    "/static/images/branding/barrelboss-logo.png",
+    "/static/images/branding/pwa-192.png",
+    "/static/images/branding/pwa-512.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -89,8 +89,8 @@ self.addEventListener("push", (event) => {
     const title = payload.title || "BarrelBoss";
     const options = {
         body: payload.body || "You have a new update.",
-        icon: payload.icon || "/static/images/pwa-192.png",
-        badge: payload.badge || "/static/images/pwa-192.png",
+        icon: payload.icon || "/static/images/branding/pwa-192.png",
+        badge: payload.badge || "/static/images/branding/pwa-192.png",
         tag: payload.tag || "barrelboss-update",
         renotify: Boolean(payload.renotify),
         data: {

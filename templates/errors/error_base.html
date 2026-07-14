@@ -24,17 +24,15 @@
         })();
     </script>
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready6">
-    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260714-public-ready6">
-    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}?v=20260714-public-ready6">
-    <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}?v=20260714-public-ready6">
-    <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready7">
+    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260714-public-ready7">
+    {% include 'partials/head/branding_links.html' %}
 </head>
 <body class="login-page">
     <div class="shell-bg"></div>
     <section class="login-shell error-shell">
         <div class="error-card panel">
-            <img class="login-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
+            <img class="login-logo" src="{% static 'images/branding/barrelboss-logo.png' %}" alt="BarrelBoss logo">
             <p class="kicker">BarrelBoss</p>
             <h1>{% block heading %}Something went wrong{% endblock %}</h1>
             <p>{% block message %}Please try again or return to the login page.{% endblock %}</p>
