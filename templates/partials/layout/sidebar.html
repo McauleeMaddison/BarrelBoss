@@ -93,18 +93,6 @@
             {% endfor %}
         </div>
 
-        <div class="nav-section nav-section-quick-actions">
-            <p class="nav-section-title">Quick actions</p>
-            <div class="sidebar-shortcut-grid">
-                {% for action in workspace_quick_actions %}
-                <a class="sidebar-shortcut{% if action.emphasis == 'primary' %} sidebar-shortcut-primary{% endif %}" href="{{ action.url }}">
-                    <strong>{{ action.label }}</strong>
-                    <small>{{ action.copy }}</small>
-                </a>
-                {% endfor %}
-            </div>
-        </div>
-
         <div class="nav-section nav-section-management">
             <p class="nav-section-title">{% if is_management %}Extended tools{% else %}More tools{% endif %}</p>
             {% for link in workspace_secondary_links %}

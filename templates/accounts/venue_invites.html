@@ -4,10 +4,11 @@
 {% block page_title %}Venue Invites{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <div class="panel-header">
+<section class="panel stock-form-panel detail-panel">
+    <div class="panel-header detail-panel-head">
         <div>
-            <h3>Invite Staff to {{ active_venue.name }}</h3>
+            <p class="detail-kicker">Venue Access</p>
+            <h3 class="detail-title">Invite Staff to {{ active_venue.name }}</h3>
             <p class="panel-subtitle">Create a shareable invite link for a manager or staff member in this venue.</p>
         </div>
         <a class="table-action" href="{% url 'staff' %}">Back to Staff</a>

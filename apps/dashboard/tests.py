@@ -84,7 +84,7 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Today")
-        self.assertContains(response, "Quick tools")
+        self.assertContains(response, "Workspace")
         self.assertContains(response, "View stock")
 
     def test_staff_cannot_access_management_portal(self):

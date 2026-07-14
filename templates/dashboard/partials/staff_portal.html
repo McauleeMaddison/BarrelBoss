@@ -53,29 +53,6 @@
     </div>
 </section>
 
-<section class="staff-pulse-grid">
-    <article class="staff-pulse-card">
-        <span class="staff-pulse-label">Hours this week</span>
-        <strong>{{ staff_snapshot.hours_this_week }}h</strong>
-        <p>Keep your planned weekly hours visible before the rota shifts again.</p>
-    </article>
-    <article class="staff-pulse-card">
-        <span class="staff-pulse-label">Due today</span>
-        <strong>{{ staff_snapshot.tasks_due_today }}</strong>
-        <p>These are the tasks that should be cleared before your shift handover.</p>
-    </article>
-    <article class="staff-pulse-card">
-        <span class="staff-pulse-label">Overdue</span>
-        <strong>{{ staff_snapshot.tasks_overdue }}</strong>
-        <p>Any overdue item needs attention before service gets busier.</p>
-    </article>
-    <article class="staff-pulse-card">
-        <span class="staff-pulse-label">Next shift note</span>
-        <strong>{{ staff_snapshot.next_shift_note }}</strong>
-        <p>Double-check your next start time and task queue before you travel in.</p>
-    </article>
-</section>
-
 <section class="staff-summary-grid">
     {% for card in metrics %}
     <article class="staff-summary-card">
@@ -93,67 +70,95 @@
     {% endfor %}
 </section>
 
-<section class="panel staff-throughput-panel">
-    <div class="panel-header">
-        <div>
-            <h3>Your week rhythm</h3>
-            <p class="panel-subtitle">Relative rota load against your own completed tasks over the last seven days.</p>
-        </div>
-        <span class="badge">Personal view</span>
-    </div>
-    <div class="throughput-grid" aria-label="Your recent week rhythm">
-        {% for point in throughput %}
-        <div class="throughput-column">
-            <div class="throughput-bar-wrap">
-                <div class="throughput-stack">
-                    <span class="throughput-bar throughput-bar-service" style="height: {{ point.value }}%"></span>
-                    <span class="throughput-bar throughput-bar-task" style="height: {{ point.task_value }}%"></span>
-                </div>
-            </div>
-            <strong>{{ point.label }}</strong>
-            <small>Rota and tasks</small>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-
-<section class="staff-workspace-grid">
-    <article class="panel portal-panel dashboard-collapsible" data-panel-storage-key="staff-quick-tools">
+<section class="overview-board">
+    <article class="panel portal-panel dashboard-collapsible" data-panel-storage-key="staff-workspace-board">
         <div class="panel-header">
             <div>
-                <h3>Quick tools</h3>
-                <p class="panel-subtitle">One clear route for the jobs bar staff do most often.</p>
+                <h3>Workspace</h3>
+                <p class="panel-subtitle">One board for tasks, stock, rota, and handover updates.</p>
             </div>
-            <button
-                type="button"
-                class="table-action panel-collapse-toggle"
-                data-panel-toggle
-                aria-expanded="true"
-                aria-controls="staff-quick-tools"
-            >
-                Collapse
-            </button>
+            <div class="dashboard-panel-actions">
+                <label class="dashboard-panel-select-label">
+                    Section
+                    <select class="dashboard-panel-select" data-dashboard-panel-select>
+                        {% for section in portal_sections %}
+                        <option value="{{ section.slug }}">{{ section.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button
+                    type="button"
+                    class="table-action panel-collapse-toggle"
+                    data-panel-toggle
+                    aria-expanded="true"
+                    aria-controls="staff-workspace-board"
+                >
+                    Collapse
+                </button>
+            </div>
         </div>
-        <div class="dashboard-collapsible-body" id="staff-quick-tools" data-panel-body>
-            <div class="staff-tool-grid">
-                {% for action in quick_actions %}
-                <article class="action-tile staff-tool-card">
-                    <div class="staff-tool-head">
-                        <p class="kicker">{{ action.label }}</p>
-                        <span class="filter-chip">{{ action.stat }}</span>
-                    </div>
-                    <strong>{{ action.title }}</strong>
-                    <span>{{ action.copy }}</span>
-                    {% if action.href %}
-                    <a class="metric-action-link" href="{{ action.href }}">{{ action.action_label }}</a>
-                    {% else %}
-                    <a class="metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
-                        {{ action.action_label }}
-                    </a>
-                    {% endif %}
-                </article>
+        <div class="dashboard-collapsible-body" id="staff-workspace-board" data-panel-body>
+            <div class="dashboard-controls dashboard-section-tabs">
+                {% for section in portal_sections %}
+                <button class="segment-btn{% if forloop.first %} active{% endif %}" type="button" data-dashboard-panel-target="{{ section.slug }}">
+                    {{ section.label }}
+                </button>
                 {% endfor %}
             </div>
+            {% for section in portal_sections %}
+            <div class="dashboard-panel-group dashboard-workspace-group" data-dashboard-panel-group="{{ section.slug }}"{% if not forloop.first %} hidden{% endif %}>
+                <div class="dashboard-workspace-shell">
+                    <div class="dashboard-workspace-main">
+                        <div class="dashboard-workspace-head">
+                            <p class="kicker dashboard-workspace-kicker">{{ section.eyebrow }}</p>
+                            <h4>{{ section.title }}</h4>
+                        </div>
+                        <p class="panel-subtitle">{{ section.copy }}</p>
+                        <div class="dashboard-section-stats">
+                            {% for stat in section.stats %}
+                            <article class="dashboard-section-stat">
+                                <span>{{ stat.label }}</span>
+                                <strong>{{ stat.value }}</strong>
+                            </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="dashboard-workspace-side">
+                        {% if section.rows %}
+                        <ul class="dashboard-record-list">
+                            {% for row in section.rows %}
+                            <li class="dashboard-record-row">
+                                <div class="dashboard-record-copy">
+                                    <strong>{{ row.title }}</strong>
+                                    <small>{{ row.meta }}</small>
+                                    {% if row.note %}
+                                    <span class="dashboard-record-note">{{ row.note }}</span>
+                                    {% endif %}
+                                </div>
+                                <span class="metric-state metric-state-{{ row.tone|default:'neutral' }}">{{ row.badge }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="empty-state">{{ section.empty_state }}</p>
+                        {% endif %}
+                        {% if section.actions %}
+                        <div class="metric-actions">
+                            {% for action in section.actions %}
+                            {% if action.href %}
+                            <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                            {% else %}
+                            <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
+                                {{ action.label }}
+                            </a>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </article>
 

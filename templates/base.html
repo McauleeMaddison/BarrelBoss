@@ -27,7 +27,7 @@
             document.documentElement.style.colorScheme = theme;
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260711-ops-workspace2">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready1">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
@@ -102,8 +102,6 @@
             </div>
         </header>
 
-        {% include 'partials/layout/workspace_bar.html' %}
-
         <div class="page-shell">
             {% if messages %}
                 <div class="messages">
@@ -122,9 +120,9 @@
 </div>
 {% include 'partials/detail_drawer.html' %}
 <script src="{% static 'js/pwa.js' %}" defer></script>
-<script src="{% static 'js/core/app-shell.js' %}?v=20260711-ops-workspace2" defer></script>
-<script src="{% static 'js/modules/dashboard-tools.js' %}?v=20260711-ops-workspace2" defer></script>
-<script src="{% static 'js/modules/screen-tools.js' %}?v=20260711-ops-workspace2" defer></script>
-<script src="{% static 'js/modules/push-settings.js' %}?v=20260711-ops-workspace2" defer></script>
+<script src="{% static 'js/core/app-shell.js' %}?v=20260714-public-ready1" defer></script>
+<script src="{% static 'js/modules/dashboard-tools.js' %}?v=20260714-public-ready1" defer></script>
+<script src="{% static 'js/modules/screen-tools.js' %}?v=20260714-public-ready1" defer></script>
+<script src="{% static 'js/modules/push-settings.js' %}?v=20260714-public-ready1" defer></script>
 </body>
 </html>

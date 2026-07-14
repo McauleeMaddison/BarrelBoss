@@ -23,13 +23,13 @@
     </div>
 
     <div class="mobile-command-grid">
-        {% for action in workspace_quick_actions %}
+        {% for link in mobile_command_links %}
         <a
-            class="mobile-command-link{% if action.emphasis == 'primary' %} mobile-command-link-primary{% endif %}"
-            href="{{ action.url }}"
+            class="mobile-command-link{% if link.active %} mobile-command-link-primary{% endif %}"
+            href="{{ link.url }}"
         >
-            <strong>{{ action.label }}</strong>
-            <small>{{ action.copy }}</small>
+            <strong>{{ link.label }}</strong>
+            <small>{{ link.description }}</small>
         </a>
         {% endfor %}
     </div>

@@ -3,10 +3,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#101927">
+    <script>
+        (() => {
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            let theme = prefersDark ? "dark" : "light";
+
+            try {
+                const stored = window.localStorage.getItem("barrelboss-theme");
+                if (stored === "dark" || stored === "light") {
+                    theme = stored;
+                }
+            } catch (_error) {
+                // Ignore storage errors during initial paint.
+            }
+
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.style.colorScheme = theme;
+        })();
+    </script>
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260709-mobile-nav2">
-    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260709-structure1">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready1">
+    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260714-public-ready1">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
@@ -19,6 +38,16 @@
             <p class="kicker">BarrelBoss</p>
             <h1>{% block heading %}Something went wrong{% endblock %}</h1>
             <p>{% block message %}Please try again or return to the login page.{% endblock %}</p>
+            <div class="error-status-strip">
+                <span class="filter-chip">Public-ready shell</span>
+                <span class="filter-chip">Secure access</span>
+                <span class="filter-chip">Try again safely</span>
+            </div>
+            <ul class="error-hint-list">
+                <li>Return to the last stable page and retry the action once.</li>
+                <li>If the issue continues, sign back in or refresh the current workspace.</li>
+                <li>Escalate to management or support if the same action fails repeatedly.</li>
+            </ul>
             <div class="settings-actions">
                 <a class="action-btn action-link" href="{% url 'login' %}">Return to Login</a>
                 <a class="table-action" href="javascript:history.back()">Go Back</a>

@@ -9,15 +9,17 @@
         </a>
     {% endfor %}
 
-    <button
-        type="button"
-        class="mobile-dock-link mobile-dock-link-action"
-        data-command-toggle
-        aria-label="Open quick actions"
-        aria-controls="mobile-command-sheet"
-        aria-expanded="false"
-    >
-        <span class="mobile-dock-label">Actions</span>
-        <small class="mobile-dock-meta">Fast updates</small>
-    </button>
+    {% if mobile_command_links %}
+        <button
+            type="button"
+            class="mobile-dock-link mobile-dock-link-action"
+            data-command-toggle
+            aria-label="Open more tools"
+            aria-controls="mobile-command-sheet"
+            aria-expanded="false"
+        >
+            <span class="mobile-dock-label">{{ mobile_command_button_label }}</span>
+            <small class="mobile-dock-meta">{{ mobile_command_button_copy }}</small>
+        </button>
+    {% endif %}
 </nav>

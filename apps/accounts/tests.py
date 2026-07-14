@@ -192,8 +192,8 @@ class RoleRoutingTests(VenueScopedTestCase):
             f"{reverse('checklists:list')}?preset=today&status=pending",
         )
         self.assertEqual(
-            response.context["workspace_quick_actions"][0]["label"],
-            "Today sign-off",
+            response.context["mobile_command_links"][0]["label"],
+            "Rota",
         )
 
     def test_staff_mobile_dock_uses_shift_deep_links(self):
@@ -203,15 +203,15 @@ class RoleRoutingTests(VenueScopedTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             [link["label"] for link in response.context["mobile_dock_links"]],
-            ["Today", "Tasks", "Service", "Requests"],
+            ["Today", "Tasks", "Stock", "Rota"],
         )
         self.assertEqual(
             response.context["mobile_dock_links"][2]["url"],
-            f"{reverse('stock:list')}?focus=service",
+            reverse("stock:list"),
         )
         self.assertEqual(
-            response.context["workspace_quick_actions"][0]["label"],
-            "Open today tasks",
+            response.context["mobile_command_links"][0]["label"],
+            "Requests",
         )
 
 

@@ -4,12 +4,16 @@
 {% block page_title %}Venue Setup{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <div class="panel-header">
+<section class="panel stock-form-panel detail-panel">
+    <div class="panel-header detail-panel-head">
         <div>
-            <h3>Set Up Organisation and Venue</h3>
+            <p class="detail-kicker">Launch Setup</p>
+            <h3 class="detail-title">Set Up Organisation and Venue</h3>
             <p class="panel-subtitle">Create the bar, seed suppliers, invites, checklists, and stock baselines, then make this account the first venue owner.</p>
         </div>
+        {% if active_venue %}
+        <a class="table-action" href="{% url role_home_url_name %}">Back to Workspace</a>
+        {% endif %}
     </div>
 
     <form method="post" class="stock-edit-form">
@@ -36,9 +40,7 @@
 
         <div class="form-actions">
             <button type="submit" class="action-btn">Create Venue</button>
-            {% if active_venue %}
-            <a class="table-action" href="{% url role_home_url_name %}">Cancel</a>
-            {% endif %}
+            {% if active_venue %}<a class="table-action" href="{% url role_home_url_name %}">Cancel</a>{% endif %}
         </div>
     </form>
 </section>

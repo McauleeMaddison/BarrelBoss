@@ -9,25 +9,63 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
     <title>BarrelBoss | Sign In</title>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260711-ops-workspace2">
-    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260711-ops-workspace2">
+    <script>
+        (() => {
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            let theme = prefersDark ? "dark" : "light";
+
+            try {
+                const stored = window.localStorage.getItem("barrelboss-theme");
+                if (stored === "dark" || stored === "light") {
+                    theme = stored;
+                }
+            } catch (_error) {
+                // Ignore storage errors during initial paint.
+            }
+
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.style.colorScheme = theme;
+        })();
+    </script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready1">
+    <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260714-public-ready1">
     <link rel="icon" type="image/png" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="shortcut icon" href="{% static 'images/barrelboss-logo.png' %}">
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
     <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}">
 </head>
 <body class="login-page">
+<div class="shell-bg"></div>
 <div class="login-wrap">
     <section class="login-hero">
         <img class="login-logo" src="{% static 'images/barrelboss-logo.png' %}" alt="BarrelBoss logo">
-        <p class="eyebrow">BarrelBoss</p>
-        <h1>Run your venue operations with clarity.</h1>
-        <p>Track stock, orders, breakages, shifts, and tasks from one workspace built for pub teams.</p>
+        <p class="kicker">BarrelBoss</p>
+        <h1>Venue operations without clutter.</h1>
+        <p>One sleek workspace for staff and management to run stock, service, handover, and shift work with less friction.</p>
+        <div class="login-value-strip" aria-label="Product highlights">
+            <article class="login-value-card">
+                <span>Built for</span>
+                <strong>Staff + management</strong>
+            </article>
+            <article class="login-value-card">
+                <span>Designed for</span>
+                <strong>Mobile-first floor use</strong>
+            </article>
+            <article class="login-value-card">
+                <span>Focused on</span>
+                <strong>Live operational clarity</strong>
+            </article>
+        </div>
+        <ul class="login-feature-list">
+            <li class="login-feature-item">Keep tasks, stock, rota, and incident reporting in one consistent flow.</li>
+            <li class="login-feature-item">Reduce duplicate actions so teams move through service faster and cleaner.</li>
+            <li class="login-feature-item">Give managers a sharper operational view without burying staff in admin detail.</li>
+        </ul>
     </section>
 
     <section class="login-card">
         <h2>Sign In</h2>
-        <p>Use your staff credentials to continue.</p>
+        <p>Use the venue account issued to you to enter the live operations workspace.</p>
         <form method="post">
             {% csrf_token %}
             {% if form.errors %}
@@ -53,12 +91,13 @@
             <button type="submit" class="login-submit-btn">Sign In</button>
             <input type="hidden" name="next" value="{{ next }}">
         </form>
+        <p class="login-security-note">Access is venue-scoped and role-based. Staff only see the tools they need for the current workflow.</p>
         <div class="form-actions">
             <a class="table-action" href="{% url 'password_reset' %}">Forgot password?</a>
         </div>
     </section>
 </div>
-<script src="{% static 'js/core/app-shell.js' %}?v=20260711-ops-workspace2" defer></script>
+<script src="{% static 'js/core/app-shell.js' %}?v=20260714-public-ready1" defer></script>
 <script src="{% static 'js/pwa.js' %}" defer></script>
 </body>
 </html>

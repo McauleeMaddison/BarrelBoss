@@ -4,12 +4,14 @@
 {% block page_title %}Accept Invite{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <div class="panel-header">
+<section class="panel stock-form-panel detail-panel">
+    <div class="panel-header detail-panel-head">
         <div>
-            <h3>Join {{ invite.venue.name }}</h3>
+            <p class="detail-kicker">Invite Acceptance</p>
+            <h3 class="detail-title">Join {{ invite.venue.name }}</h3>
             <p class="panel-subtitle">{{ invite.email }} has been invited to {{ invite.venue.organisation.name }} as {{ invite.get_role_display }}.</p>
         </div>
+        <a class="table-action" href="{% url 'login' %}">Back to Login</a>
     </div>
 
     <form method="post" class="stock-edit-form">
@@ -33,7 +35,7 @@
 
         <div class="form-actions">
             <button type="submit" class="action-btn">Create Account and Join</button>
-            <a class="table-action" href="{% url 'login' %}">Back to Login</a>
+            <a class="table-action" href="{% url 'login' %}">Cancel</a>
         </div>
     </form>
 </section>

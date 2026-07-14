@@ -37,16 +37,6 @@
     </div>
 </section>
 
-<section class="dashboard-command-grid">
-    {% for action in workspace_quick_actions %}
-    <a class="dashboard-command-card" href="{{ action.url }}">
-        <span class="kicker">Quick action</span>
-        <strong>{{ action.label }}</strong>
-        <p>{{ action.copy }}</p>
-    </a>
-    {% endfor %}
-</section>
-
 <section class="metric-grid">
     {% for card in metrics %}
     <article class="metric-card {{ card.tone }}">

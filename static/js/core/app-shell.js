@@ -15,7 +15,7 @@
     const themeToggleLabel = document.querySelector("[data-theme-toggle-label]");
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     const isOverlayNav = window.matchMedia("(max-width: 1180px)");
-    const isCompactMobile = window.matchMedia("(max-width: 760px)");
+    const isCompactDock = window.matchMedia("(max-width: 1180px)");
     const prefersDarkScheme = window.matchMedia
         ? window.matchMedia("(prefers-color-scheme: dark)")
         : null;
@@ -130,7 +130,7 @@
     };
 
     const setCommandState = (isOpen) => {
-        const shouldOpen = isCompactMobile.matches ? isOpen : false;
+        const shouldOpen = isCompactDock.matches ? isOpen : false;
         body.classList.toggle("command-open", shouldOpen);
         updateExpandedState(commandToggleButtons, shouldOpen);
 
@@ -196,7 +196,7 @@
 
     commandToggleButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            if (!isCompactMobile.matches) {
+            if (!isCompactDock.matches) {
                 return;
             }
             if (body.classList.contains("nav-open")) {
@@ -209,7 +209,7 @@
     if (isOverlayNav.matches) {
         closeNav();
     }
-    if (isCompactMobile.matches) {
+    if (isCompactDock.matches) {
         closeCommandSheet();
     }
 
@@ -242,7 +242,7 @@
         if (!isOverlayNav.matches) {
             closeNav();
         }
-        if (!isCompactMobile.matches) {
+        if (!isCompactDock.matches) {
             closeCommandSheet();
         }
         syncBodyScrollLock();
