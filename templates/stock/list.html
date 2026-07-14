@@ -53,12 +53,23 @@
                         <ul class="dashboard-record-list">
                             {% for row in supplier_action_rows %}
                             <li class="dashboard-record-row">
+                                {% if row.href %}
+                                <a class="dashboard-row-link" href="{{ row.href }}">
+                                    <div class="dashboard-record-copy">
+                                        <strong>{{ row.title }}</strong>
+                                        <small>{{ row.meta }}</small>
+                                        <span class="dashboard-record-note">{{ row.note }}</span>
+                                    </div>
+                                    <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                                </a>
+                                {% else %}
                                 <div class="dashboard-record-copy">
                                     <strong>{{ row.title }}</strong>
                                     <small>{{ row.meta }}</small>
                                     <span class="dashboard-record-note">{{ row.note }}</span>
                                 </div>
                                 <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                                {% endif %}
                             </li>
                             {% endfor %}
                         </ul>
@@ -66,12 +77,12 @@
                         <p class="empty-state">No urgent supplier follow-up is showing in the current stock scope.</p>
                         {% endif %}
                         <div class="metric-actions dashboard-section-actions">
-                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?urgency=critical">Open critical stock</a>
+                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?urgency=critical#stock-section-board">Open critical stock</a>
                             {% if is_management %}
                             <a class="table-action metric-action-link" href="{% url 'suppliers:list' %}">Open suppliers</a>
                             <a class="table-action metric-action-link" href="{% url 'orders:add' %}">Create order</a>
                             {% else %}
-                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?urgency=low">Open low stock</a>
+                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?urgency=low#stock-section-board">Open low stock</a>
                             {% endif %}
                         </div>
                     </div>
@@ -113,7 +124,7 @@
                         <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
                             <div class="filter-preset-row">
                                 {% for preset in filter_presets %}
-                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'stock:list' %}{% endif %}">{{ preset.label }}</a>
+                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}#stock-section-board{% else %}{% url 'stock:list' %}#stock-section-board{% endif %}">{{ preset.label }}</a>
                                 {% endfor %}
                             </div>
                             <div class="filter-summary-bar">
@@ -170,7 +181,7 @@
                                     </select>
                                 </div>
                                 <button class="action-btn" type="submit">Apply filters</button>
-                                <a class="table-action" href="{% url 'stock:list' %}">Reset</a>
+                                <a class="table-action" href="{% url 'stock:list' %}#stock-section-board">Reset</a>
                             </form>
                         </div>
 
@@ -334,12 +345,23 @@
                         <ul class="dashboard-record-list">
                             {% for row in count_discipline_rows %}
                             <li class="dashboard-record-row">
+                                {% if row.href %}
+                                <a class="dashboard-row-link" href="{{ row.href }}">
+                                    <div class="dashboard-record-copy">
+                                        <strong>{{ row.title }}</strong>
+                                        <small>{{ row.meta }}</small>
+                                        <span class="dashboard-record-note">{{ row.note }}</span>
+                                    </div>
+                                    <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                                </a>
+                                {% else %}
                                 <div class="dashboard-record-copy">
                                     <strong>{{ row.title }}</strong>
                                     <small>{{ row.meta }}</small>
                                     <span class="dashboard-record-note">{{ row.note }}</span>
                                 </div>
                                 <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                                {% endif %}
                             </li>
                             {% endfor %}
                         </ul>
@@ -347,7 +369,7 @@
                         <p class="empty-state">All visible lines have recent stock counts recorded.</p>
                         {% endif %}
                         <div class="metric-actions dashboard-section-actions">
-                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?focus=uncounted">Open count queue</a>
+                            <a class="table-action metric-action-link" href="{% url 'stock:list' %}?focus=uncounted#stock-section-counts">Open count queue</a>
                             {% if is_management %}
                             <a class="table-action metric-action-link" href="{% url 'stock:add' %}">Add stock item</a>
                             {% endif %}

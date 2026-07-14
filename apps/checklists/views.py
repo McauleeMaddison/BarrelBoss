@@ -1,4 +1,5 @@
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db.models import Q
@@ -24,6 +25,16 @@ CHECKLIST_LANE_COPY = {
     Checklist.ChecklistType.DELIVERY: "Delivery handling checks that keep supplier drops accountable and traceable.",
     Checklist.ChecklistType.CLEANING: "Cleaning routines that keep the pub floor, back bar, and cellar ready to work.",
 }
+
+
+def _checklists_workspace_url(*, section="checklists-section-board", **params):
+    filtered_params = {key: value for key, value in params.items() if value not in {"", None}}
+    url = reverse("checklists:list")
+    if filtered_params:
+        url = f"{url}?{urlencode(filtered_params)}"
+    if section:
+        url = f"{url}#{section}"
+    return url
 
 
 def _sync_completed_timestamp(task):
@@ -196,6 +207,7 @@ def list_checklists(request):
                 "action_label": "Open overdue",
                 "url_name": "checklists:list",
                 "query": "preset=overdue",
+                "href": _checklists_workspace_url(preset="overdue"),
             }
         )
     if due_today_count:
@@ -208,6 +220,7 @@ def list_checklists(request):
                 "action_label": "Open today",
                 "url_name": "checklists:list",
                 "query": "preset=today",
+                "href": _checklists_workspace_url(preset="today"),
             }
         )
     if management_view and unassigned_count:
@@ -219,6 +232,7 @@ def list_checklists(request):
                 "tone": "warn",
                 "action_label": "Assign tasks",
                 "url_name": "checklists:add",
+                "href": reverse("checklists:add"),
             }
         )
     if not attention_items:
@@ -231,6 +245,11 @@ def list_checklists(request):
                 "action_label": "Assign task" if management_view else "Open pending",
                 "url_name": "checklists:add" if management_view else "checklists:list",
                 "query": None if management_view else "status=pending",
+                "href": (
+                    reverse("checklists:add")
+                    if management_view
+                    else _checklists_workspace_url(status="pending")
+                ),
             }
         )
 
@@ -277,14 +296,14 @@ def list_checklists(request):
         primary_copy = (
             f"{overdue_count} task(s) are already late and should be completed or reassigned before anything else."
         )
-        primary_url = f"{reverse('checklists:list')}?preset=overdue"
+        primary_url = _checklists_workspace_url(preset="overdue")
         primary_label = "Open overdue tasks"
     elif ready_to_close_count:
         primary_title = "Work the sign-off queue"
         primary_copy = (
             f"{ready_to_close_count} task(s) are due now and should be closed before they spill into the next handover."
         )
-        primary_url = f"{reverse('checklists:list')}?preset=today"
+        primary_url = _checklists_workspace_url(preset="today")
         primary_label = "Open due-now tasks"
     elif management_view:
         primary_title = "Assign the next task"
@@ -298,7 +317,7 @@ def list_checklists(request):
         primary_copy = (
             "There is no urgent backlog showing, so use the live queue to stay ahead of later handover work."
         )
-        primary_url = f"{reverse('checklists:list')}?status=pending"
+        primary_url = _checklists_workspace_url(status="pending")
         primary_label = "Open pending tasks"
 
     module_panel = build_module_panel(
@@ -327,9 +346,12 @@ def list_checklists(request):
             ),
             build_module_link(
                 "Closing queue",
-                f"{reverse('checklists:list')}?type={Checklist.ChecklistType.CLOSING}&status=pending",
+                _checklists_workspace_url(
+                    type=Checklist.ChecklistType.CLOSING,
+                    status="pending",
+                ),
             ),
-            build_module_link("Completed", f"{reverse('checklists:list')}?preset=completed"),
+            build_module_link("Completed", _checklists_workspace_url(preset="completed")),
         ],
         toolbar_notes=[
             f"{visible_task_count} shown",
@@ -347,7 +369,7 @@ def list_checklists(request):
                 "Tasks already past due date that should be completed or reassigned before they keep compounding into tomorrow's queue."
             ),
             action_label="Open overdue",
-            action_url=f"{reverse('checklists:list')}?preset=overdue",
+            action_url=_checklists_workspace_url(preset="overdue"),
         ),
         build_module_snapshot(
             label="Ready to sign off",
@@ -358,7 +380,7 @@ def list_checklists(request):
                 "Tasks due now across the active queue, which is the fastest read on whether handover is under control."
             ),
             action_label="Open today",
-            action_url=f"{reverse('checklists:list')}?preset=today",
+            action_url=_checklists_workspace_url(preset="today"),
         ),
     ]
     if management_view:
@@ -386,7 +408,7 @@ def list_checklists(request):
                     "Tasks completed in the last 7 days, giving a simple read on whether execution is moving or starting to stall."
                 ),
                 action_label="View completed",
-                action_url=f"{reverse('checklists:list')}?preset=completed",
+                action_url=_checklists_workspace_url(preset="completed"),
             )
         )
 
@@ -410,7 +432,7 @@ def list_checklists(request):
                     if lane_total
                     else "No tasks in this lane right now"
                 ),
-                "url": f"{reverse('checklists:list')}?type={checklist_type}&status=pending",
+                "url": _checklists_workspace_url(type=checklist_type, status="pending"),
             }
         )
 
@@ -437,6 +459,11 @@ def list_checklists(request):
             ),
             "badge": "Signed off",
             "tone": "ok",
+            "href": (
+                reverse("checklists:edit", args=[task.pk])
+                if management_view
+                else _checklists_workspace_url(q=task.title)
+            ),
         }
         for task in activity_qs.filter(completed=True)
         .select_related("assigned_to")

@@ -3,6 +3,9 @@
     const accordionStorageKey = "barrelboss-dashboard-accordion-state";
     const collapsiblePanels = document.querySelectorAll(".dashboard-collapsible[data-panel-storage-key]");
     const accordionGroups = document.querySelectorAll("[data-dashboard-accordion-group]");
+    const accordionControllers = new Map();
+    const accordionBodyControllers = new Map();
+    const panelControllers = new Map();
 
     const readPanelState = () => {
         try {
@@ -72,10 +75,21 @@
 
                     if (body) {
                         body.hidden = !isOpen;
+                        if (body.id) {
+                            accordionBodyControllers.set(body.id, { groupKey, key });
+                        }
                     }
                 });
             };
 
+            const setOpenKey = (nextOpenKey) => {
+                openKey = nextOpenKey;
+                storedAccordionState[groupKey] = openKey;
+                writeAccordionState(storedAccordionState);
+                applyAccordionState(openKey);
+            };
+
+            accordionControllers.set(groupKey, { setOpenKey });
             applyAccordionState(openKey);
 
             items.forEach((item) => {
@@ -86,10 +100,7 @@
                 }
 
                 trigger.addEventListener("click", () => {
-                    openKey = openKey === key ? null : key;
-                    storedAccordionState[groupKey] = openKey;
-                    writeAccordionState(storedAccordionState);
-                    applyAccordionState(openKey);
+                    setOpenKey(openKey === key ? null : key);
                 });
             });
         });
@@ -117,16 +128,81 @@
                 panel.classList.toggle("is-collapsed", isCollapsed);
             };
 
+            const setCollapsed = (isCollapsed) => {
+                storedPanelState[storageId] = isCollapsed;
+                writePanelState(storedPanelState);
+                applyState(isCollapsed);
+            };
+
+            if (body.id) {
+                panelControllers.set(body.id, { setCollapsed });
+            }
+
             applyState(hasStoredState ? Boolean(storedPanelState[storageId]) : defaultCollapsed);
 
             toggle.addEventListener("click", () => {
-                const nextCollapsed = !panel.classList.contains("is-collapsed");
-                storedPanelState[storageId] = nextCollapsed;
-                writePanelState(storedPanelState);
-                applyState(nextCollapsed);
+                setCollapsed(!panel.classList.contains("is-collapsed"));
             });
         });
     }
+
+    const activateHashTarget = (hashId) => {
+        if (!hashId) {
+            return;
+        }
+
+        const target = document.getElementById(hashId);
+        if (!target) {
+            return;
+        }
+
+        const owningAccordionBody =
+            target.matches("[data-dashboard-accordion-body]")
+                ? target
+                : target.closest("[data-dashboard-accordion-body]");
+        if (owningAccordionBody?.id) {
+            const accordionState = accordionBodyControllers.get(owningAccordionBody.id);
+            if (accordionState) {
+                accordionControllers.get(accordionState.groupKey)?.setOpenKey(accordionState.key);
+            }
+        }
+
+        const owningPanelBody =
+            target.matches("[data-panel-body]") ? target : target.closest("[data-panel-body]");
+        if (owningPanelBody?.id) {
+            panelControllers.get(owningPanelBody.id)?.setCollapsed(false);
+        }
+
+        window.requestAnimationFrame(() => {
+            target.scrollIntoView({ block: "start", behavior: "smooth" });
+        });
+    };
+
+    const syncHashTarget = () => {
+        activateHashTarget(window.location.hash.replace(/^#/, ""));
+    };
+
+    if (window.location.hash) {
+        syncHashTarget();
+    }
+
+    window.addEventListener("hashchange", syncHashTarget);
+    document.addEventListener("click", (event) => {
+        const link = event.target.closest("a[href*='#']");
+        if (!link) {
+            return;
+        }
+
+        const nextUrl = new URL(link.href, window.location.href);
+        const sameDocument =
+            nextUrl.origin === window.location.origin
+            && nextUrl.pathname === window.location.pathname
+            && nextUrl.search === window.location.search;
+
+        if (sameDocument && nextUrl.hash) {
+            activateHashTarget(nextUrl.hash.replace(/^#/, ""));
+        }
+    });
 
     const dashboardPanelButtons = document.querySelectorAll("[data-dashboard-panel-target]");
     const dashboardPanelGroups = document.querySelectorAll("[data-dashboard-panel-group]");

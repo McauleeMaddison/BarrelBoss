@@ -79,8 +79,8 @@
                         <p class="empty-state">No shifts are showing in the current rota view.</p>
                         {% endif %}
                         <div class="metric-actions dashboard-section-actions">
-                            <a class="table-action metric-action-link" href="{% url 'shifts:list' %}?range=upcoming">Open upcoming</a>
-                            <a class="table-action metric-action-link" href="{% url 'shifts:list' %}?range=this_week">Open this week</a>
+                            <a class="table-action metric-action-link" href="{% url 'shifts:list' %}?range=upcoming#shifts-section-board">Open upcoming</a>
+                            <a class="table-action metric-action-link" href="{% url 'shifts:list' %}?range=this_week#shifts-section-board">Open this week</a>
                             {% if is_management %}
                             <a class="table-action metric-action-link" href="{% url 'shifts:add' %}">Schedule shift</a>
                             {% endif %}
@@ -124,7 +124,7 @@
                         <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
                             <div class="filter-preset-row">
                                 {% for preset in filter_presets %}
-                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}">{{ preset.label }}</a>
+                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="?{{ preset.query }}#shifts-section-board">{{ preset.label }}</a>
                                 {% endfor %}
                             </div>
                             <div class="filter-summary-bar">
@@ -171,7 +171,7 @@
                                 </div>
 
                                 <button class="action-btn" type="submit">Apply</button>
-                                <a class="table-action" href="{% url 'shifts:list' %}">Reset</a>
+                                <a class="table-action" href="{% url 'shifts:list' %}#shifts-section-board">Reset</a>
                             </form>
                         </div>
 

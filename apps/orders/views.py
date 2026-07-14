@@ -1,4 +1,5 @@
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db.models import Count, Sum
@@ -17,6 +18,16 @@ from taptrack.pagination import build_query_string, paginate_collection
 
 from .forms import OrderForm, OrderItemFormSet
 from .models import Order
+
+
+def _orders_workspace_url(*, section="orders-section-board", **params):
+    filtered_params = {key: value for key, value in params.items() if value not in {"", None}}
+    url = reverse("orders:list")
+    if filtered_params:
+        url = f"{url}?{urlencode(filtered_params)}"
+    if section:
+        url = f"{url}#{section}"
+    return url
 
 
 def _safe_next_url(request, fallback):
@@ -80,12 +91,27 @@ def _delivery_runway_row(order, *, today, management_view):
         if order.delivery_date
         else "No delivery date"
     )
+    if management_view:
+        href = reverse("orders:edit", args=[order.pk])
+    elif order.status == Order.Status.DRAFT:
+        href = reverse("orders:edit", args=[order.pk])
+    elif order.delivery_date and order.delivery_date < today:
+        href = _orders_workspace_url(preset="overdue")
+    elif order.status == Order.Status.PENDING_DELIVERY:
+        href = _orders_workspace_url(preset="pending")
+    elif order.status == Order.Status.ORDERED:
+        href = _orders_workspace_url(preset="ordered")
+    elif order.status == Order.Status.DELIVERED:
+        href = _orders_workspace_url(preset="delivered")
+    else:
+        href = _orders_workspace_url()
     return {
         "title": order.reference,
         "meta": f"{order.supplier.name} · {_order_supplier_contact_copy(order.supplier)}",
         "note": f"{delivery_copy} · {order.total_units or 0} units",
         "badge": badge,
         "tone": tone,
+        "href": href,
     }
 
 
@@ -291,8 +317,7 @@ def list_orders(request):
                 "copy": "Expected delivery dates have passed and should be chased or updated.",
                 "tone": "alert",
                 "action_label": "Open overdue",
-                "url_name": "orders:list",
-                "query": "preset=overdue",
+                "href": _orders_workspace_url(preset="overdue"),
             }
         )
     if context["stale_draft_count"]:
@@ -303,8 +328,7 @@ def list_orders(request):
                 "copy": "Draft requests have been waiting more than 48 hours and need a decision.",
                 "tone": "warn",
                 "action_label": "Open drafts",
-                "url_name": "orders:list",
-                "query": "preset=drafts",
+                "href": _orders_workspace_url(preset="drafts"),
             }
         )
     if context["pending_count"]:
@@ -315,8 +339,7 @@ def list_orders(request):
                 "copy": "Placed orders are on the way and should stay visible until they land in stock.",
                 "tone": "neutral",
                 "action_label": "Track pending",
-                "url_name": "orders:list",
-                "query": "preset=pending",
+                "href": _orders_workspace_url(preset="pending"),
             }
         )
     if not attention_items:
@@ -327,7 +350,7 @@ def list_orders(request):
                 "copy": "No stale drafts or overdue deliveries are currently showing in this view.",
                 "tone": "ok",
                 "action_label": "Create order" if management_view else "New request",
-                "url_name": "orders:add",
+                "href": reverse("orders:add"),
             }
         )
 
@@ -337,14 +360,14 @@ def list_orders(request):
             primary_copy = (
                 f"{context['overdue_delivery_count']} order(s) have passed their expected delivery date and should be chased or updated first."
             )
-            primary_url = f"{reverse('orders:list')}?preset=overdue"
+            primary_url = _orders_workspace_url(preset="overdue")
             primary_label = "Open overdue deliveries"
         elif context["awaiting_approval_count"]:
             primary_title = "Clear the draft queue"
             primary_copy = (
                 f"{context['awaiting_approval_count']} request(s) are still waiting for approval or a decision."
             )
-            primary_url = f"{reverse('orders:list')}?preset=drafts"
+            primary_url = _orders_workspace_url(preset="drafts")
             primary_label = "Review draft queue"
         else:
             primary_title = "Create the next order"
@@ -363,14 +386,14 @@ def list_orders(request):
             primary_copy = (
                 f"{context['awaiting_approval_count']} request(s) are still sitting in draft and can be finished before they slow the queue down."
             )
-            primary_url = f"{reverse('orders:list')}?preset=drafts"
+            primary_url = _orders_workspace_url(preset="drafts")
             primary_label = "Review drafts"
         elif context["pending_count"]:
             primary_title = "Track incoming delivery"
             primary_copy = (
                 f"{context['pending_count']} order(s) are still in flight and should stay visible until the stock lands."
             )
-            primary_url = f"{reverse('orders:list')}?preset=pending"
+            primary_url = _orders_workspace_url(preset="pending")
             primary_label = "Track delivery"
         else:
             primary_title = "Raise a stock request"
@@ -396,7 +419,7 @@ def list_orders(request):
         primary_label=primary_label,
         utility_links=[
             build_module_link("Create order" if management_view else "New request", reverse("orders:add")),
-            build_module_link("Delivered", f"{reverse('orders:list')}?preset=delivered"),
+            build_module_link("Delivered", _orders_workspace_url(preset="delivered")),
         ],
         toolbar_notes=[
             f"{context['open_order_count']} open",
@@ -416,7 +439,7 @@ def list_orders(request):
                 else "Requests you can still review and finish before they move into the approval queue."
             ),
             action_label="Open drafts" if management_view else "Review drafts",
-            action_url=f"{reverse('orders:list')}?preset=drafts",
+            action_url=_orders_workspace_url(preset="drafts"),
         ),
         build_module_snapshot(
             label="Pending delivery",
@@ -427,7 +450,7 @@ def list_orders(request):
                 "Orders already placed and still waiting to land into stock, which means they need follow-through rather than reordering."
             ),
             action_label="Track pending",
-            action_url=f"{reverse('orders:list')}?preset=pending",
+            action_url=_orders_workspace_url(preset="pending"),
         ),
         build_module_snapshot(
             label="Delivery risk",
@@ -439,11 +462,49 @@ def list_orders(request):
             ),
             action_label="Open overdue" if context["overdue_delivery_count"] else "View pending",
             action_url=(
-                f"{reverse('orders:list')}?preset=overdue"
+                _orders_workspace_url(preset="overdue")
                 if context["overdue_delivery_count"]
-                else f"{reverse('orders:list')}?preset=pending"
+                else _orders_workspace_url(preset="pending")
             ),
         ),
+    ]
+    queue_lane_cards = [
+        {
+            "label": "Draft queue" if management_view else "My drafts",
+            "value": context["awaiting_approval_count"],
+            "copy": (
+                "Requests waiting for approval before supplier ordering can move."
+                if management_view
+                else "Draft requests you can still finish or tidy before they are sent."
+            ),
+            "note": (
+                f"{context['stale_draft_count']} stale for 48h+"
+                if context["stale_draft_count"]
+                else "No stale drafts"
+            ),
+            "url": _orders_workspace_url(preset="drafts"),
+        },
+        {
+            "label": "Pending delivery",
+            "value": context["pending_count"],
+            "copy": "Orders already placed and still waiting to land into stock.",
+            "note": f"{context['due_today_count']} due today · {context['due_tomorrow_count']} tomorrow",
+            "url": _orders_workspace_url(preset="pending"),
+        },
+        {
+            "label": "Delivery risk",
+            "value": context["overdue_delivery_count"],
+            "copy": "Orders with delivery dates already passed and still unresolved.",
+            "note": "Chase supplier or correct the delivery timeline first",
+            "url": _orders_workspace_url(preset="overdue"),
+        },
+        {
+            "label": "Delivered 7d",
+            "value": context["delivered_recent_count"],
+            "copy": "Recently closed deliveries for a quick proof-of-completion check.",
+            "note": f"{context['total_units_in_view']} units in current view",
+            "url": _orders_workspace_url(preset="delivered"),
+        },
     ]
     context.update(
         {
@@ -461,6 +522,7 @@ def list_orders(request):
             "attention_items": attention_items,
             "module_panel": module_panel,
             "module_snapshots": module_snapshots,
+            "queue_lane_cards": queue_lane_cards,
         }
     )
     return render(request, "orders/list.html", context)

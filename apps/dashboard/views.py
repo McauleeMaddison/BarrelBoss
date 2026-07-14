@@ -51,18 +51,30 @@ def _format_activity_time(moment):
     return local_moment.strftime("%a %H:%M")
 
 
-def _dashboard_href(url_name, *, args=None, query=None, **params):
+def _dashboard_href(url_name, *, args=None, query=None, fragment=None, **params):
+    default_fragments = {
+        "checklists:list": "checklists-section-board",
+        "stock:list": "stock-section-board",
+        "shifts:list": "shifts-section-board",
+        "orders:list": "orders-section-board",
+        "breakages:list": "breakageTable",
+        "sales:list": "salesTable",
+    }
     url = reverse(url_name, args=args or [])
     if query:
-        return f"{url}?{query}"
+        url = f"{url}?{query}"
+    else:
+        query_params = [
+            (key, value)
+            for key, value in params.items()
+            if value not in (None, "")
+        ]
+        if query_params:
+            url = f"{url}?{urlencode(query_params, doseq=True)}"
 
-    query_params = [
-        (key, value)
-        for key, value in params.items()
-        if value not in (None, "")
-    ]
-    if query_params:
-        return f"{url}?{urlencode(query_params, doseq=True)}"
+    target_fragment = fragment or default_fragments.get(url_name)
+    if target_fragment:
+        url = f"{url}#{target_fragment}"
     return url
 
 
@@ -75,6 +87,7 @@ def _normalize_link_item(item):
         normalized["url_name"],
         args=normalized.get("args"),
         query=normalized.get("query"),
+        fragment=normalized.get("fragment"),
     )
     return normalized
 

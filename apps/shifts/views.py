@@ -1,5 +1,6 @@
 from calendar import monthrange
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -37,6 +38,16 @@ def _hours_label(hours):
     if minutes:
         return f"{minutes}m"
     return "0h"
+
+
+def _shifts_workspace_url(*, section="shifts-section-board", **params):
+    filtered_params = {key: value for key, value in params.items() if value not in {"", None}}
+    url = reverse("shifts:list")
+    if filtered_params:
+        url = f"{url}?{urlencode(filtered_params)}"
+    if section:
+        url = f"{url}#{section}"
+    return url
 
 
 @active_venue_required
@@ -136,7 +147,7 @@ def list_shifts(request):
         primary_copy = (
             "Use the live upcoming queue as the main working view, then widen the range only when you need history."
         )
-        primary_url = f"{reverse('shifts:list')}?range=upcoming"
+        primary_url = _shifts_workspace_url(range="upcoming")
         primary_label = "Open upcoming shifts"
     elif management_view:
         primary_title = "Keep the rota moving"
@@ -150,7 +161,7 @@ def list_shifts(request):
         primary_copy = (
             "Stay focused on your upcoming service windows and only open wider history when you need to check worked hours."
         )
-        primary_url = f"{reverse('shifts:list')}?range=upcoming"
+        primary_url = _shifts_workspace_url(range="upcoming")
         primary_label = "Open upcoming shifts"
 
     module_panel = build_module_panel(
@@ -173,8 +184,8 @@ def list_shifts(request):
         primary_label=primary_label,
         utility_links=[
             *([build_module_link("Schedule shift", reverse("shifts:add"))] if management_view else []),
-            build_module_link("This week", f"{reverse('shifts:list')}?range=this_week"),
-            build_module_link("All shifts", f"{reverse('shifts:list')}?range=all"),
+            build_module_link("This week", _shifts_workspace_url(range="this_week")),
+            build_module_link("All shifts", _shifts_workspace_url(range="all")),
         ],
         toolbar_notes=[
             week_start.strftime("%d %b") + " - " + week_end.strftime("%d %b"),
@@ -190,7 +201,7 @@ def list_shifts(request):
             value=f"{hours_this_week:.2f}h",
             copy="Scheduled hours inside the current Monday to Sunday operating window.",
             action_label="Open week",
-            action_url=f"{reverse('shifts:list')}?range=this_week",
+            action_url=_shifts_workspace_url(range="this_week"),
         ),
         build_module_snapshot(
             label="Hours this month",
@@ -199,7 +210,7 @@ def list_shifts(request):
             value=f"{hours_this_month:.2f}h",
             copy="Booked hours across the current calendar month in the visible rota scope.",
             action_label="Open all shifts",
-            action_url=f"{reverse('shifts:list')}?range=all",
+            action_url=_shifts_workspace_url(range="all"),
         ),
         build_module_snapshot(
             label="Upcoming shifts",
@@ -208,7 +219,7 @@ def list_shifts(request):
             value=upcoming_shift_count,
             copy="Future shifts from today onward, which is the fastest read on remaining rota pressure.",
             action_label="Open upcoming",
-            action_url=f"{reverse('shifts:list')}?range=upcoming",
+            action_url=_shifts_workspace_url(range="upcoming"),
         ),
         build_module_snapshot(
             label="Days with cover",
@@ -221,7 +232,10 @@ def list_shifts(request):
                 else "No scheduled hours are showing in the current week window."
             ),
             action_label="View week load",
-            action_url=f"{reverse('shifts:list')}?range=this_week",
+            action_url=_shifts_workspace_url(
+                section="shifts-section-weekly-load",
+                range="this_week",
+            ),
         ),
     ]
 
@@ -303,8 +317,7 @@ def list_shifts(request):
                 "copy": "Nothing is currently scheduled ahead, which may be intentional or may need rota review.",
                 "tone": "warn",
                 "action_label": "Open planner",
-                "url_name": "shifts:list",
-                "query": "range=all",
+                "href": _shifts_workspace_url(range="all"),
             }
         )
     if context["hours_this_week"] == 0:
@@ -315,8 +328,7 @@ def list_shifts(request):
                 "copy": "The current week has no scheduled hours in the selected staff or range scope.",
                 "tone": "alert",
                 "action_label": "View week",
-                "url_name": "shifts:list",
-                "query": "range=this_week",
+                "href": _shifts_workspace_url(range="this_week"),
             }
         )
     if next_shift:
@@ -327,8 +339,7 @@ def list_shifts(request):
                 "copy": f"Starts at {next_shift.start_time.strftime('%H:%M')} and remains the next active service window in view.",
                 "tone": "ok",
                 "action_label": "Open upcoming",
-                "url_name": "shifts:list",
-                "query": "range=upcoming",
+                "href": _shifts_workspace_url(range="upcoming"),
             }
         )
     if not attention_items:
@@ -339,7 +350,7 @@ def list_shifts(request):
                 "copy": "No immediate rota gaps are showing in the selected view.",
                 "tone": "ok",
                 "action_label": "Open shifts",
-                "url_name": "shifts:list",
+                "href": _shifts_workspace_url(range="upcoming"),
             }
         )
     context["attention_items"] = attention_items

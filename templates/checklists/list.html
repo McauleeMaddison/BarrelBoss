@@ -75,8 +75,8 @@
                         <p class="empty-state">No open tasks are waiting for sign-off in the current checklist scope.</p>
                         {% endif %}
                         <div class="metric-actions dashboard-section-actions">
-                            <a class="table-action metric-action-link" href="{% url 'checklists:list' %}?preset=overdue">Open overdue</a>
-                            <a class="table-action metric-action-link" href="{% url 'checklists:list' %}?preset=today">Open today</a>
+                            <a class="table-action metric-action-link" href="{% url 'checklists:list' %}?preset=overdue#checklists-section-board">Open overdue</a>
+                            <a class="table-action metric-action-link" href="{% url 'checklists:list' %}?preset=today#checklists-section-board">Open today</a>
                             {% if is_management %}
                             <a class="table-action metric-action-link" href="{% url 'checklists:add' %}">Assign task</a>
                             {% endif %}
@@ -120,7 +120,7 @@
                         <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
                             <div class="filter-preset-row">
                                 {% for preset in filter_presets %}
-                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'checklists:list' %}{% endif %}">{{ preset.label }}</a>
+                                <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}#checklists-section-board{% else %}{% url 'checklists:list' %}#checklists-section-board{% endif %}">{{ preset.label }}</a>
                                 {% endfor %}
                             </div>
                             <div class="filter-summary-bar">
@@ -172,7 +172,7 @@
                                 </div>
 
                                 <button class="action-btn" type="submit">Apply filters</button>
-                                <a class="table-action" href="{% url 'checklists:list' %}">Reset</a>
+                                <a class="table-action" href="{% url 'checklists:list' %}#checklists-section-board">Reset</a>
                             </form>
                         </div>
 
@@ -402,12 +402,23 @@
                         <ul class="dashboard-record-list">
                             {% for row in recent_signoff_rows %}
                             <li class="dashboard-record-row">
+                                {% if row.href %}
+                                <a class="dashboard-row-link" href="{{ row.href }}">
+                                    <div class="dashboard-record-copy">
+                                        <strong>{{ row.title }}</strong>
+                                        <small>{{ row.meta }}</small>
+                                        <span class="dashboard-record-note">{{ row.note }}</span>
+                                    </div>
+                                    <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                                </a>
+                                {% else %}
                                 <div class="dashboard-record-copy">
                                     <strong>{{ row.title }}</strong>
                                     <small>{{ row.meta }}</small>
                                     <span class="dashboard-record-note">{{ row.note }}</span>
                                 </div>
                                 <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
+                                {% endif %}
                             </li>
                             {% endfor %}
                         </ul>

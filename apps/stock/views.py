@@ -1,6 +1,7 @@
 import csv
 from collections import defaultdict
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db.models import Q
@@ -50,6 +51,16 @@ STOCK_FOCUS_GROUPS = {
         "copy": "Glassware, cleaning, and service support lines needed to keep the floor moving.",
     },
 }
+
+
+def _stock_workspace_url(*, section="stock-section-board", **params):
+    filtered_params = {key: value for key, value in params.items() if value not in {"", None}}
+    url = reverse("stock:list")
+    if filtered_params:
+        url = f"{url}?{urlencode(filtered_params)}"
+    if section:
+        url = f"{url}#{section}"
+    return url
 
 
 def _stock_focus_url(value):
@@ -325,6 +336,7 @@ def list_items(request):
                 "action_label": "Open critical",
                 "url_name": "stock:list",
                 "query": "urgency=critical",
+                "href": _stock_workspace_url(urgency="critical"),
             }
         )
     if restock_gap_units:
@@ -337,6 +349,7 @@ def list_items(request):
                 "action_label": "Open low stock",
                 "url_name": "stock:list",
                 "query": "urgency=low",
+                "href": _stock_workspace_url(urgency="low"),
             }
         )
     if urgency_counts["watch"]:
@@ -349,6 +362,7 @@ def list_items(request):
                 "action_label": "Open watch list",
                 "url_name": "stock:list",
                 "query": "urgency=watch",
+                "href": _stock_workspace_url(urgency="watch"),
             }
         )
     if not attention_items:
@@ -361,6 +375,7 @@ def list_items(request):
                 "action_label": "Review healthy",
                 "url_name": "stock:list",
                 "query": "urgency=healthy",
+                "href": _stock_workspace_url(urgency="healthy"),
             }
         )
 
@@ -369,21 +384,21 @@ def list_items(request):
         primary_copy = (
             f"{urgency_counts['critical']} line(s) are already out or well below minimum and need attention first."
         )
-        primary_url = f"{reverse('stock:list')}?urgency=critical"
+        primary_url = _stock_workspace_url(urgency="critical")
         primary_label = "Open critical stock"
     elif urgency_counts["low"]:
         primary_title = "Work the low-stock queue"
         primary_copy = (
             f"{urgency_counts['low']} line(s) are below safe working level and should be queued for replenishment."
         )
-        primary_url = f"{reverse('stock:list')}?urgency=low"
+        primary_url = _stock_workspace_url(urgency="low")
         primary_label = "Open low stock"
     elif count_status_counts["missing"] or count_status_counts["stale"]:
         primary_title = "Tighten stock count discipline"
         primary_copy = (
             f"{count_status_counts['missing'] + count_status_counts['stale']} line(s) need a fresh count before the board can be trusted cleanly."
         )
-        primary_url = f"{reverse('stock:list')}?focus=uncounted"
+        primary_url = _stock_workspace_url(focus="uncounted")
         primary_label = "Open count queue"
     elif management_view:
         primary_title = "Add or tidy inventory"
@@ -397,7 +412,7 @@ def list_items(request):
         primary_copy = (
             "No urgent shortage is showing, so use the watch list to stop tomorrow's problems early."
         )
-        primary_url = f"{reverse('stock:list')}?urgency=watch"
+        primary_url = _stock_workspace_url(urgency="watch")
         primary_label = "Open watch list"
 
     display_item_count = len(items)
@@ -452,9 +467,9 @@ def list_items(request):
             ),
             action_label="Open critical" if urgency_counts["critical"] else "Open low stock",
             action_url=(
-                f"{reverse('stock:list')}?urgency=critical"
+                _stock_workspace_url(urgency="critical")
                 if urgency_counts["critical"]
-                else f"{reverse('stock:list')}?urgency=low"
+                else _stock_workspace_url(urgency="low")
             ),
         ),
         build_module_snapshot(
@@ -469,7 +484,7 @@ def list_items(request):
             action_url=(
                 reverse("orders:add")
                 if management_view
-                else f"{reverse('stock:list')}?urgency=low"
+                else _stock_workspace_url(urgency="low")
             ),
         ),
         build_module_snapshot(
@@ -485,7 +500,7 @@ def list_items(request):
                 "Lines with no recent count record, which is often where cellar decisions become guesswork."
             ),
             action_label="Open count queue",
-            action_url=f"{reverse('stock:list')}?focus=uncounted",
+            action_url=_stock_workspace_url(focus="uncounted"),
         ),
     ]
 
@@ -514,7 +529,7 @@ def list_items(request):
                     else "No lines in scope"
                 ),
                 "tone": "alert" if critical_count else ("warn" if urgent_count else "ok"),
-                "url": _stock_focus_url(focus_key),
+                "url": _stock_workspace_url(focus=focus_key),
             }
         )
 
@@ -544,6 +559,11 @@ def list_items(request):
             "note": f"{entry['lines']} line(s) short · {entry['gap']} unit gap",
             "badge": "Call now" if entry["critical"] else "Queue order",
             "tone": "alert" if entry["critical"] else "warn",
+            "href": (
+                f"{reverse('suppliers:list')}?{urlencode({'q': entry['title']})}"
+                if management_view
+                else reverse("orders:add")
+            ),
         }
         for entry in sorted(
             supplier_actions.values(),
@@ -558,6 +578,11 @@ def list_items(request):
                 "note": ", ".join(item.name for item in unlinked_urgent_items[:3]),
                 "badge": "Assign supplier",
                 "tone": "alert",
+                "href": (
+                    _stock_workspace_url(focus="unlinked")
+                    if management_view
+                    else reverse("orders:add")
+                ),
             }
         )
 
@@ -573,6 +598,11 @@ def list_items(request):
             ),
             "badge": "Count now" if item.count_status_key in {"missing", "stale"} else "Review",
             "tone": "alert" if item.count_status_key == "missing" else "warn",
+            "href": (
+                reverse("stock:edit", args=[item.pk])
+                if management_view
+                else _stock_workspace_url(q=item.name, focus="uncounted")
+            ),
         }
         for item in sorted(
             [

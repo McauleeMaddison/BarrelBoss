@@ -80,10 +80,21 @@ def _group_active(current, *group_names):
     return any(current in ROUTE_GROUPS[group_name] for group_name in group_names)
 
 
-def _build_url(url_name, *, query=None):
+def _build_url(url_name, *, query=None, fragment=None):
+    default_fragments = {
+        "checklists:list": "checklists-section-board",
+        "stock:list": "stock-section-board",
+        "shifts:list": "shifts-section-board",
+        "orders:list": "orders-section-board",
+        "breakages:list": "breakageTable",
+        "sales:list": "salesTable",
+    }
     url = reverse(url_name)
     if query:
-        return f"{url}?{query}"
+        url = f"{url}?{query}"
+    target_fragment = fragment or default_fragments.get(url_name)
+    if target_fragment:
+        url = f"{url}#{target_fragment}"
     return url
 
 
@@ -94,20 +105,21 @@ def _nav_item(
     url_name,
     group,
     query=None,
+    fragment=None,
     description="",
 ):
     return {
         "label": label,
-        "url": _build_url(url_name, query=query),
+        "url": _build_url(url_name, query=query, fragment=fragment),
         "active": _group_active(current, group),
         "description": description,
     }
 
 
-def _action_item(*, label, url_name, copy, query=None, emphasis="default"):
+def _action_item(*, label, url_name, copy, query=None, fragment=None, emphasis="default"):
     return {
         "label": label,
-        "url": _build_url(url_name, query=query),
+        "url": _build_url(url_name, query=query, fragment=fragment),
         "copy": copy,
         "emphasis": emphasis,
     }

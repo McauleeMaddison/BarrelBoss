@@ -189,7 +189,7 @@ class RoleRoutingTests(VenueScopedTestCase):
         )
         self.assertEqual(
             response.context["mobile_dock_links"][1]["url"],
-            f"{reverse('checklists:list')}?preset=today&status=pending",
+            f"{reverse('checklists:list')}?preset=today&status=pending#checklists-section-board",
         )
         self.assertEqual(
             response.context["mobile_command_links"][0]["label"],
@@ -207,7 +207,7 @@ class RoleRoutingTests(VenueScopedTestCase):
         )
         self.assertEqual(
             response.context["mobile_dock_links"][2]["url"],
-            reverse("stock:list"),
+            f"{reverse('stock:list')}#stock-section-board",
         )
         self.assertEqual(
             response.context["mobile_command_links"][0]["label"],

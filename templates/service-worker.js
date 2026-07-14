@@ -1,4 +1,4 @@
-const CACHE_NAME = "barrelboss-shell-v10";
+const CACHE_NAME = "barrelboss-shell-v11";
 const APP_SHELL = [
     "/static/css/app.css",
     "/static/css/layouts.css",
