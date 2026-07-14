@@ -1,11 +1,89 @@
 (() => {
     const panelStorageKey = "barrelboss-dashboard-panel-state";
     const accordionStorageKey = "barrelboss-dashboard-accordion-state";
+    const motionCurve = "cubic-bezier(0.22, 1, 0.36, 1)";
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const collapsiblePanels = document.querySelectorAll(".dashboard-collapsible[data-panel-storage-key]");
     const accordionGroups = document.querySelectorAll("[data-dashboard-accordion-group]");
     const accordionControllers = new Map();
     const accordionBodyControllers = new Map();
     const panelControllers = new Map();
+
+    const clearBodyAnimation = (body) => {
+        if (body._dashboardAnimationFrame) {
+            window.cancelAnimationFrame(body._dashboardAnimationFrame);
+        }
+
+        if (body._dashboardAnimationTimeout) {
+            window.clearTimeout(body._dashboardAnimationTimeout);
+        }
+
+        if (body._dashboardAnimationCleanup) {
+            body._dashboardAnimationCleanup();
+        }
+
+        body._dashboardAnimationFrame = null;
+        body._dashboardAnimationTimeout = null;
+        body._dashboardAnimationCleanup = null;
+    };
+
+    const finishBodyVisibility = (body, state) => {
+        clearBodyAnimation(body);
+        body.hidden = state === "closed";
+        body.dataset.dashboardVisibility = state;
+        body.style.transition = "";
+        body.style.height = "";
+        body.style.opacity = "";
+        body.style.overflow = "";
+    };
+
+    const setBodyVisibility = (body, isOpen, { animate = true } = {}) => {
+        if (!body) {
+            return;
+        }
+
+        const nextState = isOpen ? "open" : "closed";
+        clearBodyAnimation(body);
+
+        if (!animate || prefersReducedMotion) {
+            finishBodyVisibility(body, nextState);
+            return;
+        }
+
+        const startHeight = body.hidden ? 0 : body.getBoundingClientRect().height;
+        body.hidden = false;
+        const targetHeight = isOpen ? body.scrollHeight : 0;
+
+        body.style.transition = "none";
+        body.style.overflow = "hidden";
+        body.style.height = `${startHeight}px`;
+        body.style.opacity = isOpen ? (startHeight === 0 ? "0" : "1") : "1";
+        body.dataset.dashboardVisibility = isOpen ? "opening" : "closing";
+        void body.offsetHeight;
+
+        const handleTransitionEnd = (event) => {
+            if (event.target !== body || event.propertyName !== "height") {
+                return;
+            }
+
+            finishBodyVisibility(body, nextState);
+        };
+
+        body.addEventListener("transitionend", handleTransitionEnd);
+        body._dashboardAnimationCleanup = () => {
+            body.removeEventListener("transitionend", handleTransitionEnd);
+        };
+
+        body._dashboardAnimationFrame = window.requestAnimationFrame(() => {
+            body.style.transition = `height 340ms ${motionCurve}, opacity 220ms ease`;
+            body.style.height = `${targetHeight}px`;
+            body.style.opacity = isOpen ? "1" : "0";
+        });
+
+        body._dashboardAnimationTimeout = window.setTimeout(() => {
+            finishBodyVisibility(body, nextState);
+        }, 420);
+    };
 
     const readPanelState = () => {
         try {
@@ -62,7 +140,7 @@
                 ? storedAccordionState[groupKey]
                 : defaultItem?.dataset.dashboardAccordionKey || null;
 
-            const applyAccordionState = (nextOpenKey) => {
+            const applyAccordionState = (nextOpenKey, { animate = true } = {}) => {
                 items.forEach((item) => {
                     const { key, trigger, body } = getItemParts(item);
                     const isOpen = Boolean(nextOpenKey) && key === nextOpenKey;
@@ -74,7 +152,7 @@
                     }
 
                     if (body) {
-                        body.hidden = !isOpen;
+                        setBodyVisibility(body, isOpen, { animate });
                         if (body.id) {
                             accordionBodyControllers.set(body.id, { groupKey, key });
                         }
@@ -90,7 +168,7 @@
             };
 
             accordionControllers.set(groupKey, { setOpenKey });
-            applyAccordionState(openKey);
+            applyAccordionState(openKey, { animate: false });
 
             items.forEach((item) => {
                 const { key, trigger } = getItemParts(item);
@@ -121,8 +199,8 @@
             const hasStoredState = Object.prototype.hasOwnProperty.call(storedPanelState, storageId);
             const defaultCollapsed = panel.dataset.panelDefaultCollapsed === "true";
 
-            const applyState = (isCollapsed) => {
-                body.hidden = isCollapsed;
+            const applyState = (isCollapsed, { animate = true } = {}) => {
+                setBodyVisibility(body, !isCollapsed, { animate });
                 toggle.setAttribute("aria-expanded", String(!isCollapsed));
                 toggle.textContent = isCollapsed ? "Expand" : "Collapse";
                 panel.classList.toggle("is-collapsed", isCollapsed);
@@ -138,7 +216,9 @@
                 panelControllers.set(body.id, { setCollapsed });
             }
 
-            applyState(hasStoredState ? Boolean(storedPanelState[storageId]) : defaultCollapsed);
+            applyState(hasStoredState ? Boolean(storedPanelState[storageId]) : defaultCollapsed, {
+                animate: false,
+            });
 
             toggle.addEventListener("click", () => {
                 setCollapsed(!panel.classList.contains("is-collapsed"));
@@ -173,9 +253,13 @@
             panelControllers.get(owningPanelBody.id)?.setCollapsed(false);
         }
 
-        window.requestAnimationFrame(() => {
-            target.scrollIntoView({ block: "start", behavior: "smooth" });
-        });
+        const shouldDelayScroll = Boolean(owningAccordionBody || owningPanelBody) && !prefersReducedMotion;
+        window.setTimeout(
+            () => {
+                target.scrollIntoView({ block: "start", behavior: "smooth" });
+            },
+            shouldDelayScroll ? 170 : 0,
+        );
     };
 
     const syncHashTarget = () => {
