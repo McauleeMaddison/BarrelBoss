@@ -1,207 +1,102 @@
-<div class="dashboard-view">
-<section class="panel portal-hero dashboard-hero">
+<div class="dashboard-view dashboard-view-management">
+<section class="panel portal-hero dashboard-hero portal-hero-compact">
     <div class="dashboard-hero-grid">
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
-                {% if management_view %}
                 <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"manager" }}.</p>
                 <span class="badge portal-badge">Management Mode</span>
-                {% else %}
-                <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
-                <span class="badge portal-badge">Staff Mode</span>
-                {% endif %}
             </div>
             <h3 class="portal-hero-title">{{ overview_heading }}</h3>
             <p class="portal-hero-copy">{{ overview_copy }}</p>
-            {% include 'partials/attention_rail.html' with attention_items=attention_items %}
+            {% include 'partials/attention_rail.html' with attention_items=attention_items|slice:":1" %}
         </div>
-        <div class="dashboard-hero-aside">
-            <article class="dashboard-hero-card">
+        <aside class="dashboard-hero-aside">
+            <article class="dashboard-hero-card dashboard-hero-card-compact">
                 <div class="panel-header">
-                    <h3>Top Priorities</h3>
-                    <span class="panel-header-meta">{{ focus_list|length }} live</span>
+                    <div>
+                        <h3>Today</h3>
+                        <p class="panel-subtitle">Keep the live blockers visible and collapse everything you do not need.</p>
+                    </div>
+                    <span class="badge">{{ focus_list|length }} live</span>
                 </div>
-                <ul class="focus-list">
+                <ul class="focus-list dashboard-linked-list">
                     {% for item in focus_list %}
                     <li>
-                        <div>
-                            <strong>{{ item.task }}</strong>
-                            <small>{{ item.owner }} · Due {{ item.due }}</small>
-                        </div>
-                        <span class="badge">{{ item.state }}</span>
+                        <a class="dashboard-row-link" href="{{ item.href }}">
+                            <div>
+                                <strong>{{ item.task }}</strong>
+                                <small>{{ item.owner }} · Due {{ item.due }}</small>
+                            </div>
+                            <span class="badge">{{ item.state }}</span>
+                        </a>
                     </li>
                     {% endfor %}
                 </ul>
             </article>
-        </div>
+        </aside>
     </div>
 </section>
 
-<section class="metric-grid">
-    {% for card in metrics %}
-    <article class="metric-card {{ card.tone }}">
-        <div class="metric-card-head">
-            <h3>{{ card.label }}</h3>
-            {% if card.state %}
-            <span class="metric-state metric-state-{{ card.state_tone|default:card.tone }}">{{ card.state }}</span>
-            {% endif %}
-        </div>
-        <div class="metric-card-body">
-            <p>{{ card.value }}</p>
-            {% if card.summary %}
-            <span class="metric-summary">{{ card.summary }}</span>
-            {% endif %}
-            {% if card.chart_points %}
-            <div class="metric-chart-block">
-                <div class="metric-chart" aria-hidden="true">
-                    {% for point in card.chart_points %}
-                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
-                    {% endfor %}
-                </div>
-                {% if card.chart_label %}
-                <span class="metric-chart-label">{{ card.chart_label }}</span>
-                {% endif %}
-            </div>
-            {% endif %}
-            {% if card.trend %}
-            <span class="metric-delta metric-delta-{{ card.trend.direction }}">{{ card.trend.label }}</span>
-            {% endif %}
-            <span class="metric-note">{{ card.note }}</span>
-            {% if card.actions %}
-            <div class="metric-actions">
-                {% for action in card.actions %}
-                {% if action.href %}
-                <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
-                {% else %}
-                <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
-                    {{ action.label }}
-                </a>
-                {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-    </article>
-    {% endfor %}
-</section>
-
-<section class="dashboard-rhythm-grid">
-    <article class="panel dashboard-rhythm-panel">
+<section class="dashboard-stack dashboard-priority-stack">
+    <article class="panel portal-panel">
         <div class="panel-header">
             <div>
-                <h3>Operational rhythm</h3>
-                <p class="panel-subtitle">Relative service pressure versus task output over the last seven days.</p>
-            </div>
-            <span class="badge">7 day view</span>
-        </div>
-        <div class="throughput-grid" aria-label="Operational rhythm">
-            {% for point in throughput %}
-            <div class="throughput-column">
-                <div class="throughput-bar-wrap">
-                    <div class="throughput-stack">
-                        <span class="throughput-bar throughput-bar-service" style="height: {{ point.value }}%"></span>
-                        <span class="throughput-bar throughput-bar-task" style="height: {{ point.task_value }}%"></span>
-                    </div>
-                </div>
-                <strong>{{ point.label }}</strong>
-                <small>Service and standards</small>
-            </div>
-            {% endfor %}
-        </div>
-    </article>
-
-    <article class="panel dashboard-rhythm-side">
-        <div class="panel-header">
-            <div>
-                <h3>How to read it</h3>
-                <p class="panel-subtitle">Use the rhythm panel to spot when the floor is busier than standards work can realistically keep up with.</p>
+                <h3>Management Workspace</h3>
+                <p class="panel-subtitle">Open one work area at a time and keep the rest collapsed.</p>
             </div>
         </div>
-        <div class="dashboard-rhythm-legend">
-            <div class="dashboard-rhythm-key">
-                <span class="throughput-key throughput-key-service"></span>
-                <div>
-                    <strong>Service load</strong>
-                    <small>Orders raised and rota pressure in the same daily frame.</small>
-                </div>
-            </div>
-            <div class="dashboard-rhythm-key">
-                <span class="throughput-key throughput-key-task"></span>
-                <div>
-                    <strong>Standards output</strong>
-                    <small>Completed tasks and logged breakages moving through handover.</small>
-                </div>
-            </div>
-        </div>
-    </article>
-</section>
-
-<section class="overview-board">
-    <article class="panel portal-panel dashboard-collapsible" data-panel-storage-key="management-control-board">
-        <div class="panel-header">
-            <div>
-                <h3>{% if management_view %}Operational Control Board{% else %}My Operational Board{% endif %}</h3>
-                <p class="panel-subtitle">Use the portal sections as working views first, then jump into the full module only when you need more detail.</p>
-            </div>
-            <div class="dashboard-panel-actions">
-                <label class="dashboard-panel-select-label">
-                    Section
-                    <select class="dashboard-panel-select" data-dashboard-panel-select>
-                        {% for section in portal_sections %}
-                        <option value="{{ section.slug }}">{{ section.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
+        <div class="dashboard-accordion-group" data-dashboard-accordion-group="management-workspace">
+            {% for section in portal_sections %}
+            <article
+                class="dashboard-accordion-card{% if forloop.first %} is-open{% endif %}"
+                data-dashboard-accordion-item
+                data-dashboard-accordion-key="{{ section.slug }}"
+                {% if forloop.first %}data-dashboard-accordion-default-open="true"{% endif %}
+            >
                 <button
                     type="button"
-                    class="table-action panel-collapse-toggle"
-                    data-panel-toggle
-                    aria-expanded="true"
-                    aria-controls="management-control-board"
+                    class="dashboard-accordion-trigger"
+                    data-dashboard-accordion-trigger
+                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                    aria-controls="management-section-{{ section.slug }}"
                 >
-                    Collapse
-                </button>
-            </div>
-        </div>
-        <div class="dashboard-collapsible-body" id="management-control-board" data-panel-body>
-            <div class="dashboard-controls dashboard-section-tabs">
-                {% for section in portal_sections %}
-                <button class="segment-btn{% if forloop.first %} active{% endif %}" type="button" data-dashboard-panel-target="{{ section.slug }}">
-                    {{ section.label }}
-                </button>
-                {% endfor %}
-            </div>
-            {% for section in portal_sections %}
-            <div class="dashboard-panel-group dashboard-workspace-group" data-dashboard-panel-group="{{ section.slug }}"{% if not forloop.first %} hidden{% endif %}>
-                <div class="dashboard-workspace-shell">
-                    <div class="dashboard-workspace-main">
-                        <div class="dashboard-workspace-head">
-                            <p class="kicker dashboard-workspace-kicker">{{ section.eyebrow }}</p>
-                            <h4>{{ section.title }}</h4>
-                        </div>
-                        <p class="panel-subtitle">{{ section.copy }}</p>
-                        <div class="dashboard-section-stats">
-                            {% for stat in section.stats %}
-                            <article class="dashboard-section-stat">
-                                <span>{{ stat.label }}</span>
-                                <strong>{{ stat.value }}</strong>
-                            </article>
-                            {% endfor %}
-                        </div>
+                    <div class="dashboard-accordion-summary">
+                        <p class="kicker dashboard-workspace-kicker">{{ section.eyebrow }}</p>
+                        <span class="dashboard-accordion-label">{{ section.label }}</span>
+                        <strong>{{ section.title }}</strong>
+                        <small>{{ section.copy }}</small>
                     </div>
-                    <div class="dashboard-workspace-side">
+                    <div class="dashboard-accordion-metrics">
+                        {% for stat in section.stats %}
+                        <span class="dashboard-accordion-metric">
+                            <strong>{{ stat.value }}</strong>
+                            <small>{{ stat.label }}</small>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div
+                    class="dashboard-accordion-body"
+                    id="management-section-{{ section.slug }}"
+                    data-dashboard-accordion-body
+                    {% if not forloop.first %}hidden{% endif %}
+                >
+                    <div class="dashboard-accordion-content">
                         {% if section.rows %}
                         <ul class="dashboard-record-list">
                             {% for row in section.rows %}
                             <li class="dashboard-record-row">
-                                <div class="dashboard-record-copy">
-                                    <strong>{{ row.title }}</strong>
-                                    <small>{{ row.meta }}</small>
-                                    {% if row.note %}
-                                    <span class="dashboard-record-note">{{ row.note }}</span>
-                                    {% endif %}
-                                </div>
-                                <span class="metric-state metric-state-{{ row.tone|default:'neutral' }}">{{ row.badge }}</span>
+                                <a class="dashboard-row-link" href="{{ row.href }}">
+                                    <div class="dashboard-record-copy">
+                                        <strong>{{ row.title }}</strong>
+                                        <small>{{ row.meta }}</small>
+                                        {% if row.note %}
+                                        <span class="dashboard-record-note">{{ row.note }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="metric-state metric-state-{{ row.tone|default:'neutral' }}">{{ row.badge }}</span>
+                                </a>
                             </li>
                             {% endfor %}
                         </ul>
@@ -209,22 +104,80 @@
                         <p class="empty-state">{{ section.empty_state }}</p>
                         {% endif %}
                         {% if section.actions %}
-                        <div class="metric-actions">
+                        <div class="metric-actions dashboard-section-actions">
                             {% for action in section.actions %}
-                            {% if action.href %}
                             <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
-                            {% else %}
-                            <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">
-                                {{ action.label }}
-                            </a>
-                            {% endif %}
                             {% endfor %}
                         </div>
                         {% endif %}
                     </div>
                 </div>
-            </div>
+            </article>
             {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="management-snapshot-panel" data-panel-default-collapsed="true">
+        <div class="panel-header">
+            <div>
+                <h3>Management Snapshot</h3>
+                <p class="panel-subtitle">Open the premium metrics only when you need the wider picture.</p>
+            </div>
+            <button
+                type="button"
+                class="table-action panel-collapse-toggle"
+                data-panel-toggle
+                aria-expanded="false"
+                aria-controls="management-snapshot-panel"
+            >
+                Expand
+            </button>
+        </div>
+        <div class="dashboard-collapsible-body" id="management-snapshot-panel" data-panel-body hidden>
+            <section class="metric-grid">
+                {% for card in metrics %}
+                <article class="metric-card {{ card.tone }}">
+                    <div class="metric-card-head">
+                        <h3>{{ card.label }}</h3>
+                        {% if card.state %}
+                        <span class="metric-state metric-state-{{ card.state_tone|default:card.tone }}">{{ card.state }}</span>
+                        {% endif %}
+                    </div>
+                    {% if card.actions %}
+                    <a class="metric-card-jump" href="{{ card.actions.0.href }}">{{ card.actions.0.label }}</a>
+                    {% endif %}
+                    <div class="metric-card-body">
+                        <p>{{ card.value }}</p>
+                        {% if card.summary %}
+                        <span class="metric-summary">{{ card.summary }}</span>
+                        {% endif %}
+                        {% if card.chart_points %}
+                        <div class="metric-chart-block">
+                            <div class="metric-chart" aria-hidden="true">
+                                {% for point in card.chart_points %}
+                                <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
+                                {% endfor %}
+                            </div>
+                            {% if card.chart_label %}
+                            <span class="metric-chart-label">{{ card.chart_label }}</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if card.trend %}
+                        <span class="metric-delta metric-delta-{{ card.trend.direction }}">{{ card.trend.label }}</span>
+                        {% endif %}
+                        <span class="metric-note">{{ card.note }}</span>
+                        {% if card.actions|length > 1 %}
+                        <div class="metric-actions">
+                            {% for action in card.actions|slice:"1:" %}
+                            <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
         </div>
     </article>
 
@@ -232,14 +185,12 @@
         <div class="panel-header">
             <div>
                 <h3>Recent Activity</h3>
-                <p class="panel-subtitle">Filter by workstream when you need to narrow it down.</p>
+                <p class="panel-subtitle">Open only when you need the latest cross-team changes.</p>
             </div>
             <div class="dashboard-panel-actions">
                 <div class="dashboard-controls" data-activity-controls>
                     <button class="segment-btn active" type="button" data-activity-filter="all">All</button>
-                    {% if management_view %}
                     <button class="segment-btn" type="button" data-activity-filter="sales">Sales</button>
-                    {% endif %}
                     <button class="segment-btn" type="button" data-activity-filter="orders">Orders</button>
                     <button class="segment-btn" type="button" data-activity-filter="shifts">Shifts</button>
                     <button class="segment-btn" type="button" data-activity-filter="checklists">Checklists</button>
@@ -249,22 +200,24 @@
                     type="button"
                     class="table-action panel-collapse-toggle"
                     data-panel-toggle
-                    aria-expanded="true"
+                    aria-expanded="false"
                     aria-controls="management-recent-activity"
                 >
-                    Collapse
+                    Expand
                 </button>
             </div>
         </div>
-        <div class="dashboard-collapsible-body" id="management-recent-activity" data-panel-body>
-            <ul class="activity-list" id="activityList">
+        <div class="dashboard-collapsible-body" id="management-recent-activity" data-panel-body hidden>
+            <ul class="activity-list dashboard-linked-list" id="activityList">
                 {% for item in activity %}
                 <li data-activity-category="{{ item.category }}">
-                    <div>
-                        <strong>{{ item.time }}</strong>
-                        <small>{{ item.text }}</small>
-                    </div>
-                    <span class="activity-chip badge">{{ item.category|title }}</span>
+                    <a class="dashboard-row-link" href="{{ item.href }}">
+                        <div>
+                            <strong>{{ item.time }}</strong>
+                            <small>{{ item.text }}</small>
+                        </div>
+                        <span class="activity-chip badge">{{ item.category|title }}</span>
+                    </a>
                 </li>
                 {% endfor %}
             </ul>

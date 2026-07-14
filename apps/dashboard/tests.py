@@ -61,13 +61,14 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertEqual(response.context["portal_title"], "Management Portal")
         self.assertEqual(len(response.context["portal_sections"]), 4)
         self.assertEqual(len(response.context["metrics"]), 4)
+        self.assertTrue(response.context["command_links"])
         self.assertIn("state", response.context["metrics"][0])
         self.assertIn("trend", response.context["metrics"][0])
         self.assertIn("chart_points", response.context["metrics"][0])
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Management Overview")
-        self.assertContains(response, "Operational Control Board")
+        self.assertContains(response, "Management Workspace")
         self.assertContains(response, "Cellar watch")
 
     def test_staff_portal_context(self):
@@ -78,13 +79,14 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertFalse(response.context["management_view"])
         self.assertEqual(response.context["portal_title"], "Staff Portal")
         self.assertEqual(len(response.context["portal_sections"]), 4)
+        self.assertTrue(response.context["quick_actions"])
         self.assertIn("state", response.context["metrics"][0])
         self.assertIn("trend", response.context["metrics"][0])
         self.assertIn("chart_points", response.context["metrics"][0])
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Today")
-        self.assertContains(response, "Workspace")
+        self.assertContains(response, "Staff Workspace")
         self.assertContains(response, "View stock")
 
     def test_staff_cannot_access_management_portal(self):
@@ -95,6 +97,61 @@ class DashboardAccessTests(VenueScopedTestCase):
             reverse("dashboard:staff_portal"),
             fetch_redirect_response=False,
         )
+
+    def _assert_dashboard_links_resolve(self, response):
+        hrefs = set()
+
+        for link in response.context.get("command_links", []):
+            if link.get("href"):
+                hrefs.add(link["href"])
+
+        for link in response.context.get("quick_actions", []):
+            if link.get("href"):
+                hrefs.add(link["href"])
+
+        for item in response.context.get("attention_items", []):
+            if item.get("href"):
+                hrefs.add(item["href"])
+
+        for item in response.context.get("focus_list", []):
+            if item.get("href"):
+                hrefs.add(item["href"])
+
+        for item in response.context.get("activity", []):
+            if item.get("href"):
+                hrefs.add(item["href"])
+
+        for card in response.context.get("metrics", []):
+            for action in card.get("actions", []):
+                if action.get("href"):
+                    hrefs.add(action["href"])
+
+        for section in response.context.get("portal_sections", []):
+            if section.get("module_href"):
+                hrefs.add(section["module_href"])
+
+            for row in section.get("rows", []):
+                if row.get("href"):
+                    hrefs.add(row["href"])
+
+            for action in section.get("actions", []):
+                if action.get("href"):
+                    hrefs.add(action["href"])
+
+        self.assertTrue(hrefs)
+        for href in hrefs:
+            linked_response = self.client.get(href, follow=False)
+            self.assertIn(linked_response.status_code, {200, 302}, href)
+
+    def test_manager_portal_links_resolve(self):
+        self.client.login(username="dash_manager", password="strong-pass-123")
+        response = self.client.get(reverse("dashboard:management_portal"))
+        self._assert_dashboard_links_resolve(response)
+
+    def test_staff_portal_links_resolve(self):
+        self.client.login(username="dash_staff", password="strong-pass-123")
+        response = self.client.get(reverse("dashboard:staff_portal"))
+        self._assert_dashboard_links_resolve(response)
 
 
 class DashboardDataDrivenMetricsTests(VenueScopedTestCase):

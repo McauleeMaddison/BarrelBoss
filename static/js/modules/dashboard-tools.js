@@ -1,6 +1,8 @@
 (() => {
     const panelStorageKey = "barrelboss-dashboard-panel-state";
+    const accordionStorageKey = "barrelboss-dashboard-accordion-state";
     const collapsiblePanels = document.querySelectorAll(".dashboard-collapsible[data-panel-storage-key]");
+    const accordionGroups = document.querySelectorAll("[data-dashboard-accordion-group]");
 
     const readPanelState = () => {
         try {
@@ -17,6 +19,81 @@
             // Ignore storage errors.
         }
     };
+
+    const readAccordionState = () => {
+        try {
+            return JSON.parse(window.localStorage.getItem(accordionStorageKey) || "{}");
+        } catch (_error) {
+            return {};
+        }
+    };
+
+    const writeAccordionState = (state) => {
+        try {
+            window.localStorage.setItem(accordionStorageKey, JSON.stringify(state));
+        } catch (_error) {
+            // Ignore storage errors.
+        }
+    };
+
+    if (accordionGroups.length) {
+        const storedAccordionState = readAccordionState();
+
+        accordionGroups.forEach((group) => {
+            const groupKey = group.dataset.dashboardAccordionGroup;
+            const items = Array.from(group.querySelectorAll("[data-dashboard-accordion-item]"));
+
+            if (!groupKey || !items.length) {
+                return;
+            }
+
+            const getItemParts = (item) => ({
+                key: item.dataset.dashboardAccordionKey,
+                trigger: item.querySelector("[data-dashboard-accordion-trigger]"),
+                body: item.querySelector("[data-dashboard-accordion-body]"),
+            });
+
+            const defaultItem =
+                items.find((item) => item.dataset.dashboardAccordionDefaultOpen === "true") || items[0];
+            let openKey = Object.prototype.hasOwnProperty.call(storedAccordionState, groupKey)
+                ? storedAccordionState[groupKey]
+                : defaultItem?.dataset.dashboardAccordionKey || null;
+
+            const applyAccordionState = (nextOpenKey) => {
+                items.forEach((item) => {
+                    const { key, trigger, body } = getItemParts(item);
+                    const isOpen = Boolean(nextOpenKey) && key === nextOpenKey;
+
+                    item.classList.toggle("is-open", isOpen);
+
+                    if (trigger) {
+                        trigger.setAttribute("aria-expanded", String(isOpen));
+                    }
+
+                    if (body) {
+                        body.hidden = !isOpen;
+                    }
+                });
+            };
+
+            applyAccordionState(openKey);
+
+            items.forEach((item) => {
+                const { key, trigger } = getItemParts(item);
+
+                if (!key || !trigger) {
+                    return;
+                }
+
+                trigger.addEventListener("click", () => {
+                    openKey = openKey === key ? null : key;
+                    storedAccordionState[groupKey] = openKey;
+                    writeAccordionState(storedAccordionState);
+                    applyAccordionState(openKey);
+                });
+            });
+        });
+    }
 
     if (collapsiblePanels.length) {
         const storedPanelState = readPanelState();

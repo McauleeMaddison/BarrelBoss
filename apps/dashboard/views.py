@@ -1,7 +1,9 @@
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.db.models import Count, F, Q, Sum
+from django.urls import reverse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -47,6 +49,38 @@ def _format_activity_time(moment):
     if local_moment.date() == timezone.localdate():
         return local_moment.strftime("%H:%M")
     return local_moment.strftime("%a %H:%M")
+
+
+def _dashboard_href(url_name, *, args=None, query=None, **params):
+    url = reverse(url_name, args=args or [])
+    if query:
+        return f"{url}?{query}"
+
+    query_params = [
+        (key, value)
+        for key, value in params.items()
+        if value not in (None, "")
+    ]
+    if query_params:
+        return f"{url}?{urlencode(query_params, doseq=True)}"
+    return url
+
+
+def _normalize_link_item(item):
+    if item.get("href") or not item.get("url_name"):
+        return item
+
+    normalized = dict(item)
+    normalized["href"] = _dashboard_href(
+        normalized["url_name"],
+        args=normalized.get("args"),
+        query=normalized.get("query"),
+    )
+    return normalized
+
+
+def _normalize_link_items(items):
+    return [_normalize_link_item(item) for item in items]
 
 
 def _to_scaled_percentages(values):
@@ -148,6 +182,7 @@ def _stock_row(item):
         ),
         "badge": f"{shortage} short" if shortage else "At minimum",
         "tone": "alert" if item.quantity < item.minimum_level else "warn",
+        "href": _dashboard_href("stock:list", q=item.name),
     }
 
 
@@ -168,10 +203,11 @@ def _order_row(order):
         ),
         "badge": order.get_status_display(),
         "tone": _order_tone(order.status),
+        "href": _dashboard_href("orders:edit", args=[order.pk]),
     }
 
 
-def _task_row(task, *, today):
+def _task_row(task, *, today, management_view):
     if task.due_date < today:
         badge = "Overdue"
         tone = "alert"
@@ -191,6 +227,15 @@ def _task_row(task, *, today):
         ),
         "badge": badge,
         "tone": tone,
+        "href": (
+            _dashboard_href("checklists:edit", args=[task.pk])
+            if management_view
+            else _dashboard_href(
+                "checklists:list",
+                q=task.title,
+                status="pending" if not task.completed else "completed",
+            )
+        ),
     }
 
 
@@ -208,6 +253,11 @@ def _breakage_row(record):
         ),
         "badge": "Loss log",
         "tone": "warn",
+        "href": _dashboard_href(
+            "breakages:list",
+            q=record.item_name,
+            issue=record.issue_type,
+        ),
     }
 
 
@@ -231,10 +281,11 @@ def _integration_row(integration):
         "note": last_sync_label,
         "badge": integration.health_label,
         "tone": health_state,
+        "href": _dashboard_href("sales:integration_edit", args=[integration.pk]),
     }
 
 
-def _shift_row(shift, *, today):
+def _shift_row(shift, *, today, management_view):
     if shift.shift_date == today:
         badge = "Today"
         tone = "warn"
@@ -250,6 +301,11 @@ def _shift_row(shift, *, today):
         "note": shift.notes or "No shift notes attached",
         "badge": badge,
         "tone": tone,
+        "href": (
+            _dashboard_href("shifts:edit", args=[shift.pk])
+            if management_view
+            else _dashboard_href("shifts:list", query="range=upcoming")
+        ),
     }
 
 
@@ -506,11 +562,12 @@ def _management_dashboard_payload(venue):
                 "tone": "ok"
                 if latest_sales_snapshot.sync_mode == SalesSnapshot.SyncMode.LIVE
                 else "warn",
+                "href": _dashboard_href("sales:list"),
             }
         ]
     standards_preview = [
         *[
-            _task_row(task, today=today)
+            _task_row(task, today=today, management_view=True)
             for task in checklist_qs.filter(completed=False, due_date__lte=today)
             .order_by("due_date", "created_at")[:2]
         ],
@@ -604,6 +661,40 @@ def _management_dashboard_payload(venue):
         },
     ]
 
+    command_links = [
+        {
+            "label": "Approvals",
+            "title": "Review draft requests",
+            "copy": "Clear sign-off work before supplier cut-off gets missed.",
+            "stat": f"{pending_order_count} waiting" if pending_order_count else "Queue clear",
+            "href": _dashboard_href("orders:list", query="preset=drafts"),
+        },
+        {
+            "label": "Deliveries",
+            "title": "Track incoming stock",
+            "copy": "Keep today's and tomorrow's deliveries visible until they land.",
+            "stat": f"{deliveries_due_today} today · {deliveries_due_tomorrow} tomorrow",
+            "href": _dashboard_href("orders:list", query="preset=pending"),
+        },
+        {
+            "label": "Stock",
+            "title": "Resolve low-stock pressure",
+            "copy": "Jump straight to critical inventory lines before service slips.",
+            "stat": f"{low_stock_count} low stock" if low_stock_count else "All lines stable",
+            "href": _dashboard_href("stock:list", urgency="critical"),
+        },
+        {
+            "label": "Standards",
+            "title": "Clear overdue standards",
+            "copy": "Use one board for checklist drift and live breakage follow-up.",
+            "stat": f"{overdue_task_count} overdue" if overdue_task_count else "No overdue tasks",
+            "href": _dashboard_href(
+                "checklists:list",
+                query="preset=overdue" if overdue_task_count else "status=pending",
+            ),
+        },
+    ]
+
     focus_list = []
     next_draft = order_qs.filter(status=Order.Status.DRAFT).order_by("created_at").first()
     if next_draft:
@@ -613,6 +704,7 @@ def _management_dashboard_payload(venue):
                 "owner": next_draft.created_by.username if next_draft.created_by else "Staff",
                 "due": next_draft.created_at.astimezone(timezone.get_current_timezone()).strftime("%H:%M"),
                 "state": "Pending",
+                "href": _dashboard_href("orders:edit", args=[next_draft.pk]),
             }
         )
 
@@ -624,6 +716,7 @@ def _management_dashboard_payload(venue):
                 "owner": overdue_task.assigned_to.username if overdue_task.assigned_to else "Unassigned",
                 "due": overdue_task.due_date.strftime("%d %b"),
                 "state": "Overdue",
+                "href": _dashboard_href("checklists:edit", args=[overdue_task.pk]),
             }
         )
 
@@ -638,6 +731,7 @@ def _management_dashboard_payload(venue):
                 "owner": due_delivery.supplier.name,
                 "due": due_delivery.delivery_date.strftime("%d %b"),
                 "state": "Scheduled",
+                "href": _dashboard_href("orders:edit", args=[due_delivery.pk]),
             }
         )
 
@@ -648,6 +742,7 @@ def _management_dashboard_payload(venue):
                 "owner": "System",
                 "due": "Today",
                 "state": "Clear",
+                "href": _dashboard_href("dashboard:management_portal"),
             }
         )
 
@@ -776,6 +871,7 @@ def _management_dashboard_payload(venue):
                     f"{order.reference} is now {order.get_status_display().lower()} "
                     f"({order.supplier.name})"
                 ),
+                "href": _dashboard_href("orders:edit", args=[order.pk]),
             }
         )
 
@@ -788,6 +884,7 @@ def _management_dashboard_payload(venue):
                     f"{snapshot.get_source_display()} sync captured "
                     f"£{snapshot.net_sales:,.0f} for {snapshot.business_date:%d %b}"
                 ),
+                "href": _dashboard_href("sales:list"),
             }
         )
 
@@ -800,6 +897,7 @@ def _management_dashboard_payload(venue):
                     f"Shift updated: {shift.staff.username} on {shift.shift_date:%d %b} "
                     f"({shift.start_time:%H:%M}-{shift.end_time:%H:%M})"
                 ),
+                "href": _dashboard_href("shifts:edit", args=[shift.pk]),
             }
         )
 
@@ -810,6 +908,7 @@ def _management_dashboard_payload(venue):
                 "moment": task.updated_at,
                 "category": "checklists",
                 "text": f"Checklist task {status_label}: {task.title}",
+                "href": _dashboard_href("checklists:edit", args=[task.pk]),
             }
         )
 
@@ -822,6 +921,7 @@ def _management_dashboard_payload(venue):
                     f"{record.quantity} {record.item_name} recorded as "
                     f"{record.get_issue_type_display().lower()}"
                 ),
+                "href": _dashboard_href("breakages:list", q=record.item_name),
             }
         )
 
@@ -831,6 +931,7 @@ def _management_dashboard_payload(venue):
             "time": _format_activity_time(item["moment"]),
             "text": item["text"],
             "category": item["category"],
+            "href": item.get("href"),
         }
         for item in activity_events[:8]
     ]
@@ -840,6 +941,7 @@ def _management_dashboard_payload(venue):
                 "time": "Now",
                 "text": "No recent operational events recorded.",
                 "category": "orders",
+                "href": _dashboard_href("dashboard:management_portal"),
             }
         ]
 
@@ -849,6 +951,25 @@ def _management_dashboard_payload(venue):
             order_qs.filter(created_at__date=day).count() + shift_qs.filter(shift_date=day).count()
         )
 
+    metrics = [
+        {
+            **card,
+            "actions": _normalize_link_items(card.get("actions", [])),
+        }
+        for card in metrics
+    ]
+    portal_sections = [
+        {
+            **section,
+            "actions": _normalize_link_items(section.get("actions", [])),
+            "module_href": _normalize_link_items(section.get("actions", []))[0]["href"]
+            if section.get("actions")
+            else "",
+        }
+        for section in portal_sections
+    ]
+    attention_items = _normalize_link_items(attention_items)
+
     return {
         "portal_title": "Management Portal",
         "overview_heading": "Management Overview",
@@ -857,6 +978,7 @@ def _management_dashboard_payload(venue):
             f"{connectors_needing_attention} connector(s) need attention and "
             f"{deliveries_due_today} delivery(ies) land today."
         ),
+        "command_links": command_links,
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,
@@ -1098,14 +1220,14 @@ def _staff_dashboard_payload(user, venue):
     ]
 
     upcoming_shift_preview = [
-        _shift_row(shift, today=today)
+        _shift_row(shift, today=today, management_view=False)
         for shift in my_shifts_qs.filter(
             shift_date__gte=today,
         )[:4]
     ]
 
     open_task_preview = [
-        _task_row(task, today=today)
+        _task_row(task, today=today, management_view=False)
         for task in my_tasks_qs.filter(
             completed=False,
         ).order_by(
@@ -1268,6 +1390,7 @@ def _staff_dashboard_payload(user, venue):
                     f"{next_shift.start_time:%H:%M}"
                 ),
                 "state": "Scheduled",
+                "href": _dashboard_href("shifts:list", query="range=upcoming"),
             }
         )
 
@@ -1291,6 +1414,7 @@ def _staff_dashboard_payload(user, venue):
                     if due_task.due_date == today
                     else "Open"
                 ),
+                "href": _dashboard_href("checklists:list", q=due_task.title, status="pending"),
             }
         )
 
@@ -1301,6 +1425,7 @@ def _staff_dashboard_payload(user, venue):
                 "owner": "You",
                 "due": "Today",
                 "state": "Clear",
+                "href": _dashboard_href("dashboard:staff_portal"),
             }
         )
 
@@ -1374,6 +1499,10 @@ def _staff_dashboard_payload(user, venue):
             "url_name": "checklists:list",
             "query": "preset=overdue" if tasks_overdue else "preset=today",
             "action_label": "Open tasks",
+            "href": _dashboard_href(
+                "checklists:list",
+                query="preset=overdue" if tasks_overdue else "preset=today",
+            ),
         },
         {
             "label": "Stock",
@@ -1382,6 +1511,7 @@ def _staff_dashboard_payload(user, venue):
             "stat": "Live stock view",
             "url_name": "stock:list",
             "action_label": "View stock",
+            "href": _dashboard_href("stock:list"),
         },
         {
             "label": "Request",
@@ -1390,6 +1520,7 @@ def _staff_dashboard_payload(user, venue):
             "stat": "Submit only",
             "url_name": "orders:add",
             "action_label": "Request stock",
+            "href": _dashboard_href("orders:add"),
         },
         {
             "label": "Breakage",
@@ -1398,6 +1529,7 @@ def _staff_dashboard_payload(user, venue):
             "stat": "Submit only",
             "url_name": "breakages:add",
             "action_label": "Report breakage",
+            "href": _dashboard_href("breakages:add"),
         },
         {
             "label": "Rota",
@@ -1406,6 +1538,7 @@ def _staff_dashboard_payload(user, venue):
             "stat": next_shift_short,
             "url_name": "shifts:list",
             "action_label": "Open rota",
+            "href": _dashboard_href("shifts:list", query="range=upcoming"),
         },
     ]
 
@@ -1420,6 +1553,7 @@ def _staff_dashboard_payload(user, venue):
                     f"Shift on {shift.shift_date:%d %b} "
                     f"({shift.start_time:%H:%M}-{shift.end_time:%H:%M})"
                 ),
+                "href": _dashboard_href("shifts:list", query="range=upcoming"),
             }
         )
 
@@ -1431,6 +1565,7 @@ def _staff_dashboard_payload(user, venue):
                 "moment": task.updated_at,
                 "category": "checklists",
                 "text": f"Checklist task {task_state}: {task.title}",
+                "href": _dashboard_href("checklists:list", q=task.title),
             }
         )
 
@@ -1444,6 +1579,7 @@ def _staff_dashboard_payload(user, venue):
             "time": _format_activity_time(item["moment"]),
             "text": item["text"],
             "category": item["category"],
+            "href": item.get("href"),
         }
         for item in activity_events[:6]
     ]
@@ -1454,6 +1590,7 @@ def _staff_dashboard_payload(user, venue):
                 "time": "Now",
                 "text": "No recent staff activity recorded.",
                 "category": "shifts",
+                "href": _dashboard_href("dashboard:staff_portal"),
             }
         ]
 
@@ -1467,6 +1604,25 @@ def _staff_dashboard_payload(user, venue):
                 )
             )
         )
+
+    metrics = [
+        {
+            **card,
+            "actions": _normalize_link_items(card.get("actions", [])),
+        }
+        for card in metrics
+    ]
+    portal_sections = [
+        {
+            **section,
+            "actions": _normalize_link_items(section.get("actions", [])),
+            "module_href": _normalize_link_items(section.get("actions", []))[0]["href"]
+            if section.get("actions")
+            else "",
+        }
+        for section in portal_sections
+    ]
+    attention_items = _normalize_link_items(attention_items)
 
     return {
         "portal_title": "Staff Portal",
