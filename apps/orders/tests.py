@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -113,6 +114,27 @@ class OrderWorkflowTests(VenueScopedTestCase):
         order = Order.objects.latest("id")
         self.assertEqual(order.created_by, self.staff_user)
         self.assertEqual(order.status, Order.Status.DRAFT)
+
+    def test_staff_request_form_uses_staff_only_wording(self):
+        self.client.login(username="order_staff", password="strong-pass-123")
+        response = self.client.get(reverse("orders:add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Submit request")
+        self.assertNotContains(response, "Send to management")
+
+    def test_staff_request_success_message_stays_staff_safe(self):
+        self.client.login(username="order_staff", password="strong-pass-123")
+        response = self.client.post(
+            reverse("orders:add"),
+            self._order_post_payload(status=Order.Status.DELIVERED),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        message_text = " ".join(message.message for message in get_messages(response.wsgi_request))
+        self.assertIn("Stock request submitted.", message_text)
+        self.assertNotIn("management", message_text.lower())
 
     def test_staff_can_edit_their_own_draft(self):
         order = Order.objects.create(

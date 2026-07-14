@@ -74,6 +74,7 @@ class ShiftViewTests(VenueScopedTestCase):
         self.assertContains(response, "Main floor")
         self.assertNotContains(response, "Cellar delivery")
         self.assertNotContains(response, "Schedule shift")
+        self.assertNotContains(response, "for management")
         self.assertEqual(response.context["hours_this_week"], 5.5)
 
     def test_weekly_chart_context_is_present(self):

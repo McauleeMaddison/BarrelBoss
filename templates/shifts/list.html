@@ -101,7 +101,7 @@
                         <p class="kicker dashboard-workspace-kicker">Live board</p>
                         <span class="dashboard-accordion-label">Rota queue</span>
                         <strong>{% if is_management %}Team shift planner{% else %}My shift board{% endif %}</strong>
-                        <small>Filter by range and, for management, by staff, while keeping the full rota list inside the same board.</small>
+                        <small>{% if is_management %}Filter by range and by staff while keeping the full rota list inside the same board.{% else %}Filter your rota by date range while keeping the full shift list inside one simple board.{% endif %}</small>
                     </div>
                     <div class="dashboard-accordion-metrics">
                         <span class="dashboard-accordion-metric">

@@ -1029,6 +1029,18 @@ def _staff_dashboard_payload(user, venue):
         venue=venue,
         assigned_to=user,
     )
+    my_orders_qs = Order.objects.filter(
+        venue=venue,
+        created_by=user,
+    )
+    my_breakages_qs = Breakage.objects.filter(
+        venue=venue,
+        reported_by=user,
+    )
+    stock_qs = StockItem.objects.filter(
+        venue=venue,
+        is_active=True,
+    )
 
     hours_this_week = _sum_shift_hours(
         my_shifts_qs.filter(
@@ -1062,6 +1074,16 @@ def _staff_dashboard_payload(user, venue):
 
     open_task_count = my_tasks_qs.filter(
         completed=False,
+    ).count()
+    low_stock_count = stock_qs.filter(
+        quantity__lte=F("minimum_level"),
+    ).count()
+    my_request_count = my_orders_qs.count()
+    my_open_request_count = my_orders_qs.exclude(
+        status__in=[Order.Status.DELIVERED, Order.Status.CANCELLED],
+    ).count()
+    my_breakages_this_week = my_breakages_qs.filter(
+        created_at__date__gte=seven_day_start,
     ).count()
 
     completed_tasks_this_week = my_tasks_qs.filter(
@@ -1194,7 +1216,7 @@ def _staff_dashboard_payload(user, venue):
                 "label": "Live stock view",
                 "direction": "flat",
             },
-            "note": "Use Request stock only when something needs manager attention.",
+            "note": "Submit a stock request only when a line needs replenishment.",
             "chart_label": "Stock check",
             "chart_points": _build_chart_points([1, 1, 1, 1, 1, 1, 1]),
             "actions": [
@@ -1257,7 +1279,7 @@ def _staff_dashboard_payload(user, venue):
             "title": "Tasks assigned to you",
             "copy": (
                 "Complete your own checklist jobs before handover. "
-                "Management approvals and request history are not shown here."
+                "Only your assigned work and live task status are shown here."
             ),
             "stats": [
                 {
@@ -1289,7 +1311,7 @@ def _staff_dashboard_payload(user, venue):
             "title": "View stock availability",
             "copy": (
                 "Check what is available, low, or running out. "
-                "If something needs ordering, send one quick request to management."
+                "Raise a stock request from the same workspace when a line needs topping up."
             ),
             "stats": [
                 {
@@ -1297,12 +1319,12 @@ def _staff_dashboard_payload(user, venue):
                     "value": "Live",
                 },
                 {
-                    "label": "Requests",
-                    "value": "Submit only",
+                    "label": "Low lines",
+                    "value": low_stock_count,
                 },
                 {
-                    "label": "Review queue",
-                    "value": "Manager only",
+                    "label": "Request form",
+                    "value": "Ready",
                 },
             ],
             "rows": [],
@@ -1354,29 +1376,29 @@ def _staff_dashboard_payload(user, venue):
             "slug": "handover",
             "label": "End of shift",
             "eyebrow": "Quick reports",
-            "title": "Send issues to management",
+            "title": "Submit shift issues",
             "copy": (
                 "Use these quick forms at the end of shift. "
-                "Submitted stock requests and breakage reports go to management only."
+                "Keep stock requests and incident reports recorded in one clean handover flow."
             ),
             "stats": [
                 {
-                    "label": "Stock requests",
-                    "value": "Submit only",
+                    "label": "Open requests",
+                    "value": my_open_request_count,
                 },
                 {
-                    "label": "Breakages",
-                    "value": "Report only",
+                    "label": "Reports 7d",
+                    "value": my_breakages_this_week,
                 },
                 {
-                    "label": "History",
-                    "value": "Manager only",
+                    "label": "Total requests",
+                    "value": my_request_count,
                 },
             ],
             "rows": [],
             "empty_state": (
                 "Use Request stock or Report breakage when something needs "
-                "manager follow-up."
+                "recording before handover."
             ),
             "actions": [
                 {
@@ -1529,8 +1551,8 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Request",
             "title": "Request stock",
-            "copy": "Send a low-stock request to management.",
-            "stat": "Submit only",
+            "copy": "Submit a low-stock request from the current shift.",
+            "stat": f"{my_open_request_count} open" if my_open_request_count else "Form ready",
             "url_name": "orders:add",
             "action_label": "Request stock",
             "href": _dashboard_href("orders:add"),
@@ -1538,8 +1560,12 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Breakage",
             "title": "Report breakage",
-            "copy": "Report a breakage to management before the end of shift.",
-            "stat": "Submit only",
+            "copy": "Log breakage or waste before the end of shift.",
+            "stat": (
+                f"{my_breakages_this_week} this week"
+                if my_breakages_this_week
+                else "Form ready"
+            ),
             "url_name": "breakages:add",
             "action_label": "Report breakage",
             "href": _dashboard_href("breakages:add"),
@@ -1641,8 +1667,8 @@ def _staff_dashboard_payload(user, venue):
         "portal_title": "Staff Portal",
         "overview_heading": "Today",
         "overview_copy": (
-            "Check your shift, complete your tasks, view stock, and send "
-            "issues to management when needed."
+            "Check your shift, complete your tasks, view stock, and log issues "
+            "without leaving your own workspace."
         ),
         "metrics": metrics,
         "attention_items": attention_items,

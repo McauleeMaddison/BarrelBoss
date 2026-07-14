@@ -88,6 +88,24 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertContains(response, "Today")
         self.assertContains(response, "Staff Workspace")
         self.assertContains(response, "View stock")
+        self.assertNotContains(response, "Manager only")
+        self.assertNotContains(response, "Send issues to management")
+
+        for section in response.context["portal_sections"]:
+            combined_copy = " ".join(
+                [
+                    section.get("label", ""),
+                    section.get("title", ""),
+                    section.get("copy", ""),
+                    section.get("empty_state", ""),
+                    *[
+                        f"{stat.get('label', '')} {stat.get('value', '')}"
+                        for stat in section.get("stats", [])
+                    ],
+                ]
+            ).lower()
+            self.assertNotIn("manager only", combined_copy)
+            self.assertNotIn("management", combined_copy)
 
     def test_staff_cannot_access_management_portal(self):
         self.client.login(username="dash_staff", password="strong-pass-123")

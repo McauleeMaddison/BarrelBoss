@@ -566,7 +566,7 @@ def add_order(request):
                 messages.success(request, f"Order {order.reference} created.")
                 return redirect("orders:list")
 
-            messages.success(request, "Stock request sent to management.")
+            messages.success(request, "Stock request submitted.")
             return redirect("orders:list")
     else:
         initial = {}
@@ -591,7 +591,7 @@ def add_order(request):
             "submit_label": (
                 "Create supplier order"
                 if management_view
-                else "Send to management"
+                else "Submit request"
             ),
             "management_view": management_view,
         },
