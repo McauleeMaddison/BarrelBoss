@@ -13,6 +13,7 @@
     const unsubscribeUrl = pushSettingsNode.dataset.unsubscribeUrl || "";
     const pushConfigured = pushSettingsNode.dataset.configured === "true";
     const initialEnabled = pushSettingsNode.dataset.initialEnabled === "true";
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
 
     const setButtons = (enabled) => {
         if (!enableButton || !disableButton) {
@@ -26,11 +27,10 @@
     };
 
     const getCsrfToken = () => {
-        const tokenCookie = document.cookie
-            .split(";")
-            .map((entry) => entry.trim())
-            .find((entry) => entry.startsWith("csrftoken="));
-        return tokenCookie ? decodeURIComponent(tokenCookie.split("=")[1]) : "";
+        return (
+            pushSettingsNode.dataset.csrfToken
+            || (csrfMeta ? csrfMeta.getAttribute("content") || "" : "")
+        ).trim();
     };
 
     const toUint8Array = (base64String) => {
@@ -48,6 +48,7 @@
     const postJson = async (url, payload) => {
         const response = await fetch(url, {
             method: "POST",
+            credentials: "same-origin",
             headers: {
                 "Content-Type": "application/json",
                 "X-CSRFToken": getCsrfToken(),

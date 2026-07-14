@@ -42,6 +42,7 @@
         <div
             class="settings-actions"
             data-push-settings
+            data-csrf-token="{{ csrf_token }}"
             data-subscribe-url="{% url 'push_subscribe' %}"
             data-unsubscribe-url="{% url 'push_unsubscribe' %}"
             data-vapid-public-key="{{ web_push_public_key }}"

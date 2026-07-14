@@ -106,3 +106,15 @@ class ErrorPageTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertContains(response, "Access Denied", status_code=403)
+
+    def test_login_page_emits_security_headers(self):
+        response = self.client.get(reverse("login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Content-Security-Policy", response.headers)
+        self.assertIn("script-src 'self'", response.headers["Content-Security-Policy"])
+        self.assertEqual(
+            response.headers["Cross-Origin-Resource-Policy"],
+            "same-origin",
+        )
+        self.assertIn("Permissions-Policy", response.headers)

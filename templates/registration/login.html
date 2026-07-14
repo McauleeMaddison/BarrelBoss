@@ -8,25 +8,9 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>BarrelBoss | Sign In</title>
-    <script>
-        (() => {
-            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-            let theme = prefersDark ? "dark" : "light";
-
-            try {
-                const stored = window.localStorage.getItem("barrelboss-theme");
-                if (stored === "dark" || stored === "light") {
-                    theme = stored;
-                }
-            } catch (_error) {
-                // Ignore storage errors during initial paint.
-            }
-
-            document.documentElement.dataset.theme = theme;
-            document.documentElement.style.colorScheme = theme;
-        })();
-    </script>
+    <script src="{% static 'js/core/theme-init.js' %}?v=20260714-secure-ready1"></script>
     <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready8">
     <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260714-public-ready8">
     {% include 'partials/head/branding_links.html' %}
@@ -65,11 +49,21 @@
         <p>Use the venue account issued to you to enter the live operations workspace.</p>
         <form method="post">
             {% csrf_token %}
-            {% if form.errors %}
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% elif form.errors %}
                 <p class="error-text">Your username or password was not recognized.</p>
             {% endif %}
             <label for="id_username">Username</label>
-            <input id="id_username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required>
+            <input
+                id="id_username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                placeholder="Enter your username"
+                value="{{ form.username.value|default_if_none:'' }}"
+                required
+            >
             <label for="id_password">Password</label>
             <div class="password-toggle-wrap">
                 <input id="id_password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>

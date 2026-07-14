@@ -15,6 +15,11 @@ Set these environment variables in production:
 - `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=true`
 - `DJANGO_SECURE_HSTS_PRELOAD=true`
 - `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`
+- `LOGIN_THROTTLE_FAILURE_LIMIT=5`
+- `LOGIN_THROTTLE_WINDOW_SECONDS=900`
+- `LOGIN_THROTTLE_LOCKOUT_SECONDS=900`
+- `SESSION_IDLE_TIMEOUT_SECONDS=1800`
+- `SESSION_COOKIE_AGE=43200`
 
 Validation command:
 ```bash
@@ -26,6 +31,9 @@ DJANGO_DEBUG=false DJANGO_SECRET_KEY='<strong-secret>' DJANGO_ALLOWED_HOSTS='exa
 - Disable demo bootstrap command in production (`ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`).
 - Enforce unique named accounts for real staff.
 - Keep landlord accounts minimal and auditable.
+- Keep the Django admin reserved for superusers only. Venue managers should use the in-app management portal instead.
+- Login is rate-limited per IP and per username/IP pair to slow brute-force attempts.
+- Idle sessions expire automatically and force a fresh sign-in after the configured inactivity window.
 
 ## 3. Deployment Procedure
 1. Deploy release candidate to staging.

@@ -1,3 +1,5 @@
+from types import MethodType
+
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
@@ -5,6 +7,14 @@ from django.urls import include, path
 from apps.accounts.views import RoleLoginView
 
 from . import views as core_views
+
+
+def _admin_superuser_only(self, request):
+    user = getattr(request, "user", None)
+    return bool(user and user.is_active and user.is_superuser)
+
+
+admin.site.has_permission = MethodType(_admin_superuser_only, admin.site)
 
 urlpatterns = [
     path("", core_views.home_redirect, name="home"),

@@ -6,28 +6,74 @@ import os
 import sys
 from pathlib import Path
 
-from taptrack.database_config import build_database_settings, env_flag
+from django.core.exceptions import ImproperlyConfigured
+
+from taptrack.database_config import build_database_settings, env_flag, trim_env
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+RUNNING_TESTS = "test" in sys.argv
+RUNNING_ON_RENDER = env_flag("RENDER", False) or bool(trim_env("RENDER_EXTERNAL_HOSTNAME"))
+DEBUG = env_flag("DJANGO_DEBUG", default=not RUNNING_ON_RENDER)
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-%8hbp6^3)1$hv+!-u6t2(1ng1ap$r17v#px+@@*x65bccsj(98",
-)
 
-DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() in {"1", "true", "yes"}
+def _parse_csv_env(name, default=""):
+    return [
+        item.strip()
+        for item in os.getenv(name, default).split(",")
+        if item.strip()
+    ]
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-    if host.strip()
-]
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+def _unique_preserving_order(items):
+    seen = set()
+    ordered = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        ordered.append(item)
+    return ordered
+
+
+def _host_is_local(host):
+    normalized = (host or "").strip().lower()
+    if not normalized:
+        return True
+    return normalized.split(":")[0] in {"localhost", "127.0.0.1", "::1", "[::1]"}
+
+
+_secret_key = trim_env("DJANGO_SECRET_KEY")
+if _secret_key:
+    SECRET_KEY = _secret_key
+elif DEBUG:
+    SECRET_KEY = "barrelboss-local-dev-secret-key-change-before-production-1234567890"
+else:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set when DEBUG is false."
+    )
+
+render_external_hostname = trim_env("RENDER_EXTERNAL_HOSTNAME")
+default_allowed_hosts = "127.0.0.1,localhost" if DEBUG else ""
+ALLOWED_HOSTS = _parse_csv_env("DJANGO_ALLOWED_HOSTS", default_allowed_hosts)
+if render_external_hostname:
+    ALLOWED_HOSTS.append(render_external_hostname)
+ALLOWED_HOSTS = _unique_preserving_order(ALLOWED_HOSTS)
+
+CSRF_TRUSTED_ORIGINS = _parse_csv_env("DJANGO_CSRF_TRUSTED_ORIGINS")
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{host}"
+        for host in ALLOWED_HOSTS
+        if not _host_is_local(host)
+    ]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend(
+        [
+            "http://127.0.0.1:8000",
+            "http://localhost:8000",
+        ]
+    )
+CSRF_TRUSTED_ORIGINS = _unique_preserving_order(CSRF_TRUSTED_ORIGINS)
 
 INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
@@ -58,6 +104,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.accounts.middleware.ActiveVenueMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "apps.accounts.middleware.SessionIdleTimeoutMiddleware",
+    "apps.accounts.middleware.SecurityHeadersMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -110,11 +158,17 @@ TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "Europe/London")
 USE_I18N = True
 USE_TZ = True
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "barrelboss-default-cache",
+    }
+}
+
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-RUNNING_TESTS = "test" in sys.argv
 if RUNNING_TESTS:
     STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 else:
@@ -124,6 +178,35 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 CSRF_FAILURE_VIEW = "taptrack.views.csrf_failure"
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "86400"))
+
+LOGIN_THROTTLE_FAILURE_LIMIT = int(os.getenv("LOGIN_THROTTLE_FAILURE_LIMIT", "5"))
+LOGIN_THROTTLE_WINDOW_SECONDS = int(os.getenv("LOGIN_THROTTLE_WINDOW_SECONDS", "900"))
+LOGIN_THROTTLE_LOCKOUT_SECONDS = int(os.getenv("LOGIN_THROTTLE_LOCKOUT_SECONDS", "900"))
+SESSION_IDLE_TIMEOUT_SECONDS = int(
+    os.getenv(
+        "SESSION_IDLE_TIMEOUT_SECONDS",
+        "1800" if not DEBUG else "86400",
+    )
+)
+SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "43200"))
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env_flag(
+    "SESSION_EXPIRE_AT_BROWSER_CLOSE",
+    default=not DEBUG,
+)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Lax"
+SECURE_REFERRER_POLICY = os.getenv(
+    "DJANGO_SECURE_REFERRER_POLICY",
+    "strict-origin-when-cross-origin",
+)
+SECURE_CROSS_ORIGIN_OPENER_POLICY = os.getenv(
+    "DJANGO_SECURE_CROSS_ORIGIN_OPENER_POLICY",
+    "same-origin",
+)
 
 WEB_PUSH_PUBLIC_KEY = os.getenv("WEB_PUSH_PUBLIC_KEY", "").strip()
 WEB_PUSH_PRIVATE_KEY = os.getenv("WEB_PUSH_PRIVATE_KEY", "").strip()

@@ -4,6 +4,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.checks import run_checks
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -11,6 +12,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from .middleware import SESSION_ACTIVITY_KEY
 from .models import PushSubscription, StaffProfile, Venue, VenueMembership
 from .tenancy import ACTIVE_VENUE_SESSION_KEY
 from .testing import VenueScopedTestCase, attach_user_to_venue, create_test_venue
@@ -215,6 +217,88 @@ class RoleRoutingTests(VenueScopedTestCase):
         )
 
 
+class LoginSecurityTests(VenueScopedTestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        self.staff_user = self.create_user(
+            username="secure_staff",
+            password="strong-pass-123",
+        )
+        self.manager_user = self.create_user(
+            username="secure_manager",
+            password="strong-pass-123",
+            role=StaffProfile.Role.MANAGER,
+        )
+        self.landlord_user = self.create_superuser_with_membership(
+            username="secure_landlord",
+            email="secure_landlord@example.com",
+            password="strong-pass-123",
+        )
+
+    def tearDown(self):
+        cache.clear()
+        super().tearDown()
+
+    @override_settings(
+        LOGIN_THROTTLE_FAILURE_LIMIT=3,
+        LOGIN_THROTTLE_WINDOW_SECONDS=600,
+        LOGIN_THROTTLE_LOCKOUT_SECONDS=600,
+    )
+    def test_login_throttle_locks_after_repeated_failures(self):
+        for attempt in range(2):
+            response = self.client.post(
+                reverse("login"),
+                {"username": "secure_staff", "password": "wrong-pass"},
+            )
+            self.assertEqual(response.status_code, 200, attempt)
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "secure_staff", "password": "wrong-pass"},
+        )
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(
+            response,
+            "Too many sign-in attempts",
+            status_code=429,
+        )
+        self.assertIn("Retry-After", response.headers)
+        self.assertGreater(int(response.headers["Retry-After"]), 0)
+
+        locked_response = self.client.post(
+            reverse("login"),
+            {"username": "secure_staff", "password": "strong-pass-123"},
+        )
+        self.assertEqual(locked_response.status_code, 429)
+
+    @override_settings(SESSION_IDLE_TIMEOUT_SECONDS=60)
+    def test_idle_session_is_logged_out_and_redirected_to_login(self):
+        self.client.login(username="secure_staff", password="strong-pass-123")
+        session = self.client.session
+        session[SESSION_ACTIVITY_KEY] = int(timezone.now().timestamp()) - 120
+        session.save()
+
+        response = self.client.get(reverse("dashboard:staff_portal"))
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('dashboard:staff_portal')}",
+            fetch_redirect_response=False,
+        )
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_non_superusers_cannot_access_django_admin(self):
+        self.client.login(username="secure_manager", password="strong-pass-123")
+        response = self.client.get("/admin/", follow=False)
+        self.assertIn(response.status_code, {302, 403})
+
+    def test_superuser_can_access_django_admin(self):
+        self.client.login(username="secure_landlord", password="strong-pass-123")
+        response = self.client.get("/admin/", follow=False)
+        self.assertEqual(response.status_code, 200)
+
+
 class SettingsAndPushTests(VenueScopedTestCase):
     def setUp(self):
         super().setUp()
@@ -233,6 +317,7 @@ class SettingsAndPushTests(VenueScopedTestCase):
         response = self.client.get(reverse("settings"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "My Device Alerts")
+        self.assertContains(response, 'name="csrf-token"')
 
     def test_manager_can_update_team_shift_alert_preferences(self):
         self.client.login(username="notify_manager", password="strong-pass-123")

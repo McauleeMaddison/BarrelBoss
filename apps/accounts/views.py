@@ -10,7 +10,13 @@ from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 
 from .forms import VenueInviteAcceptForm, VenueInviteForm, VenueSetupForm
+from .middleware import SESSION_ACTIVITY_KEY
 from .permissions import is_management, role_home_name
+from .security import (
+    clear_login_failures,
+    get_login_throttle_status,
+    record_login_failure,
+)
 from .tenancy import set_active_venue, user_has_active_venue, venue_memberships_for_user
 from .models import VenueInvite
 
@@ -18,6 +24,60 @@ from .models import VenueInvite
 class RoleLoginView(LoginView):
     template_name = "registration/login.html"
     redirect_authenticated_user = True
+
+    def _submitted_username(self):
+        return (self.request.POST.get("username") or "").strip()
+
+    def _render_throttled_response(self, retry_after_seconds):
+        form = self.get_form()
+        retry_after_minutes = max(1, (retry_after_seconds + 59) // 60)
+        form.add_error(
+            None,
+            (
+                "Too many sign-in attempts from this connection. "
+                f"Try again in about {retry_after_minutes} minute(s)."
+            ),
+        )
+        response = self.render_to_response(
+            self.get_context_data(form=form),
+            status=429,
+        )
+        response.headers["Retry-After"] = str(max(retry_after_seconds, 1))
+        return response
+
+    def post(self, request, *args, **kwargs):
+        username = self._submitted_username()
+        throttle_status = get_login_throttle_status(request, username)
+        if throttle_status.locked:
+            return self._render_throttled_response(
+                throttle_status.retry_after_seconds,
+            )
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        username = (
+            self.request.user.get_username()
+            if self.request.user.is_authenticated
+            else self._submitted_username()
+        )
+        clear_login_failures(self.request, username)
+        self.request.session[SESSION_ACTIVITY_KEY] = int(
+            timezone.now().timestamp()
+        )
+        return response
+
+    def form_invalid(self, form):
+        if self._submitted_username() and self.request.POST.get("password"):
+            throttle_status = record_login_failure(
+                self.request,
+                self._submitted_username(),
+            )
+            if throttle_status.locked:
+                return self._render_throttled_response(
+                    throttle_status.retry_after_seconds,
+                )
+        return super().form_invalid(form)
 
     def get_success_url(self):
         if not user_has_active_venue(self.request.user):

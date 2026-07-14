@@ -8,25 +8,9 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="BarrelBoss">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
-    <script>
-        (() => {
-            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-            let theme = prefersDark ? "dark" : "light";
-
-            try {
-                const stored = window.localStorage.getItem("barrelboss-theme");
-                if (stored === "dark" || stored === "light") {
-                    theme = stored;
-                }
-            } catch (_error) {
-                // Ignore storage errors during initial paint.
-            }
-
-            document.documentElement.dataset.theme = theme;
-            document.documentElement.style.colorScheme = theme;
-        })();
-    </script>
+    <script src="{% static 'js/core/theme-init.js' %}?v=20260714-secure-ready1"></script>
     <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready9">
     {% include 'partials/head/branding_links.html' %}
 </head>
