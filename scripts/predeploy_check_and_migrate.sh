@@ -25,6 +25,7 @@ sys.path.insert(0, os.getcwd())
 import django
 from taptrack.database_config import (
     FALLBACK_DATABASE_ENV_KEYS,
+    get_fallback_database_url,
     is_render_private_postgres_hostname,
     resolve_hostname,
     select_database_url,
@@ -33,6 +34,7 @@ from taptrack.database_config import (
 
 primary_url = trim_env("DATABASE_URL")
 selection = select_database_url()
+fallback_url, fallback_source = get_fallback_database_url()
 
 print(f"DATABASE_URL_SET={bool(primary_url)}", flush=True)
 for env_key in FALLBACK_DATABASE_ENV_KEYS:
@@ -45,6 +47,23 @@ if selection:
         print(
             "Using the external database fallback because DATABASE_URL points at a "
             "Render private hostname.",
+            flush=True,
+        )
+    elif selection.reason == "render_private_hostname_without_fallback":
+        print(
+            "DATABASE_URL points at a Render private Postgres hostname and no "
+            "fallback URL is configured.",
+            flush=True,
+        )
+        print(
+            "This only works when the web service and Postgres are in the same "
+            "Render workspace and region.",
+            flush=True,
+        )
+        print(
+            "If that is not true for this deploy, set DATABASE_FALLBACK_URL or "
+            "RENDER_EXTERNAL_DATABASE_URL to the database's external connection "
+            "string and redeploy.",
             flush=True,
         )
 else:
@@ -88,7 +107,36 @@ if not host_resolves:
 
 print("Attempting database connection...", flush=True)
 
-connection.ensure_connection()
+from django.db.utils import OperationalError
+
+try:
+    connection.ensure_connection()
+except OperationalError as exc:
+    if engine == "django.db.backends.postgresql" and is_render_private_postgres_hostname(host):
+        print(
+            "Database connection failed while using a Render private Postgres "
+            "hostname.",
+            flush=True,
+        )
+        if not fallback_url:
+            print(
+                "No DATABASE_FALLBACK_URL or RENDER_EXTERNAL_DATABASE_URL is set.",
+                flush=True,
+            )
+            print(
+                "Set one of those env vars to the database's external connection "
+                "string if the database is outside this Render workspace/region.",
+                flush=True,
+            )
+        else:
+            print(
+                f"Fallback URL is configured via {fallback_source}, but the active "
+                "database host is still private. Recheck DATABASE_URL and fallback "
+                "values in Render.",
+                flush=True,
+            )
+    print(f"DB_CONNECTION_ERROR={exc.__class__.__name__}: {exc}", flush=True)
+    raise SystemExit(1) from exc
 
 print("Database connection OK", flush=True)
 PY

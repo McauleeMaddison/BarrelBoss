@@ -32,6 +32,21 @@ class DatabaseConfigTests(SimpleTestCase):
         self.assertEqual(selection.reason, "render_private_hostname")
         self.assertEqual(selection.hostname, "db.example.com")
 
+    def test_select_database_url_marks_private_render_host_without_fallback(self):
+        selection = select_database_url(
+            {
+                "DATABASE_URL": "postgresql://user:password@dpg-d85ive6q1p3s73f7o2cg-a:5432/barrelboss",
+            }
+        )
+
+        self.assertIsNotNone(selection)
+        self.assertEqual(selection.source, "DATABASE_URL")
+        self.assertEqual(
+            selection.reason,
+            "render_private_hostname_without_fallback",
+        )
+        self.assertEqual(selection.hostname, "dpg-d85ive6q1p3s73f7o2cg-a")
+
     def test_select_database_url_uses_external_alias_for_invalid_primary_url(self):
         selection = select_database_url(
             {

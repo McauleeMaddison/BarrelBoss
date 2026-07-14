@@ -90,10 +90,13 @@ def select_database_url(environ=None):
             )
 
     if primary_url:
+        reason = "primary_database_url"
+        if is_render_private_postgres_hostname(primary_hostname):
+            reason = "render_private_hostname_without_fallback"
         return DatabaseUrlSelection(
             url=primary_url,
             source="DATABASE_URL",
-            reason="primary_database_url",
+            reason=reason,
             hostname=primary_hostname,
         )
 
