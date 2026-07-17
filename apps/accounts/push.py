@@ -99,6 +99,25 @@ def _build_stock_count_push_payload(item, actor_name):
     }
 
 
+def _build_checklist_completion_push_payload(task, actor_name):
+    return {
+        "title": "BarrelBoss Task Completion",
+        "body": (
+            f"{actor_name} completed {task.title} "
+            f"({task.get_checklist_type_display().lower()})."
+        ),
+        "icon": "/static/images/branding/pwa-192.png",
+        "badge": "/static/images/branding/pwa-192.png",
+        "url": f"{reverse('checklists:list')}?status=pending#checklists-section-board",
+        "tag": f"checklist-complete-{task.pk}",
+        "renotify": True,
+        "data": {
+            "kind": "checklist_completion",
+            "checklistTaskId": task.pk,
+        },
+    }
+
+
 def send_shift_push_notification(shift, actor=None, event_type="assigned"):
     if not push_notifications_configured():
         return 0
@@ -205,6 +224,70 @@ def send_stock_count_push_notification(item, actor=None):
         except Exception as exc:  # pragma: no cover - protects stock count flow
             logger.exception(
                 "Unexpected stock count push notification error for user=%s endpoint=%s: %s",
+                subscription.user_id,
+                subscription.endpoint,
+                exc,
+            )
+
+    return sent_count
+
+
+def send_checklist_completion_push_notification(task, actor=None):
+    if not push_notifications_configured():
+        return 0
+
+    memberships = VenueMembership.objects.filter(
+        venue=task.venue,
+        is_active=True,
+        role__in=[StaffProfile.Role.MANAGER, StaffProfile.Role.LANDLORD],
+    ).select_related("user")
+    if actor is not None:
+        memberships = memberships.exclude(user=actor)
+
+    recipients = [
+        membership.user
+        for membership in memberships
+        if membership.notify_on_shift_assignment
+    ]
+    if not recipients:
+        return 0
+
+    subscriptions = PushSubscription.objects.filter(
+        user__in=recipients,
+        is_active=True,
+    ).select_related("user")
+    if not subscriptions.exists():
+        return 0
+
+    actor_name = getattr(actor, "username", None) or "A team member"
+    payload = json.dumps(_build_checklist_completion_push_payload(task, actor_name))
+    sent_count = 0
+
+    for subscription in subscriptions:
+        try:
+            webpush(
+                subscription_info=subscription.webpush_payload,
+                data=payload,
+                vapid_private_key=settings.WEB_PUSH_PRIVATE_KEY,
+                vapid_claims={"sub": settings.WEB_PUSH_SUBJECT},
+                ttl=86400,
+            )
+            sent_count += 1
+        except WebPushException as exc:
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            if status_code in {404, 410}:
+                subscription.delete()
+                continue
+
+            logger.warning(
+                "Checklist completion push notification failed for user=%s endpoint=%s: %s",
+                subscription.user_id,
+                subscription.endpoint,
+                exc,
+            )
+        except Exception as exc:  # pragma: no cover - protects checklist completion flow
+            logger.exception(
+                "Unexpected checklist completion push notification error for user=%s endpoint=%s: %s",
                 subscription.user_id,
                 subscription.endpoint,
                 exc,

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -69,8 +70,14 @@ class ChecklistViewTests(VenueScopedTestCase):
 
         self.assertContains(response, "Task Board")
         self.assertContains(response, "Restock fridges")
+        self.assertContains(response, "Complete")
         self.assertNotContains(response, "Count till")
         self.assertNotContains(response, "Assign task")
+        self.assertNotContains(response, 'data-detail-trigger')
+        self.assertEqual(
+            response.context["task_action_return_path"],
+            f"{reverse('checklists:list')}?status=pending#checklists-section-board",
+        )
 
     def test_manager_sees_all_tasks(self):
         self.client.login(username="task_manager", password="strong-pass-123")
@@ -166,14 +173,21 @@ class ChecklistViewTests(VenueScopedTestCase):
             fetch_redirect_response=False,
         )
 
-    def test_staff_can_toggle_their_own_task(self):
+    @patch("apps.checklists.views.send_checklist_completion_push_notification")
+    def test_staff_can_toggle_their_own_task(self, mock_send_push):
+        mock_send_push.return_value = 1
         self.client.login(username="task_staff", password="strong-pass-123")
-        response = self.client.post(reverse("checklists:toggle", args=[self.task_for_staff.pk]))
+        next_url = f"{reverse('checklists:list')}?preset=today&status=pending#checklists-section-board"
+        response = self.client.post(
+            reverse("checklists:toggle", args=[self.task_for_staff.pk]),
+            {"next": next_url},
+        )
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
         self.task_for_staff.refresh_from_db()
         self.assertTrue(self.task_for_staff.completed)
         self.assertIsNotNone(self.task_for_staff.completed_at)
+        mock_send_push.assert_called_once_with(self.task_for_staff, actor=self.staff_user)
 
     def test_toggle_complete_redirects_back_to_filtered_queue(self):
         self.client.login(username="task_staff", password="strong-pass-123")
@@ -185,11 +199,29 @@ class ChecklistViewTests(VenueScopedTestCase):
 
         self.assertRedirects(response, next_url, fetch_redirect_response=False)
 
+    @patch("apps.checklists.views.send_checklist_completion_push_notification")
+    def test_task_completion_removes_item_from_pending_queue(self, mock_send_push):
+        mock_send_push.return_value = 0
+        self.client.login(username="task_staff", password="strong-pass-123")
+        response = self.client.post(
+            reverse("checklists:toggle", args=[self.task_for_staff.pk]),
+            {"next": f"{reverse('checklists:list')}?preset=today&status=pending#checklists-section-board"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["tasks"]), [])
+        self.assertContains(response, "No checklist tasks match this filter.")
+
     def test_staff_cannot_toggle_other_users_task(self):
         self.client.login(username="task_staff", password="strong-pass-123")
         response = self.client.post(reverse("checklists:toggle", args=[self.task_for_other.pk]))
 
-        self.assertRedirects(response, reverse("checklists:list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            f"{reverse('checklists:list')}?status=pending#checklists-section-board",
+            fetch_redirect_response=False,
+        )
         self.task_for_other.refresh_from_db()
         self.assertFalse(self.task_for_other.completed)
 

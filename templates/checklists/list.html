@@ -85,7 +85,7 @@
                                         <th>Assigned To</th>
                                         <th>Due Date</th>
                                         <th>Status</th>
-                                        <th data-sort="off">Review</th>
+                                        <th data-sort="off">{% if is_management %}Review{% else %}Complete{% endif %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -112,7 +112,8 @@
                                         <td data-label="Status">
                                             <span class="badge {{ task.status_badge_class }}">{{ task.status_label }}</span>
                                         </td>
-                                        <td class="stock-actions-cell mobile-action-cell" data-label="Review">
+                                        <td class="stock-actions-cell mobile-action-cell" data-label="{% if is_management %}Review{% else %}Complete{% endif %}">
+                                            {% if is_management %}
                                             <div class="task-primary-actions">
                                                 {% if task.can_toggle %}
                                                 <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form">
@@ -187,6 +188,17 @@
                                                     </div>
                                                 </section>
                                             </template>
+                                            {% else %}
+                                            {% if not task.completed %}
+                                            <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{{ task_action_return_path }}">
+                                                <button class="action-btn" type="submit">Complete</button>
+                                            </form>
+                                            {% else %}
+                                            <span class="filter-chip filter-chip-muted">Done</span>
+                                            {% endif %}
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}

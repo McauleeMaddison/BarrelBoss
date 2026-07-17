@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from apps.accounts.push import send_checklist_completion_push_notification
 from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import active_venue_required, is_management, management_required
 from apps.audit.models import AuditEvent
@@ -53,6 +54,15 @@ def _safe_next_url(request, fallback):
     ):
         return redirect_to
     return fallback
+
+
+def _staff_task_return_url(*, query="", task_type="", preset=""):
+    return _checklists_workspace_url(
+        q=query or None,
+        type=task_type or None,
+        preset=preset if preset in {"overdue", "today"} else None,
+        status="pending",
+    )
 
 
 def _decorate_task(task, *, today, management_view, request_user_id):
@@ -498,6 +508,15 @@ def list_checklists(request):
             selected_preset_label,
         ),
         "return_path": request.get_full_path(),
+        "task_action_return_path": (
+            request.get_full_path()
+            if management_view
+            else _staff_task_return_url(
+                query=query,
+                task_type=selected_type,
+                preset=selected_preset,
+            )
+        ),
         "query": query,
         "status_choices": status_choices,
         "filters_active": filters_active,
@@ -582,15 +601,28 @@ def edit_checklist(request, pk):
 @active_venue_required
 def toggle_complete(request, pk):
     task = get_object_or_404(Checklist, pk=pk, venue=current_venue_or_404(request))
+    management_view = is_management(request.user, request=request)
+    fallback_url = (
+        reverse("checklists:list")
+        if management_view
+        else _staff_task_return_url()
+    )
 
-    if not is_management(request.user, request=request) and task.assigned_to_id != request.user.id:
+    if not management_view and task.assigned_to_id != request.user.id:
         messages.error(request, "You can only update tasks assigned to you.")
-        return redirect(_safe_next_url(request, reverse("checklists:list")))
+        return redirect(_safe_next_url(request, fallback_url))
 
     if request.method == "POST":
+        was_completed = task.completed
         task.completed = not task.completed
         _sync_completed_timestamp(task)
         task.save(update_fields=["completed", "completed_at", "updated_at"])
+        manager_notifications_sent = 0
+        if not management_view and not was_completed and task.completed:
+            manager_notifications_sent = send_checklist_completion_push_notification(
+                task,
+                actor=request.user,
+            )
         record_audit_event(
             request,
             action=AuditEvent.Action.TOGGLE,
@@ -598,9 +630,15 @@ def toggle_complete(request, pk):
             summary=f"Toggled checklist status: {task.title}",
             details={"completed": task.completed},
         )
-        messages.success(request, "Checklist status updated.")
+        if not management_view and not was_completed and task.completed:
+            if manager_notifications_sent:
+                messages.success(request, "Task completed and managers notified.")
+            else:
+                messages.success(request, "Task completed.")
+        else:
+            messages.success(request, "Checklist status updated.")
 
-    return redirect(_safe_next_url(request, reverse("checklists:list")))
+    return redirect(_safe_next_url(request, fallback_url))
 
 
 @management_required
