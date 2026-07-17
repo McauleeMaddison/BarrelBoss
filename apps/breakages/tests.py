@@ -101,3 +101,17 @@ class BreakageViewTests(VenueScopedTestCase):
 
         self.assertContains(response, "Pint Glass")
         self.assertNotContains(response, "Cleaning Cloth")
+
+    def test_breakages_list_uses_module_shell(self):
+        self.client.login(username="break_staff", password="strong-pass-123")
+        response = self.client.get(
+            reverse("breakages:list"),
+            {"issue": Breakage.IssueType.BROKEN},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Incident board")
+        self.assertNotContains(response, "Quick access")
+        self.assertEqual(response.context["module_panel"]["badge"], "Incident Capture")
+        self.assertEqual(response.context["active_filter_labels"], ["Broken"])
+        self.assertTrue(response.context["filters_panel_open"])

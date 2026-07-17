@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.scoping import current_venue_or_404
@@ -10,6 +11,7 @@ from apps.accounts.permissions import active_venue_required, management_required
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_audit_event
 from taptrack.pagination import build_query_string, paginate_collection
+from taptrack.module_ui import build_module_link, build_module_panel
 
 from .forms import BreakageForm
 from .models import Breakage
@@ -50,6 +52,19 @@ def list_breakages(request):
             for value, label in Breakage.IssueType.choices
         ],
     ]
+    selected_preset_label = next(
+        (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+        "",
+    )
+    active_filter_labels = []
+    for label in [
+        selected_preset_label,
+        f"Search: {query}" if query else "",
+        "" if selected_preset_label else issue_labels.get(selected_issue, ""),
+    ]:
+        if label and label not in active_filter_labels:
+            active_filter_labels.append(label)
+    filters_panel_open = bool(selected_issue)
     attention_items = []
     if week_count:
         attention_items.append(
@@ -85,6 +100,32 @@ def list_breakages(request):
             }
         )
 
+    primary_title = "Log the next incident" if week_count else "Keep the loss log current"
+    primary_copy = (
+        f"{week_count} incident(s) landed in the last 7 days. Keep new loss reports clean and immediate."
+        if week_count
+        else "No fresh loss pattern is standing out, so keep reporting quick and simple when something does happen."
+    )
+    module_panel = build_module_panel(
+        hero_class="breakages-hero",
+        kicker="Loss Tracking",
+        badge="Incident Capture",
+        title="Log breakages fast and review the live queue cleanly.",
+        copy="One board for loss reports, one filter row when needed, and no extra dashboard clutter.",
+        primary_title=primary_title,
+        primary_copy=primary_copy,
+        primary_url=reverse("breakages:add"),
+        primary_label="Log incident",
+        utility_links=[
+            build_module_link("Open requests", reverse("orders:add")),
+            build_module_link("View activity", reverse("audit:list")),
+        ],
+        toolbar_notes=[
+            f"{records_qs.count()} total",
+            f"{week_count} in 7d",
+        ],
+    )
+
     context = {
         "records": records,
         "page_obj": page_obj,
@@ -98,12 +139,12 @@ def list_breakages(request):
         "filters_active": filters_active,
         "active_filter_count": sum([bool(query), bool(selected_issue)]),
         "selected_issue_label": issue_labels.get(selected_issue, ""),
-        "selected_preset_label": next(
-            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
-            "",
-        ),
+        "selected_preset_label": selected_preset_label,
+        "active_filter_labels": active_filter_labels,
+        "filters_panel_open": filters_panel_open,
         "filter_presets": filter_presets,
         "attention_items": attention_items,
+        "module_panel": module_panel,
     }
     return render(request, "breakages/list.html", context)
 

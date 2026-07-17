@@ -57,7 +57,7 @@ def _dashboard_href(url_name, *, args=None, query=None, fragment=None, **params)
         "stock:list": "stock-section-board",
         "shifts:list": "shifts-section-board",
         "orders:list": "orders-section-board",
-        "breakages:list": "breakageTable",
+        "breakages:list": "breakages-section-board",
         "sales:list": "salesTable",
     }
     url = reverse(url_name, args=args or [])
@@ -1413,28 +1413,14 @@ def _staff_dashboard_payload(user, venue):
         },
     ]
 
-    focus_list = []
-
-    if next_shift:
-        focus_list.append(
-            {
-                "task": "Check your next shift",
-                "owner": "You",
-                "due": (
-                    f"{next_shift.shift_date:%d %b} "
-                    f"{next_shift.start_time:%H:%M}"
-                ),
-                "state": "Scheduled",
-                "href": _dashboard_href("shifts:list", query="range=upcoming"),
-            }
-        )
-
     due_task = my_tasks_qs.filter(
         completed=False,
     ).order_by(
         "due_date",
         "created_at",
     ).first()
+
+    focus_list = []
 
     if due_task:
         focus_list.append(
@@ -1450,6 +1436,20 @@ def _staff_dashboard_payload(user, venue):
                     else "Open"
                 ),
                 "href": _dashboard_href("checklists:list", q=due_task.title, status="pending"),
+            }
+        )
+
+    if next_shift:
+        focus_list.append(
+            {
+                "task": "Check your next shift",
+                "owner": "You",
+                "due": (
+                    f"{next_shift.shift_date:%d %b} "
+                    f"{next_shift.start_time:%H:%M}"
+                ),
+                "state": "Scheduled",
+                "href": _dashboard_href("shifts:list", query="range=upcoming"),
             }
         )
 
@@ -1532,11 +1532,23 @@ def _staff_dashboard_payload(user, venue):
                 else "Queue clear"
             ),
             "url_name": "checklists:list",
-            "query": "preset=overdue" if tasks_overdue else "preset=today",
+            "query": (
+                "preset=overdue"
+                if tasks_overdue
+                else "preset=today"
+                if tasks_due_today
+                else "status=pending"
+            ),
             "action_label": "Open tasks",
             "href": _dashboard_href(
                 "checklists:list",
-                query="preset=overdue" if tasks_overdue else "preset=today",
+                query=(
+                    "preset=overdue"
+                    if tasks_overdue
+                    else "preset=today"
+                    if tasks_due_today
+                    else "status=pending"
+                ),
             ),
         },
         {

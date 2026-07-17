@@ -116,7 +116,7 @@
                                             {% if is_management %}
                                             <div class="task-primary-actions">
                                                 {% if task.can_toggle %}
-                                                <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form">
+                                                <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form" data-instant-submit-row data-pending-label="{% if task.completed %}Reopening…{% else %}Completing…{% endif %}">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="next" value="{{ return_path }}">
                                                     <button class="action-btn" type="submit">{% if task.completed %}Reopen{% else %}Sign off{% endif %}</button>
@@ -190,7 +190,7 @@
                                             </template>
                                             {% else %}
                                             {% if not task.completed %}
-                                            <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form">
+                                            <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form" data-instant-submit-row data-pending-label="Completing…">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ task_action_return_path }}">
                                                 <button class="action-btn" type="submit">Complete</button>

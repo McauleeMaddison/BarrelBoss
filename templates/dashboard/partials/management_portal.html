@@ -41,5 +41,59 @@
             {% endfor %}
         </div>
     </article>
+
+    <div class="dashboard-ops-grid">
+        <article class="panel portal-panel dashboard-ops-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Next up</h3>
+                    <p class="panel-subtitle">Work the live blockers in order and keep service moving.</p>
+                </div>
+            </div>
+            <ul class="focus-list">
+                {% for item in focus_list %}
+                <li>
+                    <a class="dashboard-row-link" href="{{ item.href }}">
+                        <div class="dashboard-record-copy">
+                            <strong>{{ item.task }}</strong>
+                            <small>{{ item.owner }} · {{ item.due }}</small>
+                        </div>
+                        <span class="filter-chip">{{ item.state }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </article>
+
+        <article class="panel portal-panel dashboard-ops-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Activity inbox</h3>
+                    <p class="panel-subtitle">See what changed without opening every board separately.</p>
+                </div>
+            </div>
+            <div class="dashboard-activity-filters">
+                <button class="preset-chip active" type="button" data-activity-filter="all">All</button>
+                <button class="preset-chip" type="button" data-activity-filter="orders">Orders</button>
+                <button class="preset-chip" type="button" data-activity-filter="sales">Sales</button>
+                <button class="preset-chip" type="button" data-activity-filter="shifts">Rota</button>
+                <button class="preset-chip" type="button" data-activity-filter="checklists">Tasks</button>
+                <button class="preset-chip" type="button" data-activity-filter="breakages">Breakages</button>
+            </div>
+            <ul class="activity-list" id="activityList">
+                {% for item in activity %}
+                <li data-activity-category="{{ item.category }}">
+                    <a class="dashboard-row-link" href="{{ item.href }}">
+                        <div class="dashboard-record-copy">
+                            <strong>{{ item.text }}</strong>
+                            <small>{{ item.time }}</small>
+                        </div>
+                        <span class="filter-chip">{{ item.category|title }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </article>
+    </div>
 </section>
 </div>

@@ -86,7 +86,7 @@ def _build_url(url_name, *, query=None, fragment=None):
         "stock:list": "stock-section-board",
         "shifts:list": "shifts-section-board",
         "orders:list": "orders-section-board",
-        "breakages:list": "breakageTable",
+        "breakages:list": "breakages-section-board",
         "sales:list": "salesTable",
     }
     url = reverse(url_name)
@@ -156,16 +156,16 @@ def build_workspace_navigation(request):
             _nav_item(
                 current,
                 label="Rota",
-                url_name="shifts:list",
-                group="shifts",
-                description="Coverage and hours",
-            ),
-            _nav_item(
-                current,
-                label="Requests",
                 url_name="orders:list",
                 group="orders",
                 description="Approvals and deliveries",
+            ),
+            _nav_item(
+                current,
+                label="Rota",
+                url_name="shifts:list",
+                group="shifts",
+                description="Coverage and hours",
             ),
         ]
         secondary_links = [
@@ -222,8 +222,9 @@ def build_workspace_navigation(request):
         quick_actions = []
         bar_title = "Management workspace"
         bar_copy = "Keep sign-off, cellar counts, and supplier follow-up one jump away."
+        secondary_title = "Support"
         command_title = "More tools"
-        command_copy = "Open the secondary management tools without duplicating the main dock."
+        command_copy = "Open rota and the secondary management tools without crowding the main dock."
         mobile_dock_links = [
             _nav_item(
                 current,
@@ -234,7 +235,7 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
-                label="Sign-off",
+                label="Tasks",
                 url_name="checklists:list",
                 group="checklists",
                 query="preset=today&status=pending",
@@ -242,7 +243,7 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
-                label="Cellar",
+                label="Stock",
                 url_name="stock:list",
                 group="stock",
                 query="focus=cellar",
@@ -250,11 +251,11 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
-                label="Deliveries",
+                label="Requests",
                 url_name="orders:list",
                 group="orders",
-                query="preset=pending",
-                description="In transit",
+                query="preset=drafts",
+                description="Approvals",
             ),
         ]
         mobile_command_links = [
@@ -372,8 +373,9 @@ def build_workspace_navigation(request):
         quick_actions = []
         bar_title = "Shift workspace"
         bar_copy = "Surface the tasks, stock, and handover actions bar staff need most."
+        secondary_title = "Capture"
         command_title = "More tools"
-        command_copy = "Open the remaining staff tools without repeating the main dock links."
+        command_copy = "Open rota and the remaining shift tools without repeating the main dock."
         mobile_dock_links = [
             _nav_item(
                 current,
@@ -399,19 +401,19 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
-                label="Rota",
-                url_name="shifts:list",
-                group="shifts",
-                description="Upcoming shifts",
+                label="Requests",
+                url_name="orders:list",
+                group="orders",
+                description="Submitted issues",
             ),
         ]
         mobile_command_links = [
             _nav_item(
                 current,
-                label="Requests",
-                url_name="orders:list",
-                group="orders",
-                description="Submitted issues",
+                label="Rota",
+                url_name="shifts:list",
+                group="shifts",
+                description="Upcoming shifts",
             ),
             _nav_item(
                 current,
@@ -437,6 +439,7 @@ def build_workspace_navigation(request):
     return {
         "workspace_primary_links": primary_links,
         "workspace_secondary_links": secondary_links,
+        "workspace_secondary_title": secondary_title,
         "workspace_quick_actions": quick_actions,
         "workspace_bar_title": bar_title,
         "workspace_bar_copy": bar_copy,
@@ -446,5 +449,5 @@ def build_workspace_navigation(request):
         "mobile_command_title": command_title,
         "mobile_command_copy": command_copy,
         "mobile_command_button_label": "More",
-        "mobile_command_button_copy": "Extra tools",
+        "mobile_command_button_copy": "Rota + tools",
     }

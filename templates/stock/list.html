@@ -125,7 +125,7 @@
                                         </td>
                                         <td class="stock-actions-cell mobile-action-cell" data-label="{% if is_management %}Review{% else %}Count{% endif %}">
                                             {% if not is_management %}
-                                            <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="inline-action-form">
+                                            <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="inline-action-form" data-instant-submit-row data-pending-label="Counting…">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ count_return_path }}">
                                                 <button class="action-btn" type="submit">Count</button>

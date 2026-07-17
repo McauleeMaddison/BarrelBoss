@@ -29,6 +29,31 @@
         });
     });
 
+    const instantRowForms = document.querySelectorAll("form[data-instant-submit-row]");
+    instantRowForms.forEach((form) => {
+        let submitted = false;
+
+        form.addEventListener("submit", () => {
+            if (submitted) {
+                return;
+            }
+            submitted = true;
+
+            const row = form.closest("tr");
+            const button = form.querySelector("button[type='submit']");
+
+            if (row) {
+                row.classList.add("row-action-pending");
+            }
+
+            if (button) {
+                button.disabled = true;
+                button.classList.add("is-working");
+                button.textContent = form.dataset.pendingLabel || "Working…";
+            }
+        });
+    });
+
     const tableSortExtractValue = (cell) => {
         const raw = (cell?.dataset?.sortValue || cell?.textContent || "").replace(/\s+/g, " ").trim();
 

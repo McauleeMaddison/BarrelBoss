@@ -85,7 +85,7 @@
         </div>
 
         <div class="nav-section nav-section-management">
-            <p class="nav-section-title">{% if is_management %}Supporting tools{% else %}More{% endif %}</p>
+            <p class="nav-section-title">{{ workspace_secondary_title }}</p>
             {% for link in workspace_secondary_links %}
             <a class="nav-link{% if link.active %} active{% endif %}" href="{{ link.url }}">
                 <span class="nav-link-copy">

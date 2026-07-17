@@ -69,6 +69,8 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Management")
         self.assertContains(response, "Today")
+        self.assertContains(response, "Next up")
+        self.assertContains(response, "Activity inbox")
         self.assertContains(response, "Cellar watch")
 
     def test_staff_portal_context(self):
@@ -86,7 +88,13 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Today")
+        self.assertContains(response, "Next up")
+        self.assertContains(response, "Recent activity")
         self.assertContains(response, "View stock")
+        self.assertEqual(
+            response.context["quick_actions"][0]["href"],
+            f"{reverse('checklists:list')}?status=pending#checklists-section-board",
+        )
         self.assertNotContains(response, "Manager only")
         self.assertNotContains(response, "Send issues to management")
 

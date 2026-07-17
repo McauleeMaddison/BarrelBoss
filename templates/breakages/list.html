@@ -4,112 +4,69 @@
 {% block page_title %}Breakages{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero portal-hero-compact breakages-hero">
-    <div class="portal-hero-head">
-        <p class="kicker">Loss Tracking</p>
-        <span class="badge portal-badge">Incident Log</span>
-    </div>
-    <h3 class="portal-hero-title">Incident Log</h3>
-    <p class="portal-hero-copy">
-        Log incidents quickly and review the live loss queue without extra visual clutter.
-    </p>
-    <div class="report-toolbar">
-        <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
-        <div class="dashboard-controls">
-            <span class="panel-header-meta">Records: {{ record_count }}</span>
-            <span class="panel-header-meta">Reported 7d: {{ week_count }}</span>
-        </div>
-    </div>
-</section>
+<div class="dashboard-view module-view module-view-breakages">
+{% include 'partials/modules/command_panel.html' %}
 
-<section class="panel dashboard-entry-panel">
+<section class="dashboard-stack dashboard-stack-lean">
+<article class="panel portal-panel module-live-panel" id="breakages-section-board">
     <div class="panel-header">
         <div>
-            <h3>Quick access</h3>
-            <p class="panel-subtitle">Keep the loss workflow focused on logging and reviewing incidents.</p>
+            <h3>Incident board</h3>
+            <p class="panel-subtitle">One loss queue, one search row, and one optional issue filter when you need it.</p>
         </div>
     </div>
-    <div class="dashboard-entry-grid">
-        <article class="dashboard-entry-card">
-            <span class="dashboard-entry-label">Log</span>
-            <strong>{{ record_count }} incident record{{ record_count|pluralize }}</strong>
-            <p>Open the live incident log or capture a new issue immediately.</p>
-            <div class="dashboard-entry-actions">
-                <a class="table-action" href="#breakageTable">Open log</a>
-                <a class="table-action" href="{% url 'breakages:add' %}">Log incident</a>
-            </div>
-        </article>
-        <article class="dashboard-entry-card">
-            <span class="dashboard-entry-label">Recent flow</span>
-            <strong>{{ week_count }} reported in 7 days</strong>
-            <p>Use the current week count to judge whether a floor issue is building.</p>
-            <div class="dashboard-entry-footer">
-                <span class="badge">{% if week_count %}Active flow{% else %}Quiet week{% endif %}</span>
-                <span class="dashboard-entry-cta">Review below</span>
-            </div>
-        </article>
-        <article class="dashboard-entry-card">
-            <span class="dashboard-entry-label">Focus</span>
-            <strong>{% if filters_active %}Filtered incident view{% else %}Full incident log{% endif %}</strong>
-            <p>{% if selected_issue_label %}Issue type: {{ selected_issue_label }}.{% else %}Use presets or filters to isolate a pattern quickly.{% endif %}</p>
-            <div class="dashboard-entry-footer">
-                <span class="badge">{% if filters_active %}{{ active_filter_count }} active{% else %}Open queue{% endif %}</span>
-                <span class="dashboard-entry-cta">Use filters below</span>
-            </div>
-        </article>
-    </div>
-</section>
-
-<section class="panel" id="breakageTable">
-    <div class="panel-header">
-        <h3>Breakage Log</h3>
-    </div>
-
-    <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+    <div class="module-board-shell">
+    <div class="filter-shell{% if filters_panel_open %} is-open{% endif %}" data-filter-shell>
         <div class="filter-preset-row">
             {% for preset in filter_presets %}
-            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}{% else %}{% url 'breakages:list' %}{% endif %}">{{ preset.label }}</a>
+            <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}#breakages-section-board{% else %}{% url 'breakages:list' %}#breakages-section-board{% endif %}">{{ preset.label }}</a>
             {% endfor %}
         </div>
         <div class="filter-summary-bar">
-            <div class="filter-chip-row">
-                {% if filters_active %}
+            <div class="filter-summary-copy">
+                {% if active_filter_labels %}
                 <span class="panel-header-meta">{{ active_filter_count }} active</span>
-                {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
-                {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
-                {% if selected_issue_label %}<span class="filter-chip">{{ selected_issue_label }}</span>{% endif %}
+                <span>{{ active_filter_labels|join:" · " }}</span>
                 {% else %}
                 <span class="filter-chip filter-chip-muted">All incident records in view</span>
                 {% endif %}
             </div>
-            <button
-                class="table-action filter-toggle-btn"
-                type="button"
-                data-filter-toggle
-                aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
-            >
-                Filters
-            </button>
+            <div class="filter-summary-actions">
+                {% if filters_active %}
+                <a class="table-action" href="{% url 'breakages:list' %}#breakages-section-board">Reset</a>
+                {% endif %}
+                <button
+                    class="table-action filter-toggle-btn"
+                    type="button"
+                    data-filter-toggle
+                    data-open-label="Hide filters"
+                    data-closed-label="Filters"
+                    aria-expanded="{% if filters_panel_open %}true{% else %}false{% endif %}"
+                >
+                    Filters
+                </button>
+            </div>
         </div>
 
         <form method="get" class="stock-filter-form" data-filter-form>
-            <div class="filter-field">
-                <label for="q">Search</label>
-                <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+            <div class="stock-filter-search-row">
+                <div class="filter-field filter-field-search">
+                    <label for="q">Search</label>
+                    <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, note, or username">
+                </div>
+                <button class="action-btn" type="submit">Apply</button>
             </div>
-
-            <div class="filter-field">
-                <label for="issue">Issue Type</label>
-                <select id="issue" name="issue">
-                    <option value="">All Types</option>
-                    {% for value, label in issue_choices %}
-                    <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
+            <div class="stock-filter-advanced" data-filter-advanced>
+                <div class="filter-field">
+                    <label for="issue">Issue Type</label>
+                    <select id="issue" name="issue">
+                        <option value="">All Types</option>
+                        {% for value, label in issue_choices %}
+                        <option value="{{ value }}" {% if selected_issue == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-
-            <button class="action-btn" type="submit">Apply</button>
-            <a class="table-action" href="{% url 'breakages:list' %}">Reset</a>
         </form>
     </div>
 
@@ -187,5 +144,8 @@
     {% else %}
     <p class="empty-state">No breakage records match this filter.</p>
     {% endif %}
+    </div>
+</article>
 </section>
+</div>
 {% endblock %}

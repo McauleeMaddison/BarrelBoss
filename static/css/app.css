@@ -35,6 +35,8 @@
     --dashboard-dock-offset: clamp(0.7rem, 1.8vw, 1rem);
     --dashboard-dock-width: min(100%, 760px);
     --dashboard-sheen: linear-gradient(90deg, rgba(240, 199, 119, 0.92), rgba(143, 183, 255, 0.36) 55%, rgba(100, 214, 163, 0.28));
+    --motion-quick: 180ms;
+    --motion-base: 220ms;
 }
 
 *,
@@ -243,19 +245,19 @@ img {
 }
 
 .app-shell .page-shell > * {
-    animation: page-shell-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: page-shell-rise var(--motion-base) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .app-shell .page-shell > *:nth-child(2) {
-    animation-delay: 0.04s;
+    animation-delay: 0.03s;
 }
 
 .app-shell .page-shell > *:nth-child(3) {
-    animation-delay: 0.08s;
+    animation-delay: 0.06s;
 }
 
 .app-shell .page-shell > *:nth-child(4) {
-    animation-delay: 0.12s;
+    animation-delay: 0.09s;
 }
 
 .nav-overlay,
@@ -2713,6 +2715,10 @@ body.nav-open .sidebar {
     width: auto;
 }
 
+.action-btn.is-working {
+    opacity: 0.78;
+}
+
 .task-primary-block,
 .task-due-cell {
     display: grid;
@@ -2945,6 +2951,20 @@ table {
     width: 100%;
     border-collapse: collapse;
     background: transparent;
+}
+
+.data-table tr.row-action-pending {
+    pointer-events: none;
+}
+
+.data-table tr.row-action-pending td {
+    opacity: 0.42;
+    transition:
+        opacity var(--motion-quick) ease,
+        transform var(--motion-quick) ease,
+        filter var(--motion-quick) ease;
+    transform: translateY(-2px);
+    filter: saturate(0.7);
 }
 
 th,
@@ -5801,12 +5821,16 @@ body.command-open .mobile-dock {
     background: var(--surface-subtle);
     color: var(--text);
     text-decoration: none;
-    transition: border-color 0.18s ease, background 0.18s ease;
+    transition:
+        border-color var(--motion-quick) ease,
+        background var(--motion-quick) ease,
+        transform var(--motion-quick) ease;
 }
 
 .dashboard-entry-card:hover {
     border-color: rgba(188, 144, 80, 0.24);
     background: var(--surface-hover);
+    transform: translateY(-1px);
 }
 
 .dashboard-entry-label {
@@ -6005,6 +6029,40 @@ body.command-open .mobile-dock {
     gap: 0.85rem;
 }
 
+.dashboard-ops-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 0.95rem;
+}
+
+.dashboard-ops-panel {
+    gap: 0.85rem;
+}
+
+.dashboard-activity-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.dashboard-ops-panel .focus-list,
+.dashboard-ops-panel .activity-list {
+    gap: 0.7rem;
+}
+
+.dashboard-ops-panel .dashboard-record-copy {
+    gap: 0.18rem;
+}
+
+.dashboard-ops-panel .dashboard-record-copy strong {
+    font-size: 0.94rem;
+    line-height: 1.35;
+}
+
+.dashboard-ops-panel .dashboard-row-link {
+    align-items: center;
+}
+
 .module-live-panel .module-board-shell,
 .module-support-panel .dashboard-command-grid {
     margin-top: 0.05rem;
@@ -6036,6 +6094,10 @@ body.command-open .mobile-dock {
     }
 
     .dashboard-entry-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-ops-grid {
         grid-template-columns: 1fr;
     }
 
