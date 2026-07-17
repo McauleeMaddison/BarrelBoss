@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from apps.accounts.push import send_stock_count_push_notification
 from apps.accounts.scoping import current_venue_or_404
 from apps.accounts.permissions import active_venue_required, is_management, management_required
 from apps.audit.models import AuditEvent
@@ -128,6 +129,15 @@ def _safe_next_url(request, fallback):
     ):
         return redirect_to
     return fallback
+
+
+def _staff_count_return_url(*, query="", category="", urgency="all"):
+    return _stock_workspace_url(
+        focus="uncounted",
+        q=query or None,
+        category=category or None,
+        urgency=urgency if urgency != "all" else None,
+    )
 
 
 @active_venue_required
@@ -658,6 +668,15 @@ def list_items(request):
             "",
         ),
         "return_path": request.get_full_path(),
+        "count_return_path": (
+            request.get_full_path()
+            if management_view
+            else _staff_count_return_url(
+                query=query,
+                category=selected_category,
+                urgency=selected_urgency,
+            )
+        ),
         "filter_presets": filter_presets,
         "attention_items": attention_items,
         "module_panel": module_panel,
@@ -758,9 +777,10 @@ def delete_item(request, pk):
     return render(request, "stock/confirm_delete.html", {"item": item})
 
 
-@management_required
+@active_venue_required
 def mark_counted(request, pk):
     item = get_object_or_404(StockItem, pk=pk, venue=current_venue_or_404(request))
+    management_view = is_management(request.user, request=request)
 
     if request.method == "POST":
         item.last_counted_at = timezone.now()
@@ -772,6 +792,20 @@ def mark_counted(request, pk):
             summary=f"Marked stock item {item.name} as counted",
             details={"last_counted_at": timezone.localtime(item.last_counted_at).isoformat()},
         )
-        messages.success(request, f"{item.name} marked as counted.")
+        manager_notifications_sent = 0
+        if not management_view:
+            manager_notifications_sent = send_stock_count_push_notification(item, actor=request.user)
 
-    return redirect(_safe_next_url(request, reverse("stock:list")))
+        if not management_view and manager_notifications_sent:
+            messages.success(request, f"{item.name} counted and managers notified.")
+        elif not management_view:
+            messages.success(request, f"{item.name} counted and confirmed.")
+        else:
+            messages.success(request, f"{item.name} marked as counted.")
+
+    fallback_url = (
+        reverse("stock:list")
+        if management_view
+        else _stock_workspace_url(focus="uncounted")
+    )
+    return redirect(_safe_next_url(request, fallback_url))

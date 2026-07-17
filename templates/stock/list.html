@@ -94,7 +94,7 @@
                                         <th>Unit Cost</th>
                                         <th>Est. Value</th>
                                         <th>Urgency</th>
-                                        <th data-sort="off">Review</th>
+                                        <th data-sort="off">{% if is_management %}Review{% else %}Count{% endif %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -117,7 +117,14 @@
                                         <td data-label="Urgency">
                                             <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
                                         </td>
-                                        <td class="stock-actions-cell mobile-action-cell" data-label="Review">
+                                        <td class="stock-actions-cell mobile-action-cell" data-label="{% if is_management %}Review{% else %}Count{% endif %}">
+                                            {% if not is_management %}
+                                            <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="inline-action-form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{{ count_return_path }}">
+                                                <button class="action-btn" type="submit">Count</button>
+                                            </form>
+                                            {% else %}
                                             <button
                                                 class="table-action"
                                                 type="button"
@@ -190,6 +197,7 @@
                                                 </section>
                                                 {% endif %}
                                             </template>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}

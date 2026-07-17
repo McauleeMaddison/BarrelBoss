@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -74,6 +75,8 @@ class StockListViewTests(VenueScopedTestCase):
         self.assertContains(response, "Carling 50L")
         self.assertContains(response, "Jameson")
         self.assertNotContains(response, "Create order")
+        self.assertContains(response, "Count")
+        self.assertNotContains(response, 'data-detail-trigger')
         self.assertEqual(response.context["total_items"], 2)
         self.assertEqual(response.context["low_stock_count"], 1)
         self.assertEqual(response.context["module_panel"]["badge"], "Stock Control")
@@ -283,6 +286,35 @@ class StockCrudViewTests(VenueScopedTestCase):
         self.assertRedirects(response, next_url, fetch_redirect_response=False)
         self.item.refresh_from_db()
         self.assertIsNotNone(self.item.last_counted_at)
+
+    @patch("apps.stock.views.send_stock_count_push_notification")
+    def test_staff_can_count_item_and_managers_are_notified(self, mock_send_push):
+        mock_send_push.return_value = 1
+        self.client.login(username="stock_staff", password="strong-pass-123")
+        next_url = f"{reverse('stock:list')}?focus=uncounted#stock-section-board"
+        response = self.client.post(
+            reverse("stock:mark_counted", args=[self.item.pk]),
+            {"next": next_url},
+        )
+
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
+        self.item.refresh_from_db()
+        self.assertIsNotNone(self.item.last_counted_at)
+        mock_send_push.assert_called_once_with(self.item, actor=self.staff_user)
+
+    @patch("apps.stock.views.send_stock_count_push_notification")
+    def test_staff_count_removes_item_from_uncounted_queue(self, mock_send_push):
+        mock_send_push.return_value = 0
+        self.client.login(username="stock_staff", password="strong-pass-123")
+        response = self.client.post(
+            reverse("stock:mark_counted", args=[self.item.pk]),
+            {"next": f"{reverse('stock:list')}?focus=uncounted#stock-section-board"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["items"]), [])
+        self.assertContains(response, "No inventory items match this filter.")
 
     def test_staff_cannot_delete_item(self):
         self.client.login(username="stock_staff", password="strong-pass-123")
