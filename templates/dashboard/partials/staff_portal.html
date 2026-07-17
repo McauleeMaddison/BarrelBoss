@@ -4,7 +4,7 @@
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
                 <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
-                <span class="badge portal-badge">Staff Mode</span>
+                <span class="badge portal-badge">Staff</span>
             </div>
             <h3 class="portal-hero-title">{{ overview_heading }}</h3>
             <p class="portal-hero-copy">{{ overview_copy }}</p>
@@ -14,8 +14,8 @@
             <article class="dashboard-hero-card dashboard-hero-card-compact">
                 <div class="panel-header">
                     <div>
-                        <h3>Today Queue</h3>
-                        <p class="panel-subtitle">Keep only the next task or shift visible while the rest stays tucked away.</p>
+                        <h3>Next Up</h3>
+                        <p class="panel-subtitle">Keep the next task visible.</p>
                     </div>
                     <span class="badge">{{ focus_list|length }} live</span>
                 </div>
@@ -42,8 +42,8 @@
     <article class="panel portal-panel">
         <div class="panel-header">
             <div>
-                <h3>Staff Workspace</h3>
-                <p class="panel-subtitle">Open one work area at a time for tasks, stock, rota, or handover.</p>
+                <h3>Workspace</h3>
+                <p class="panel-subtitle">Open one area at a time.</p>
             </div>
         </div>
         <div class="dashboard-accordion-group" data-dashboard-accordion-group="staff-workspace">
@@ -121,8 +121,8 @@
     <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="staff-snapshot-panel" data-panel-default-collapsed="true">
         <div class="panel-header">
             <div>
-                <h3>Staff Snapshot</h3>
-                <p class="panel-subtitle">Open the wider metrics only when you need a fuller check.</p>
+                <h3>Snapshot</h3>
+                <p class="panel-subtitle">Key numbers when you need them.</p>
             </div>
             <button
                 type="button"
@@ -186,7 +186,7 @@
         <div class="panel-header">
             <div>
                 <h3>Recent Updates</h3>
-                <p class="panel-subtitle">Open only when you need the latest rota or task changes.</p>
+                <p class="panel-subtitle">Latest rota and task changes.</p>
             </div>
             <button
                 type="button"

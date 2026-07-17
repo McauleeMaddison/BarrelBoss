@@ -48,7 +48,7 @@
             {% if available_venue_memberships %}
             <details class="sidebar-venue-switcher">
                 <summary>
-                    <span>Venue access</span>
+                    <span>Venues</span>
                     <small>{{ available_venue_memberships|length }} venue{{ available_venue_memberships|length|pluralize }}</small>
                 </summary>
                 <div class="sidebar-venue-switcher-body">
@@ -82,7 +82,7 @@
 
     <nav class="nav-links" aria-label="Main menu">
         <div class="nav-section nav-section-operations">
-            <p class="nav-section-title">Core workflow</p>
+            <p class="nav-section-title">Workspace</p>
             {% for link in workspace_primary_links %}
             <a class="nav-link{% if link.active %} active{% endif %}" href="{{ link.url }}">
                 <span class="nav-link-copy">
@@ -94,7 +94,7 @@
         </div>
 
         <div class="nav-section nav-section-management">
-            <p class="nav-section-title">{% if is_management %}Extended tools{% else %}More tools{% endif %}</p>
+            <p class="nav-section-title">{% if is_management %}Supporting tools{% else %}More{% endif %}</p>
             {% for link in workspace_secondary_links %}
             <a class="nav-link{% if link.active %} active{% endif %}" href="{{ link.url }}">
                 <span class="nav-link-copy">

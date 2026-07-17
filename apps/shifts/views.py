@@ -169,14 +169,14 @@ def list_shifts(request):
         kicker="Rota Management" if management_view else "My Rota",
         badge="Team Planner" if management_view else "Schedule View",
         title=(
-            "Keep coverage, hours, and the next live shift easy to scan."
+            "Keep coverage and hours easy to scan."
             if management_view
-            else "See your next shifts and this week's hours without digging through the rota."
+            else "See your next shifts and this week's hours."
         ),
         copy=(
-            "Use one rota board for immediate coverage, weekly load, and the full shift list so the team is not bouncing between duplicate views."
+            "Use one rota board for upcoming coverage, weekly load, and the full list."
             if management_view
-            else "Use one clean schedule board for your next shifts, weekly hours, and the full rota without extra clutter."
+            else "Use one clean rota board for your next shifts, weekly hours, and the full list."
         ),
         primary_title=primary_title,
         primary_copy=primary_copy,

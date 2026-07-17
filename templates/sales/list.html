@@ -9,9 +9,9 @@
         <p class="kicker">Sales Operations</p>
         <span class="badge portal-badge">POS Control</span>
     </div>
-    <h3 class="portal-hero-title">Live Revenue With Cleaner Sync Control</h3>
+    <h3 class="portal-hero-title">Sales</h3>
     <p class="portal-hero-copy">
-        Keep the main sales workspace focused on revenue, close quality, and the hand-off into stock and labor. Connector detail lives in the sync center instead of cluttering the daily board.
+        Track revenue and sync status in one board.
     </p>
     {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
@@ -73,7 +73,7 @@
         <div class="panel-header">
             <div>
                 <h3>POS Sync Health</h3>
-                <p class="panel-subtitle">Connector status, location coverage, and webhook readiness.</p>
+                <p class="panel-subtitle">Connector status, coverage, and webhook health.</p>
             </div>
             <a class="table-action" href="{% url 'sales:sync_center' %}">Manage Feeds</a>
         </div>
@@ -105,7 +105,7 @@
         <div class="panel-header">
             <div>
                 <h3>Revenue and Margin Handoff</h3>
-                <p class="panel-subtitle">Keep revenue mix and cellar pressure in one compact board.</p>
+                <p class="panel-subtitle">Keep revenue mix and cellar pressure visible.</p>
             </div>
         </div>
         <div class="sales-panel-stack">
@@ -137,7 +137,7 @@
     <div class="panel-header">
         <div>
             <h3>Daily Sales Snapshots</h3>
-            <p class="panel-subtitle">Filter by source and trading window, then export clean close-out data.</p>
+            <p class="panel-subtitle">Filter by source and trading window, then export.</p>
         </div>
     </div>
 

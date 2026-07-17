@@ -866,7 +866,7 @@ class ReportsPageTests(VenueScopedTestCase):
         response = self.client.get(reverse("reports"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Operational Performance Cockpit")
+        self.assertContains(response, "Reports")
         self.assertEqual(len(response.context["report_kpi_cards"]), 5)
         self.assertGreaterEqual(len(response.context["executive_highlights"]), 4)
 

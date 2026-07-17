@@ -9,9 +9,9 @@
         <p class="kicker">Finance & Operations</p>
         <span class="badge portal-badge">Management Reports</span>
     </div>
-    <h3 class="portal-hero-title">Operational Performance Cockpit</h3>
+    <h3 class="portal-hero-title">Reports</h3>
     <p class="portal-hero-copy">
-        Review stock risk, supplier spend, breakage loss, and checklist completion in one management summary.
+        Review stock, spend, loss, and completion in one summary.
     </p>
     {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
@@ -38,10 +38,7 @@
         </form>
         <a href="?range={{ selected_range }}&export=csv" class="table-action report-export-btn">Export CSV</a>
     </div>
-    <p class="report-window-meta">
-        Current window: {{ report_window_label }}<br>
-        Compare period: {{ previous_window_label }}
-    </p>
+    <p class="report-window-meta">Window: {{ report_window_label }} · Compare: {{ previous_window_label }}</p>
 </section>
 
 <section class="metric-grid report-metric-grid">
@@ -55,12 +52,12 @@
 </section>
 
 <section class="panel portal-panel">
-    <div class="panel-header">
-        <div>
-            <h3>Executive Highlights</h3>
-            <p class="panel-subtitle">Priority signals to review before service starts</p>
+        <div class="panel-header">
+            <div>
+                <h3>Executive Highlights</h3>
+                <p class="panel-subtitle">Key signals for today.</p>
+            </div>
         </div>
-    </div>
     <div class="report-highlight-grid">
         {% for item in executive_highlights %}
         <article class="report-highlight-card report-highlight-{{ item.tone }}">

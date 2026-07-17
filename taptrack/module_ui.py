@@ -22,7 +22,7 @@ def build_module_panel(
         "badge": badge,
         "title": title,
         "copy": copy,
-        "primary_kicker": "Primary action",
+        "primary_kicker": "Next step",
         "primary_title": primary_title,
         "primary_copy": primary_copy,
         "primary_url": primary_url,

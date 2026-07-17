@@ -66,7 +66,7 @@ class SalesAccessTests(VenueScopedTestCase):
         response = self.client.get(reverse("sales:list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Live Revenue With Cleaner Sync Control")
+        self.assertContains(response, "Sales")
 
 
 class SalesListViewTests(VenueScopedTestCase):
@@ -246,7 +246,7 @@ class SalesSyncCenterTests(VenueScopedTestCase):
         response = self.client.get(reverse("sales:sync_center"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "POS Connectors, Mappings, and Sync Health")
+        self.assertContains(response, "Sync Center")
         self.assertContains(response, "Square Garden Feed")
 
     def test_manual_sync_run_creates_live_snapshot(self):

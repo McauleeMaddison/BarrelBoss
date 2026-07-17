@@ -325,14 +325,14 @@ def list_checklists(request):
         kicker="Task Management" if management_view else "Personal Task Queue",
         badge="Operations Checklist" if management_view else "Personal Checklist",
         title=(
-            "Keep the task queue clean, assigned, and easy to complete."
+            "Keep tasks clear and on time."
             if management_view
-            else "See exactly what needs closing before your shift rolls over."
+            else "See what needs closing before your shift rolls over."
         ),
         copy=(
-            "Use this board to spot overdue work, rebalance ownership, and keep daily checks moving without extra admin noise."
+            "Work today's queue, close overdue items, and keep handover clean."
             if management_view
-            else "Work from today's queue, clear anything overdue, and keep handover quality tight without hunting through a busy dashboard."
+            else "Work today's queue, clear anything overdue, and keep handover clean."
         ),
         primary_title=primary_title,
         primary_copy=primary_copy,

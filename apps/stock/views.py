@@ -420,10 +420,8 @@ def list_items(request):
         hero_class="inventory-hero",
         kicker="Inventory",
         badge="Stock Control",
-        title="Keep service-critical stock visible and actionable.",
-        copy=(
-            "Use this board to spot urgent shortages fast, tighten replenishment decisions, and keep the working stock list clean."
-        ),
+        title="Keep stock visible and current.",
+        copy="Work shortages, counts, and supplier follow-up from one board.",
         primary_title=primary_title,
         primary_copy=primary_copy,
         primary_url=primary_url,

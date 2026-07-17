@@ -12,7 +12,7 @@
         <div class="panel-header">
             <div>
                 <h3>Rota Workspace</h3>
-                <p class="panel-subtitle">Use one consistent rota board for upcoming coverage, weekly load, and the full shift list.</p>
+                <p class="panel-subtitle">Use one rota board for upcoming coverage, weekly load, and the full list.</p>
             </div>
         </div>
 
@@ -29,7 +29,7 @@
                         <p class="kicker dashboard-workspace-kicker">Next coverage</p>
                         <span class="dashboard-accordion-label">Upcoming queue</span>
                         <strong>{% if is_management %}Upcoming coverage{% else %}My next shifts{% endif %}</strong>
-                        <small>Keep the next live service windows visible first, then open the wider rota board only when you need to inspect more dates.</small>
+                        <small>Keep the next service windows visible first.</small>
                     </div>
                     <div class="dashboard-accordion-metrics">
                         <span class="dashboard-accordion-metric">
@@ -101,7 +101,7 @@
                         <p class="kicker dashboard-workspace-kicker">Live board</p>
                         <span class="dashboard-accordion-label">Rota queue</span>
                         <strong>{% if is_management %}Team shift planner{% else %}My shift board{% endif %}</strong>
-                        <small>{% if is_management %}Filter by range and by staff while keeping the full rota list inside the same board.{% else %}Filter your rota by date range while keeping the full shift list inside one simple board.{% endif %}</small>
+                        <small>{% if is_management %}Filter by range and staff in one board.{% else %}Filter your rota by range in one board.{% endif %}</small>
                     </div>
                     <div class="dashboard-accordion-metrics">
                         <span class="dashboard-accordion-metric">

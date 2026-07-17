@@ -985,11 +985,11 @@ def _management_dashboard_payload(venue):
 
     return {
         "portal_title": "Management Portal",
-        "overview_heading": "Management Overview",
+        "overview_heading": "Management",
         "overview_copy": (
-            f"{pending_order_count} order request(s) awaiting approval. "
-            f"{connectors_needing_attention} connector(s) need attention and "
-            f"{deliveries_due_today} delivery(ies) land today."
+            f"{pending_order_count} awaiting approval, "
+            f"{connectors_needing_attention} sync issue(s), "
+            f"{deliveries_due_today} delivery(ies) due today."
         ),
         "command_links": command_links,
         "metrics": metrics,
@@ -1666,10 +1666,7 @@ def _staff_dashboard_payload(user, venue):
     return {
         "portal_title": "Staff Portal",
         "overview_heading": "Today",
-        "overview_copy": (
-            "Check your shift, complete your tasks, view stock, and log issues "
-            "without leaving your own workspace."
-        ),
+        "overview_copy": "See your shift, tasks, stock, and issues in one place.",
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,

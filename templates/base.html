@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}BarrelBoss{% endblock %}</title>
     <script src="{% static 'js/core/theme-init.js' %}?v=20260714-secure-ready1"></script>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260714-public-ready9">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260717-minimal-ui4">
     {% include 'partials/head/branding_links.html' %}
 </head>
 <body class="app-shell {% block body_class %}{% endblock %}">
@@ -40,13 +40,12 @@
                         <span class="menu-btn-label">Menu</span>
                     </button>
                     <div class="topbar-title-block">
-                        <span class="topbar-eyebrow">Operations Workspace</span>
+                        <span class="topbar-eyebrow">
+                            {{ user_role_label }}
+                            {% if active_venue %} · {{ active_venue.name }}{% endif %}
+                        </span>
                         <div class="topbar-title-row">
                             <h2>{% block page_title %}Dashboard{% endblock %}</h2>
-                            <span class="badge topbar-mode-chip">{{ user_role_label }}</span>
-                            {% if active_venue %}
-                            <span class="badge topbar-mode-chip">{{ active_venue.name }}</span>
-                            {% endif %}
                         </div>
                         <p class="topbar-date">{% now "l, j F Y" %}</p>
                     </div>
@@ -65,20 +64,20 @@
                     <form action="{% url 'logout' %}" method="post" class="switch-account-form">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{% url 'login' %}">
-                        <button type="submit" class="topbar-switch-btn" aria-label="Switch account">Switch</button>
+                        <button type="submit" class="topbar-switch-btn" aria-label="Sign out">Sign out</button>
                     </form>
                 </div>
             </div>
-            <div class="topbar-utility" role="region" aria-label="System status">
+            <div class="topbar-utility" role="region" aria-label="Workspace context">
                 <div class="topbar-status-row">
-                    <span class="status-chip status-chip-live">System Online</span>
-                    <span class="status-chip status-chip-time">{% now "H:i" %} UK</span>
                     <span class="status-chip status-chip-user">
                         <strong>{{ request.user.get_username|default:'Guest' }}</strong>
+                        <small>{{ user_role_label }}</small>
                     </span>
                     {% if active_venue %}
                     <span class="status-chip status-chip-time">{{ active_venue.name }}</span>
                     {% endif %}
+                    <span class="status-chip status-chip-time">{% now "H:i" %} UK</span>
                 </div>
             </div>
         </header>

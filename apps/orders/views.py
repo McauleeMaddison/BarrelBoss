@@ -404,8 +404,8 @@ def list_orders(request):
             primary_label = "Create request"
         kicker = "Request Tracking"
         badge = "My Queue"
-        title = "Track requests, delivery follow-through, and what still needs your attention."
-        copy = "Submit requests, finish drafts, and keep incoming deliveries visible until they land in stock."
+        title = "Keep requests and deliveries in one queue."
+        copy = "Create requests, finish drafts, and track incoming stock."
 
     module_panel = build_module_panel(
         hero_class="orders-hero",

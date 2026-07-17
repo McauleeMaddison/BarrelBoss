@@ -67,8 +67,8 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertIn("chart_points", response.context["metrics"][0])
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
-        self.assertContains(response, "Management Overview")
-        self.assertContains(response, "Management Workspace")
+        self.assertContains(response, "Management")
+        self.assertContains(response, "Workspace")
         self.assertContains(response, "Cellar watch")
 
     def test_staff_portal_context(self):
@@ -86,7 +86,7 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Today")
-        self.assertContains(response, "Staff Workspace")
+        self.assertContains(response, "Workspace")
         self.assertContains(response, "View stock")
         self.assertNotContains(response, "Manager only")
         self.assertNotContains(response, "Send issues to management")

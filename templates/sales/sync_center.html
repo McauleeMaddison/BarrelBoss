@@ -9,9 +9,9 @@
         <p class="kicker">Live Feed Control</p>
         <span class="badge portal-badge">Connectors</span>
     </div>
-    <h3 class="portal-hero-title">POS Connectors, Mappings, and Sync Health</h3>
+    <h3 class="portal-hero-title">Sync Center</h3>
     <p class="portal-hero-copy">
-        This is the control room for Toast, Lightspeed, Square, and Clover style feeds: connector setup, per-location mapping, manual sync runs, and webhook intake.
+        Manage connectors, mappings, sync runs, and webhooks.
     </p>
     {% include 'partials/attention_rail.html' with attention_items=attention_items %}
     <div class="hero-signal-bar">
@@ -56,7 +56,7 @@
         <div class="panel-header">
             <div>
                 <h3>Connector Health</h3>
-                <p class="panel-subtitle">Each connector owns its sync cadence, webhook secret, and location coverage.</p>
+                <p class="panel-subtitle">View cadence, webhook, and location coverage.</p>
             </div>
         </div>
         {% if connector_rows %}
@@ -90,7 +90,7 @@
         <div class="panel-header">
             <div>
                 <h3>Location Mappings</h3>
-                <p class="panel-subtitle">Per-location mapping keeps external till locations aligned with internal venue names.</p>
+                <p class="panel-subtitle">Map external tills to internal locations.</p>
             </div>
         </div>
         {% if mappings %}
@@ -126,7 +126,7 @@
         <div class="panel-header">
             <div>
                 <h3>Recent Sync Runs</h3>
-                <p class="panel-subtitle">Track manual, scheduled, and webhook-triggered imports.</p>
+                <p class="panel-subtitle">Track manual, scheduled, and webhook imports.</p>
             </div>
         </div>
         {% if recent_runs %}
@@ -152,7 +152,7 @@
         <div class="panel-header">
             <div>
                 <h3>Webhook Events</h3>
-                <p class="panel-subtitle">Inbound live events are logged here before or after import processing.</p>
+                <p class="panel-subtitle">Inbound events logged before or after import.</p>
             </div>
         </div>
         {% if recent_events %}

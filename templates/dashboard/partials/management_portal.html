@@ -4,7 +4,7 @@
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
                 <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"manager" }}.</p>
-                <span class="badge portal-badge">Management Mode</span>
+                <span class="badge portal-badge">Management</span>
             </div>
             <h3 class="portal-hero-title">{{ overview_heading }}</h3>
             <p class="portal-hero-copy">{{ overview_copy }}</p>
@@ -15,7 +15,7 @@
                 <div class="panel-header">
                     <div>
                         <h3>Today</h3>
-                        <p class="panel-subtitle">Keep the live blockers visible and collapse everything you do not need.</p>
+                        <p class="panel-subtitle">Keep the next blockers visible.</p>
                     </div>
                     <span class="badge">{{ focus_list|length }} live</span>
                 </div>
@@ -41,8 +41,8 @@
     <article class="panel portal-panel">
         <div class="panel-header">
             <div>
-                <h3>Management Workspace</h3>
-                <p class="panel-subtitle">Open one work area at a time and keep the rest collapsed.</p>
+                <h3>Workspace</h3>
+                <p class="panel-subtitle">Open one area at a time.</p>
             </div>
         </div>
         <div class="dashboard-accordion-group" data-dashboard-accordion-group="management-workspace">
@@ -120,8 +120,8 @@
     <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="management-snapshot-panel" data-panel-default-collapsed="true">
         <div class="panel-header">
             <div>
-                <h3>Management Snapshot</h3>
-                <p class="panel-subtitle">Open the premium metrics only when you need the wider picture.</p>
+                <h3>Snapshot</h3>
+                <p class="panel-subtitle">Key numbers when you need them.</p>
             </div>
             <button
                 type="button"
@@ -185,7 +185,7 @@
         <div class="panel-header">
             <div>
                 <h3>Recent Activity</h3>
-                <p class="panel-subtitle">Open only when you need the latest cross-team changes.</p>
+                <p class="panel-subtitle">Latest cross-team changes.</p>
             </div>
             <div class="dashboard-panel-actions">
                 <div class="dashboard-controls" data-activity-controls>

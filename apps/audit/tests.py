@@ -63,7 +63,7 @@ class AuditLogPageTests(VenueScopedTestCase):
         response = self.client.get(reverse("audit:list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Business Accountability Trail")
+        self.assertContains(response, "Change Log")
         self.assertTrue(response.context["is_paginated"])
         self.assertEqual(response.context["page_obj"].number, 1)
 
