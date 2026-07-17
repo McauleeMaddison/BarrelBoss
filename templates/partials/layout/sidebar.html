@@ -28,7 +28,7 @@
                 <small>{{ request.user.get_username|default:"Guest" }} · {{ user_role_label }}</small>
             </div>
 
-            {% if available_venue_memberships %}
+            {% if is_management and available_venue_memberships %}
             <details class="sidebar-venue-switcher">
                 <summary>
                     <span>Switch venue</span>

@@ -134,6 +134,10 @@ def venue_setup(request):
 
 @login_required
 def switch_venue(request, venue_id):
+    if not is_management(request.user, request=request):
+        messages.error(request, "Venue changes are managed by management.")
+        return redirect(role_home_name(request.user, request=request))
+
     membership = venue_memberships_for_user(request.user).filter(venue_id=venue_id).first()
     if membership is None:
         messages.error(request, "You do not have access to that venue.")

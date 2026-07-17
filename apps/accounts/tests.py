@@ -616,6 +616,33 @@ class VenueSwitchingAndIsolationTests(VenueScopedTestCase):
         self.assertContains(shift_response, "Garden terrace")
         self.assertNotContains(shift_response, "Main floor")
 
+    def test_staff_cannot_switch_venue_or_see_switcher(self):
+        self.client.login(username="multi_staff", password="strong-pass-123")
+
+        stock_response = self.client.get(reverse("stock:list"))
+        self.assertContains(stock_response, "Main Lager")
+        self.assertNotContains(stock_response, "Garden Gin")
+        self.assertNotContains(stock_response, "Switch venue")
+        self.assertNotContains(
+            stock_response,
+            reverse("switch_venue", args=[self.second_venue.id]),
+        )
+
+        switch_response = self.client.get(reverse("switch_venue", args=[self.second_venue.id]))
+        self.assertRedirects(
+            switch_response,
+            reverse("dashboard:staff_portal"),
+            fetch_redirect_response=False,
+        )
+
+        stock_response = self.client.get(reverse("stock:list"))
+        checklist_response = self.client.get(reverse("checklists:list"))
+
+        self.assertContains(stock_response, "Main Lager")
+        self.assertNotContains(stock_response, "Garden Gin")
+        self.assertContains(checklist_response, "Main opening checks")
+        self.assertNotContains(checklist_response, "Garden close checks")
+
     def test_active_venue_blocks_cross_venue_primary_key_access(self):
         self.client.login(username="multi_manager", password="strong-pass-123")
         self.client.get(reverse("switch_venue", args=[self.second_venue.id]))
