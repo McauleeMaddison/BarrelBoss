@@ -114,6 +114,17 @@ class StockListViewTests(VenueScopedTestCase):
         self.assertNotContains(response, "Jameson")
         self.assertEqual(response.context["selected_urgency"], "critical")
 
+    def test_stock_filter_summary_deduplicates_preset_and_focus(self):
+        self.client.login(username="stock_user", password="strong-pass-123")
+        response = self.client.get(
+            reverse("stock:list"),
+            {"focus": "cellar"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["active_filter_labels"], ["Cellar"])
+        self.assertFalse(response.context["filters_panel_open"])
+
     def test_stock_list_can_export_csv(self):
         self.client.login(username="stock_user", password="strong-pass-123")
         response = self.client.get(

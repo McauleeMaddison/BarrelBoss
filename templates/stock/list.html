@@ -16,67 +16,73 @@
             </div>
         </div>
         <div class="module-board-shell">
-            <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+            <div class="filter-shell{% if filters_panel_open %} is-open{% endif %}" data-filter-shell>
                             <div class="filter-preset-row">
                                 {% for preset in filter_presets %}
                                 <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}#stock-section-board{% else %}{% url 'stock:list' %}#stock-section-board{% endif %}">{{ preset.label }}</a>
                                 {% endfor %}
                             </div>
                             <div class="filter-summary-bar">
-                                <div class="filter-chip-row">
-                                    {% if filters_active %}
+                                <div class="filter-summary-copy">
+                                    {% if active_filter_labels %}
                                     <span class="panel-header-meta">{{ active_filter_count }} active</span>
-                                    {% if selected_preset_label %}<span class="filter-chip">{{ selected_preset_label }}</span>{% endif %}
-                                    {% if query %}<span class="filter-chip">Search: {{ query|truncatechars:18 }}</span>{% endif %}
-                                    {% if selected_focus_label %}<span class="filter-chip">{{ selected_focus_label }}</span>{% endif %}
-                                    {% if selected_category_label %}<span class="filter-chip">{{ selected_category_label }}</span>{% endif %}
-                                    {% if selected_urgency_label %}<span class="filter-chip">{{ selected_urgency_label }}</span>{% endif %}
+                                    <span>{{ active_filter_labels|join:" · " }}</span>
                                     {% else %}
                                     <span class="filter-chip filter-chip-muted">All active inventory in view</span>
                                     {% endif %}
                                 </div>
-                                <button
-                                    class="table-action filter-toggle-btn"
-                                    type="button"
-                                    data-filter-toggle
-                                    aria-expanded="{% if filters_active %}true{% else %}false{% endif %}"
-                                >
-                                    Filters
-                                </button>
+                                <div class="filter-summary-actions">
+                                    {% if filters_active %}
+                                    <a class="table-action" href="{% url 'stock:list' %}#stock-section-board">Reset</a>
+                                    {% endif %}
+                                    <button
+                                        class="table-action filter-toggle-btn"
+                                        type="button"
+                                        data-filter-toggle
+                                        data-open-label="Hide filters"
+                                        data-closed-label="Filters"
+                                        aria-expanded="{% if filters_panel_open %}true{% else %}false{% endif %}"
+                                    >
+                                        Filters
+                                    </button>
+                                </div>
                             </div>
 
                             <form method="get" class="stock-filter-form" data-filter-form>
-                                <div class="filter-field">
-                                    <label for="focus">Zone</label>
-                                    <select id="focus" name="focus">
-                                        {% for value, label in focus_choices %}
-                                        <option value="{{ value }}" {% if selected_focus == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
+                                <div class="stock-filter-search-row">
+                                    <div class="filter-field filter-field-search">
+                                        <label for="q">Search</label>
+                                        <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
+                                    </div>
+                                    <button class="action-btn" type="submit">Apply</button>
                                 </div>
-                                <div class="filter-field">
-                                    <label for="q">Search</label>
-                                    <input id="q" type="text" name="q" value="{{ query }}" placeholder="Item, supplier, note or unit">
+                                <div class="stock-filter-advanced" data-filter-advanced>
+                                    <div class="filter-field">
+                                        <label for="focus">Zone</label>
+                                        <select id="focus" name="focus">
+                                            {% for value, label in focus_choices %}
+                                            <option value="{{ value }}" {% if selected_focus == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="filter-field">
+                                        <label for="category">Category</label>
+                                        <select id="category" name="category">
+                                            <option value="">All Categories</option>
+                                            {% for value, label in category_choices %}
+                                            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="filter-field">
+                                        <label for="urgency">Urgency</label>
+                                        <select id="urgency" name="urgency">
+                                            {% for value, label in urgency_choices %}
+                                            <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="filter-field">
-                                    <label for="category">Category</label>
-                                    <select id="category" name="category">
-                                        <option value="">All Categories</option>
-                                        {% for value, label in category_choices %}
-                                        <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="filter-field">
-                                    <label for="urgency">Urgency</label>
-                                    <select id="urgency" name="urgency">
-                                        {% for value, label in urgency_choices %}
-                                        <option value="{{ value }}" {% if selected_urgency == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <button class="action-btn" type="submit">Apply filters</button>
-                                <a class="table-action" href="{% url 'stock:list' %}#stock-section-board">Reset</a>
                             </form>
                         </div>
 

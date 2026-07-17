@@ -2520,6 +2520,19 @@ body.nav-open .sidebar {
     gap: var(--dashboard-gap-tight);
 }
 
+.filter-summary-copy,
+.filter-summary-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.filter-summary-copy {
+    min-width: 0;
+    color: var(--muted);
+}
+
 .filter-chip {
     display: inline-flex;
     align-items: center;
@@ -2872,8 +2885,8 @@ textarea:focus {
 
 .stock-filter-form {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    align-items: end;
+    grid-template-columns: 1fr;
+    align-items: stretch;
     gap: 0.9rem;
     margin-bottom: 0;
     padding: 0;
@@ -2882,17 +2895,33 @@ textarea:focus {
     background: transparent;
 }
 
-.stock-filter-form > .filter-field {
+.stock-filter-search-row,
+.stock-filter-advanced {
+    display: grid;
+    gap: 0.9rem;
+    align-items: end;
+}
+
+.stock-filter-search-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.stock-filter-advanced {
+    display: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.filter-shell.is-open .stock-filter-advanced {
+    display: grid;
+}
+
+.stock-filter-search-row > .filter-field,
+.stock-filter-advanced > .filter-field {
     min-width: 0;
 }
 
-.stock-filter-form > .filter-field:nth-of-type(2) {
-    grid-column: span 2;
-}
-
-.stock-filter-form > .action-btn,
-.stock-filter-form > .table-action {
-    width: 100%;
+.stock-filter-search-row > .action-btn {
+    width: auto;
     min-height: 42px;
 }
 
@@ -3401,8 +3430,9 @@ body.command-open .mobile-command-sheet {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .stock-filter-form > .filter-field:nth-of-type(2) {
-        grid-column: 1 / -1;
+    .stock-filter-search-row,
+    .stock-filter-advanced {
+        grid-template-columns: 1fr;
     }
 
     .metric-grid,
@@ -3695,8 +3725,13 @@ body.command-open .mobile-command-sheet {
         gap: 0.82rem;
     }
 
-    .stock-filter-form > .filter-field:nth-of-type(2) {
-        grid-column: auto;
+    .stock-filter-search-row,
+    .stock-filter-advanced {
+        grid-template-columns: 1fr;
+    }
+
+    .stock-filter-search-row > .action-btn {
+        width: 100%;
     }
 
     .dashboard-accordion-trigger,

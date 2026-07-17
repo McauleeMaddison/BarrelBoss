@@ -335,6 +335,29 @@ def list_items(request):
         {"label": "Critical Risk", "query": "urgency=critical", "active": selected_urgency == "critical" and not query and not selected_category and not selected_focus},
         {"label": "Needs Count", "query": "focus=uncounted", "active": selected_focus == "uncounted" and not query and not selected_category and selected_urgency == "all"},
     ]
+    selected_preset_label = next(
+        (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
+        "",
+    )
+    active_filter_labels = []
+    for label in [
+        selected_preset_label,
+        f"Search: {query}" if query else "",
+        "" if selected_preset_label else focus_labels.get(selected_focus, ""),
+        category_labels.get(selected_category, ""),
+        (
+            ""
+            if selected_preset_label
+            else urgency_label_map.get(selected_urgency, "")
+        ) if selected_urgency != "all" else "",
+    ]:
+        if label and label not in active_filter_labels:
+            active_filter_labels.append(label)
+    filters_panel_open = bool(
+        selected_category
+        or selected_urgency != "all"
+        or selected_focus == "unlinked"
+    )
     attention_items = []
     if urgency_counts["critical"]:
         attention_items.append(
@@ -663,10 +686,9 @@ def list_items(request):
         ),
         "selected_category_label": category_labels.get(selected_category, ""),
         "selected_urgency_label": urgency_label_map.get(selected_urgency, "") if selected_urgency != "all" else "",
-        "selected_preset_label": next(
-            (preset["label"] for preset in filter_presets if preset["active"] and preset["query"]),
-            "",
-        ),
+        "selected_preset_label": selected_preset_label,
+        "active_filter_labels": active_filter_labels,
+        "filters_panel_open": filters_panel_open,
         "return_path": request.get_full_path(),
         "count_return_path": (
             request.get_full_path()

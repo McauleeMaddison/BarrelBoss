@@ -7,12 +7,18 @@
         if (!filterShell) {
             return;
         }
+        const closedLabel = button.dataset.closedLabel || button.textContent.replace(/\s+/g, " ").trim();
+        const openLabel = button.dataset.openLabel || closedLabel;
 
         const syncExpandedState = () => {
+            const isOpen = filterShell.classList.contains("is-open");
             button.setAttribute(
                 "aria-expanded",
-                String(filterShell.classList.contains("is-open")),
+                String(isOpen),
             );
+            if (button.dataset.closedLabel || button.dataset.openLabel) {
+                button.textContent = isOpen ? openLabel : closedLabel;
+            }
         };
 
         syncExpandedState();
