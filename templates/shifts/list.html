@@ -7,93 +7,12 @@
 <div class="dashboard-view module-view module-view-shifts">
 {% include 'partials/modules/command_panel.html' %}
 
-<section class="dashboard-stack dashboard-priority-stack dashboard-stack-lean">
-    <article class="panel portal-panel module-workspace-panel dashboard-entry-panel">
-        <div class="panel-header">
-            <div>
-                <h3>Rota Workspace</h3>
-                <p class="panel-subtitle">Open the right rota view, then work from one live board.</p>
-            </div>
-        </div>
-        <div class="dashboard-entry-grid">
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Upcoming</span>
-                <strong>{% if is_management %}Upcoming coverage{% else %}My next shifts{% endif %}</strong>
-                <p>Keep the next service windows visible first.</p>
-                {% if priority_shifts %}
-                <div class="dashboard-entry-preview">
-                    <strong>{% if is_management %}{{ priority_shifts.0.staff.username }}{% else %}{{ priority_shifts.0.shift_date|date:"D j M" }}{% endif %}</strong>
-                    <small>{{ priority_shifts.0.start_time|time:"H:i" }} - {{ priority_shifts.0.end_time|time:"H:i" }}</small>
-                </div>
-                {% endif %}
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ upcoming_shift_count }}</strong>
-                        <small>Upcoming</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ hours_this_week|floatformat:2 }}h</strong>
-                        <small>This week</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="{% url 'shifts:list' %}?range=upcoming#shifts-section-board">Open upcoming</a>
-                    <a class="table-action" href="{% url 'shifts:list' %}?range=this_week#shifts-section-board">Open this week</a>
-                </div>
-            </article>
-
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Live board</span>
-                <strong>{% if is_management %}Team shift planner{% else %}My shift board{% endif %}</strong>
-                <p>{% if is_management %}Filter by range and staff in one board.{% else %}Filter your rota by range in one board.{% endif %}</p>
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ total_shifts }}</strong>
-                        <small>Visible</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ hours_this_month|floatformat:2 }}h</strong>
-                        <small>This month</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="#shifts-section-board">Open board</a>
-                    {% if is_management %}
-                    <a class="table-action" href="{% url 'shifts:add' %}">Schedule shift</a>
-                    {% endif %}
-                </div>
-            </article>
-
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Weekly load</span>
-                <strong>Hours profile</strong>
-                <p>Inspect the current week’s labor pattern without cluttering the main rota queue.</p>
-                <div class="dashboard-entry-preview">
-                    <strong>{{ week_window_label }}</strong>
-                    <small>{% if peak_day %}Peak day {{ peak_day.full_date }} at {{ peak_day.pretty_hours }}{% else %}No peak day in range{% endif %}</small>
-                </div>
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{% if peak_day %}{{ peak_day.pretty_hours }}{% else %}0h{% endif %}</strong>
-                        <small>Peak day</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ days_with_cover }}</strong>
-                        <small>Days covered</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="#shifts-section-support">Open weekly load</a>
-                </div>
-            </article>
-        </div>
-    </article>
-
+<section class="dashboard-stack dashboard-stack-lean">
     <article class="panel portal-panel module-live-panel" id="shifts-section-board">
         <div class="panel-header">
             <div>
                 <h3>Rota Board</h3>
-                <p class="panel-subtitle">Live schedule first. Analytics second.</p>
+                <p class="panel-subtitle">One rota board with just the range and staff controls you need.</p>
             </div>
         </div>
         <div class="module-board-shell">
@@ -257,55 +176,6 @@
                         <p class="empty-state">No shifts found for this view.</p>
                         {% endif %}
         </div>
-    </article>
-
-    <article class="panel portal-panel module-support-panel" id="shifts-section-support">
-        <div class="panel-header">
-            <div>
-                <h3>Weekly Load</h3>
-                <p class="panel-subtitle">A single compact week view when you need labor shape.</p>
-            </div>
-        </div>
-        <section class="shifts-analytics module-chart-shell">
-            <article class="panel shift-chart-panel">
-                <div class="panel-header">
-                    <h3>Weekly hours chart</h3>
-                    <span class="badge">{{ week_window_label }}</span>
-                </div>
-                <div class="shift-chart-grid" aria-label="Weekly shift hours">
-                    {% for point in weekly_chart %}
-                    <div class="shift-chart-column">
-                        <button
-                            type="button"
-                            class="shift-chart-bar{% if peak_day and point.full_date == peak_day.full_date %} active{% endif %}"
-                            data-shift-day="{{ point.label }}"
-                            data-shift-date="{{ point.full_date }}"
-                            data-shift-hours="{{ point.pretty_hours }}"
-                            aria-label="{{ point.full_date }} {{ point.pretty_hours }}"
-                        >
-                            <span class="shift-chart-fill" style="height: {{ point.height }}%"></span>
-                        </button>
-                        <strong>{{ point.label }}</strong>
-                        <small>{{ point.hours|floatformat:2 }}h</small>
-                    </div>
-                    {% endfor %}
-                </div>
-            </article>
-
-            <article class="panel shift-chart-insight" id="shiftChartInsight">
-                <p class="kicker">Focused Day</p>
-                {% if peak_day %}
-                <h3 id="shiftChartDay">{{ peak_day.label }}</h3>
-                <p class="shift-chart-hours" id="shiftChartHours">{{ peak_day.pretty_hours }}</p>
-                <p class="shift-chart-date" id="shiftChartDate">{{ peak_day.full_date }}</p>
-                <span class="metric-note">Tap or click a bar to inspect that day.</span>
-                {% else %}
-                <h3 id="shiftChartDay">-</h3>
-                <p class="shift-chart-hours" id="shiftChartHours">0h</p>
-                <p class="shift-chart-date" id="shiftChartDate">No shifts this week</p>
-                {% endif %}
-            </article>
-        </section>
     </article>
 </section>
 </div>

@@ -1,6 +1,6 @@
 <div class="dashboard-view dashboard-view-staff">
 <section class="panel portal-hero portal-hero-compact">
-    <div class="dashboard-hero-grid">
+    <div class="dashboard-hero-grid dashboard-hero-grid-single">
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
                 <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
@@ -10,31 +10,6 @@
             <p class="portal-hero-copy">{{ overview_copy }}</p>
             {% include 'partials/attention_rail.html' with attention_items=attention_items|slice:":1" %}
         </div>
-        <aside class="dashboard-hero-aside">
-            <article class="dashboard-hero-card dashboard-hero-card-compact">
-                <div class="panel-header">
-                    <div>
-                        <h3>Next Up</h3>
-                        <p class="panel-subtitle">Keep the next task visible.</p>
-                    </div>
-                    <span class="badge">{{ focus_list|length }} live</span>
-                </div>
-                <ul class="staff-focus-list dashboard-linked-list">
-                    {% for item in focus_list %}
-                    <li class="staff-focus-item">
-                        <a class="dashboard-row-link" href="{{ item.href }}">
-                            <div class="staff-focus-copy">
-                                <span class="staff-focus-kicker">{{ item.owner }}</span>
-                                <strong>{{ item.task }}</strong>
-                                <small>Due {{ item.due }}</small>
-                            </div>
-                            <span class="metric-state">{{ item.state }}</span>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </article>
-        </aside>
     </div>
 </section>
 
@@ -42,8 +17,8 @@
     <article class="panel portal-panel dashboard-entry-panel">
         <div class="panel-header">
             <div>
-                <h3>Workspace</h3>
-                <p class="panel-subtitle">Open the tool you need and get back to work.</p>
+                <h3>Today</h3>
+                <p class="panel-subtitle">Open the board you need and get back to the floor.</p>
             </div>
         </div>
         <div class="dashboard-entry-grid">

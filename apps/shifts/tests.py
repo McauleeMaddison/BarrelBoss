@@ -70,7 +70,7 @@ class ShiftViewTests(VenueScopedTestCase):
         self.client.login(username="shift_staff", password="strong-pass-123")
         response = self.client.get(reverse("shifts:list"))
 
-        self.assertContains(response, "Rota Workspace")
+        self.assertContains(response, "Rota Board")
         self.assertContains(response, "Main floor")
         self.assertNotContains(response, "Cellar delivery")
         self.assertNotContains(response, "Schedule shift")
@@ -90,7 +90,7 @@ class ShiftViewTests(VenueScopedTestCase):
         self.client.login(username="shift_manager", password="strong-pass-123")
         response = self.client.get(reverse("shifts:list"))
 
-        self.assertContains(response, "Rota Workspace")
+        self.assertContains(response, "Rota Board")
         self.assertContains(response, "Main floor")
         self.assertContains(response, "Cellar delivery")
         self.assertContains(response, "Schedule shift")

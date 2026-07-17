@@ -141,20 +141,6 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
-                label="Stock",
-                url_name="stock:list",
-                group="stock",
-                description="Cellar and back bar",
-            ),
-            _nav_item(
-                current,
-                label="Orders",
-                url_name="orders:list",
-                group="orders",
-                description="Approvals and deliveries",
-            ),
-            _nav_item(
-                current,
                 label="Tasks",
                 url_name="checklists:list",
                 group="checklists",
@@ -162,10 +148,24 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
+                label="Stock",
+                url_name="stock:list",
+                group="stock",
+                description="Cellar and back bar",
+            ),
+            _nav_item(
+                current,
                 label="Rota",
                 url_name="shifts:list",
                 group="shifts",
                 description="Coverage and hours",
+            ),
+            _nav_item(
+                current,
+                label="Requests",
+                url_name="orders:list",
+                group="orders",
+                description="Approvals and deliveries",
             ),
         ]
         secondary_links = [
@@ -356,14 +356,14 @@ def build_workspace_navigation(request):
         secondary_links = [
             _nav_item(
                 current,
-                label="Report breakage",
+                label="Breakages",
                 url_name="breakages:add",
                 group="breakages",
                 description="Send a loss report",
             ),
             _nav_item(
                 current,
-                label="Request stock",
+                label="Restock",
                 url_name="orders:add",
                 group="orders",
                 description="Raise a stock request",

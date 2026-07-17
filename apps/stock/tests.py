@@ -70,7 +70,7 @@ class StockListViewTests(VenueScopedTestCase):
         response = self.client.get(reverse("stock:list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Inventory Workspace")
+        self.assertContains(response, "Inventory Board")
         self.assertContains(response, "Carling 50L")
         self.assertContains(response, "Jameson")
         self.assertNotContains(response, "Create order")

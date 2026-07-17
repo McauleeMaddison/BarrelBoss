@@ -7,124 +7,12 @@
 <div class="dashboard-view module-view module-view-stock">
 {% include 'partials/modules/command_panel.html' %}
 
-<section class="dashboard-stack dashboard-priority-stack dashboard-stack-lean">
-    <article class="panel portal-panel module-workspace-panel dashboard-entry-panel">
-        <div class="panel-header">
-            <div>
-                <h3>Inventory Workspace</h3>
-                <p class="panel-subtitle">Start from the right queue, then work from one live board.</p>
-            </div>
-        </div>
-        <div class="dashboard-entry-grid">
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Supplier action</span>
-                <strong>Urgent stock queue</strong>
-                <p>Go straight from shortages to the supplier or replenishment step that clears them.</p>
-                {% if supplier_action_rows %}
-                <div class="dashboard-entry-preview">
-                    <strong>{{ supplier_action_rows.0.title }}</strong>
-                    <small>{{ supplier_action_rows.0.meta }}</small>
-                </div>
-                {% endif %}
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ critical_stock_count }}</strong>
-                        <small>Critical</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ low_stock_count }}</strong>
-                        <small>Urgent</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="{% url 'stock:list' %}?urgency=critical#stock-section-board">Open critical</a>
-                    {% if is_management %}
-                    <a class="table-action" href="{% url 'suppliers:list' %}">Open suppliers</a>
-                    {% else %}
-                    <a class="table-action" href="{% url 'stock:list' %}?urgency=low#stock-section-board">Open low stock</a>
-                    {% endif %}
-                </div>
-            </article>
-
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Inventory board</span>
-                <strong>Live stock board</strong>
-                <p>Filter the inventory list, inspect counts, and review supplier links from one board.</p>
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ display_item_count }}</strong>
-                        <small>Shown</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ total_units }}</strong>
-                        <small>Units</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="#stock-section-board">Open board</a>
-                    {% if is_management %}
-                    <a class="table-action" href="{% url 'orders:add' %}">Create order</a>
-                    {% endif %}
-                </div>
-            </article>
-
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Count queue</span>
-                <strong>Count discipline</strong>
-                <p>Keep count recency visible so stock decisions stay grounded in current numbers.</p>
-                {% if count_discipline_rows %}
-                <div class="dashboard-entry-preview">
-                    <strong>{{ count_discipline_rows.0.title }}</strong>
-                    <small>{{ count_discipline_rows.0.meta }}</small>
-                </div>
-                {% endif %}
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ missing_count_count }}</strong>
-                        <small>Missing</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ stale_count_count }}</strong>
-                        <small>Overdue</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="{% url 'stock:list' %}?focus=uncounted#stock-section-board">Open count queue</a>
-                </div>
-            </article>
-
-            <article class="dashboard-entry-card">
-                <span class="dashboard-entry-label">Zones</span>
-                <strong>Area shortcuts</strong>
-                <p>Open cellar, back bar, or service-kit stock from one consistent control row.</p>
-                {% if focus_zone_cards %}
-                <div class="dashboard-entry-preview">
-                    <strong>{{ focus_zone_cards.0.value }}</strong>
-                    <small>{{ focus_zone_cards.0.note }}</small>
-                </div>
-                {% endif %}
-                <div class="dashboard-entry-stats">
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ watch_stock_count }}</strong>
-                        <small>Watch</small>
-                    </span>
-                    <span class="dashboard-entry-stat">
-                        <strong>{{ healthy_stock_count }}</strong>
-                        <small>Healthy</small>
-                    </span>
-                </div>
-                <div class="dashboard-entry-actions">
-                    <a class="table-action" href="#stock-section-support">Open zones</a>
-                </div>
-            </article>
-        </div>
-    </article>
-
+<section class="dashboard-stack dashboard-stack-lean">
     <article class="panel portal-panel module-live-panel" id="stock-section-board">
         <div class="panel-header">
             <div>
                 <h3>Inventory Board</h3>
-                <p class="panel-subtitle">Live stock first. Extra navigation second.</p>
+                <p class="panel-subtitle">One live inventory board with just the filters that help you act.</p>
             </div>
         </div>
         <div class="module-board-shell">
@@ -312,25 +200,6 @@
                         {% else %}
                         <p class="empty-state">No inventory items match this filter.</p>
                         {% endif %}
-        </div>
-    </article>
-
-    <article class="panel portal-panel module-support-panel" id="stock-section-support">
-        <div class="panel-header">
-            <div>
-                <h3>Zone Shortcuts</h3>
-                <p class="panel-subtitle">Jump straight into the stock area you need.</p>
-            </div>
-        </div>
-        <div class="dashboard-command-grid module-card-grid">
-            {% for zone in focus_zone_cards %}
-            <a class="dashboard-command-card" href="{{ zone.url }}">
-                <span class="kicker">{{ zone.label }}</span>
-                <strong>{{ zone.value }}</strong>
-                <p>{{ zone.copy }}</p>
-                <small class="panel-subtitle">{{ zone.note }}</small>
-            </a>
-            {% endfor %}
         </div>
     </article>
 </section>

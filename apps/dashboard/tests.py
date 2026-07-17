@@ -68,7 +68,7 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Management")
-        self.assertContains(response, "Workspace")
+        self.assertContains(response, "Today")
         self.assertContains(response, "Cellar watch")
 
     def test_staff_portal_context(self):
@@ -86,7 +86,6 @@ class DashboardAccessTests(VenueScopedTestCase):
         self.assertIn("actions", response.context["metrics"][0])
         self.assertTrue(response.context["attention_items"])
         self.assertContains(response, "Today")
-        self.assertContains(response, "Workspace")
         self.assertContains(response, "View stock")
         self.assertNotContains(response, "Manager only")
         self.assertNotContains(response, "Send issues to management")
@@ -293,8 +292,13 @@ class DashboardDataDrivenMetricsTests(VenueScopedTestCase):
         self.assertEqual(metrics_by_label["Order Requests Awaiting Approval"], 1)
         self.assertEqual(metrics_by_label["Shifts Scheduled This Week"], 1)
         self.assertEqual(len(response.context["portal_sections"]), 4)
-        self.assertContains(response, "Metric Lager Barrel")
-        self.assertContains(response, "Toast Control Feed")
+        row_titles = [
+            row["title"]
+            for section in response.context["portal_sections"]
+            for row in section.get("rows", [])
+        ]
+        self.assertIn("Metric Lager Barrel", row_titles)
+        self.assertIn("Toast Control Feed", row_titles)
 
     def test_staff_portal_uses_live_personal_counts(self):
         self.client.login(username="metric_staff", password="strong-pass-123")
@@ -309,6 +313,11 @@ class DashboardDataDrivenMetricsTests(VenueScopedTestCase):
         self.assertEqual(metrics_by_label["Hours This Week"], "7.5")
         self.assertEqual(metrics_by_label["Next Shift"], "12:00")
         self.assertEqual(len(response.context["portal_sections"]), 4)
-        self.assertContains(response, "Close till review")
+        row_titles = [
+            row["title"]
+            for section in response.context["portal_sections"]
+            for row in section.get("rows", [])
+        ]
+        self.assertIn("Close till review", row_titles)
         self.assertContains(response, "Request stock")
         self.assertContains(response, "View stock")

@@ -433,7 +433,7 @@ def list_items(request):
                 else []
             ),
             *(
-                [build_module_link("Supplier directory", reverse("suppliers:list"))]
+                [build_module_link("Open suppliers", reverse("suppliers:list"))]
                 if management_view
                 else []
             ),
