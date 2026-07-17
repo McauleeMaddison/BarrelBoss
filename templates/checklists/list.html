@@ -7,117 +7,121 @@
 <div class="dashboard-view module-view module-view-checklists">
 {% include 'partials/modules/command_panel.html' %}
 
-<section class="dashboard-stack dashboard-priority-stack">
-    <article class="panel portal-panel module-workspace-panel">
+<section class="dashboard-stack dashboard-priority-stack dashboard-stack-lean">
+    <article class="panel portal-panel module-workspace-panel dashboard-entry-panel">
         <div class="panel-header">
             <div>
                 <h3>Task Workspace</h3>
-                <p class="panel-subtitle">Keep the queue visible and open detail only when needed.</p>
+                <p class="panel-subtitle">Use quick lanes, then work directly from the live queue.</p>
             </div>
         </div>
-
-        <div class="dashboard-accordion-group" data-dashboard-accordion-group="checklists-workspace">
-            <article class="dashboard-accordion-card is-open" data-dashboard-accordion-item data-dashboard-accordion-key="signoff" data-dashboard-accordion-default-open="true">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="true"
-                    aria-controls="checklists-section-signoff"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">Due now</p>
-                        <span class="dashboard-accordion-label">Action queue</span>
-                        <strong>Sign-off queue</strong>
-                        <small>Clear time-sensitive work first.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ overdue_count }}</strong>
-                            <small>Overdue</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ ready_to_close_count }}</strong>
-                            <small>Due now</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ completion_rate }}%</strong>
-                            <small>Complete</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="checklists-section-signoff" data-dashboard-accordion-body>
-                    <div class="dashboard-accordion-content">
-                        {% if signoff_tasks %}
-                        <ul class="dashboard-record-list">
-                            {% for task in signoff_tasks %}
-                            <li class="dashboard-record-row dashboard-record-row-actionable">
-                                <div class="dashboard-record-copy">
-                                    <strong>{{ task.title }}</strong>
-                                    <small>{{ task.get_checklist_type_display }} · {{ task.assignee_label }}</small>
-                                    <span class="dashboard-record-note">{{ task.due_state_label }} · {{ task.note_preview|truncatechars:110 }}</span>
-                                </div>
-                                <div class="dashboard-record-actions">
-                                    <span class="metric-state metric-state-{{ task.row_tone }}">{{ task.due_state_label }}</span>
-                                    {% if task.can_toggle %}
-                                    <form method="post" action="{% url 'checklists:toggle' task.pk %}" class="inline-action-form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="{{ return_path }}">
-                                        <button class="action-btn" type="submit">Sign off</button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <p class="empty-state">No open tasks are waiting for sign-off in the current checklist scope.</p>
-                        {% endif %}
-                        <div class="metric-actions dashboard-section-actions">
-                            <a class="table-action metric-action-link" href="{% url 'checklists:list' %}?preset=overdue#checklists-section-board">Open overdue</a>
-                            <a class="table-action metric-action-link" href="{% url 'checklists:list' %}?preset=today#checklists-section-board">Open today</a>
-                            {% if is_management %}
-                            <a class="table-action metric-action-link" href="{% url 'checklists:add' %}">Assign task</a>
-                            {% endif %}
-                        </div>
-                    </div>
+        <div class="dashboard-entry-grid">
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Sign-off queue</span>
+                <strong>Due-now work</strong>
+                <p>Clear the most time-sensitive checklist work first.</p>
+                {% if signoff_tasks %}
+                <div class="dashboard-entry-preview">
+                    <strong>{{ signoff_tasks.0.title }}</strong>
+                    <small>{{ signoff_tasks.0.assignee_label }} · {{ signoff_tasks.0.due_state_label }}</small>
+                </div>
+                {% endif %}
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ overdue_count }}</strong>
+                        <small>Overdue</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ ready_to_close_count }}</strong>
+                        <small>Due now</small>
+                    </span>
+                </div>
+                <div class="dashboard-entry-actions">
+                    <a class="table-action" href="{% url 'checklists:list' %}?preset=overdue#checklists-section-board">Open overdue</a>
+                    <a class="table-action" href="{% url 'checklists:list' %}?preset=today#checklists-section-board">Open today</a>
                 </div>
             </article>
 
-            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="board">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="false"
-                    aria-controls="checklists-section-board"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">Live board</p>
-                        <span class="dashboard-accordion-label">Queue</span>
-                        <strong>{% if is_management %}Checklist queue{% else %}My task queue{% endif %}</strong>
-                        <small>Filter, review, and complete work from one board.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ visible_task_count }}</strong>
-                            <small>Shown</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ due_today_count }}</strong>
-                            <small>Today</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ due_tomorrow_count }}</strong>
-                            <small>Tomorrow</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="checklists-section-board" data-dashboard-accordion-body hidden>
-                    <div class="dashboard-accordion-content module-board-shell">
-                        <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Live board</span>
+                <strong>{% if is_management %}Checklist queue{% else %}My task queue{% endif %}</strong>
+                <p>Filter, review, and complete work from one board.</p>
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ visible_task_count }}</strong>
+                        <small>Shown</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ due_today_count }}</strong>
+                        <small>Today</small>
+                    </span>
+                </div>
+                <div class="dashboard-entry-actions">
+                    <a class="table-action" href="#checklists-section-board">Open board</a>
+                    {% if is_management %}
+                    <a class="table-action" href="{% url 'checklists:add' %}">Assign task</a>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Workflow lanes</span>
+                <strong>Task shortcuts</strong>
+                <p>Jump straight into opening, closing, delivery, or cleaning work.</p>
+                {% if completion_lane_cards %}
+                <div class="dashboard-entry-preview">
+                    <strong>{{ completion_lane_cards.0.value }}</strong>
+                    <small>{{ completion_lane_cards.0.note }}</small>
+                </div>
+                {% endif %}
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ task_count }}</strong>
+                        <small>Total</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ completed_week_count }}</strong>
+                        <small>Closed 7d</small>
+                    </span>
+                </div>
+                <div class="dashboard-entry-actions">
+                    <a class="table-action" href="#checklists-section-support">Open lanes</a>
+                </div>
+            </article>
+
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Recent</span>
+                <strong>Recent sign-off</strong>
+                <p>Check what has already closed without keeping a second queue open.</p>
+                {% if recent_signoff_rows %}
+                <div class="dashboard-entry-preview">
+                    <strong>{{ recent_signoff_rows.0.title }}</strong>
+                    <small>{{ recent_signoff_rows.0.meta }}</small>
+                </div>
+                {% endif %}
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ due_tomorrow_count }}</strong>
+                        <small>Tomorrow</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ unassigned_count }}</strong>
+                        <small>Unassigned</small>
+                    </span>
+                </div>
+            </article>
+        </div>
+    </article>
+
+    <article class="panel portal-panel module-live-panel" id="checklists-section-board">
+        <div class="panel-header">
+            <div>
+                <h3>Task Board</h3>
+                <p class="panel-subtitle">Live task queue by default. Less panel switching.</p>
+            </div>
+        </div>
+        <div class="module-board-shell">
+            <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
                             <div class="filter-preset-row">
                                 {% for preset in filter_presets %}
                                 <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}#checklists-section-board{% else %}{% url 'checklists:list' %}#checklists-section-board{% endif %}">{{ preset.label }}</a>
@@ -298,157 +302,25 @@
                         {% else %}
                         <p class="empty-state">No checklist tasks match this filter.</p>
                         {% endif %}
-                    </div>
-                </div>
-            </article>
-
-            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="lanes">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="false"
-                    aria-controls="checklists-section-lanes"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">By workflow</p>
-                        <span class="dashboard-accordion-label">Lanes</span>
-                        <strong>Task lanes</strong>
-                        <small>Jump straight into opening, closing, delivery, or cleaning work without duplicating separate dashboards.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ task_count }}</strong>
-                            <small>Total</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ completed_week_count }}</strong>
-                            <small>Closed 7d</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ due_tomorrow_count }}</strong>
-                            <small>Tomorrow</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="checklists-section-lanes" data-dashboard-accordion-body hidden>
-                    <div class="dashboard-accordion-content">
-                        <div class="dashboard-command-grid module-card-grid">
-                            {% for lane in completion_lane_cards %}
-                            <a class="dashboard-command-card" href="{{ lane.url }}">
-                                <span class="kicker">{{ lane.label }}</span>
-                                <strong>{{ lane.value }}</strong>
-                                <p>{{ lane.copy }}</p>
-                                <small class="panel-subtitle">{{ lane.note }}</small>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="recent">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="false"
-                    aria-controls="checklists-section-recent"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">Closure trail</p>
-                        <span class="dashboard-accordion-label">Recent</span>
-                        <strong>Recent sign-off activity</strong>
-                        <small>Use a short completion trail to confirm what has already closed without keeping a second queue open.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ ready_to_close_count }}</strong>
-                            <small>Due now</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ due_tomorrow_count }}</strong>
-                            <small>Tomorrow</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ unassigned_count }}</strong>
-                            <small>Unassigned</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="checklists-section-recent" data-dashboard-accordion-body hidden>
-                    <div class="dashboard-accordion-content">
-                        <div class="dashboard-section-stats">
-                            <article class="dashboard-section-stat">
-                                <span>Due now</span>
-                                <strong>{{ ready_to_close_count }}</strong>
-                            </article>
-                            <article class="dashboard-section-stat">
-                                <span>Due tomorrow</span>
-                                <strong>{{ due_tomorrow_count }}</strong>
-                            </article>
-                            <article class="dashboard-section-stat">
-                                <span>Unassigned</span>
-                                <strong>{{ unassigned_count }}</strong>
-                            </article>
-                            <article class="dashboard-section-stat">
-                                <span>Closed 7d</span>
-                                <strong>{{ completed_week_count }}</strong>
-                            </article>
-                        </div>
-                        {% if recent_signoff_rows %}
-                        <ul class="dashboard-record-list">
-                            {% for row in recent_signoff_rows %}
-                            <li class="dashboard-record-row">
-                                {% if row.href %}
-                                <a class="dashboard-row-link" href="{{ row.href }}">
-                                    <div class="dashboard-record-copy">
-                                        <strong>{{ row.title }}</strong>
-                                        <small>{{ row.meta }}</small>
-                                        <span class="dashboard-record-note">{{ row.note }}</span>
-                                    </div>
-                                    <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
-                                </a>
-                                {% else %}
-                                <div class="dashboard-record-copy">
-                                    <strong>{{ row.title }}</strong>
-                                    <small>{{ row.meta }}</small>
-                                    <span class="dashboard-record-note">{{ row.note }}</span>
-                                </div>
-                                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
-                                {% endif %}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <p class="empty-state">No tasks have been signed off in this checklist scope yet.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </article>
         </div>
     </article>
 
-    <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="checklists-snapshot-panel" data-panel-default-collapsed="true">
+    <article class="panel portal-panel module-support-panel" id="checklists-section-support">
         <div class="panel-header">
             <div>
-                <h3>Task Snapshot</h3>
-                <p class="panel-subtitle">Open the broader checklist metrics only when you need the fuller operational picture.</p>
+                <h3>Workflow Shortcuts</h3>
+                <p class="panel-subtitle">Open the specific checklist lane you need.</p>
             </div>
-            <button
-                type="button"
-                class="table-action panel-collapse-toggle"
-                data-panel-toggle
-                aria-expanded="false"
-                aria-controls="checklists-snapshot-panel"
-            >
-                Expand
-            </button>
         </div>
-        <div class="dashboard-collapsible-body" id="checklists-snapshot-panel" data-panel-body hidden>
-            {% include 'partials/modules/snapshot_grid.html' %}
+        <div class="dashboard-command-grid module-card-grid">
+            {% for lane in completion_lane_cards %}
+            <a class="dashboard-command-card" href="{{ lane.url }}">
+                <span class="kicker">{{ lane.label }}</span>
+                <strong>{{ lane.value }}</strong>
+                <p>{{ lane.copy }}</p>
+                <small class="panel-subtitle">{{ lane.note }}</small>
+            </a>
+            {% endfor %}
         </div>
     </article>
 </section>

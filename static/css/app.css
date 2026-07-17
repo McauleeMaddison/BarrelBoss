@@ -5834,6 +5834,13 @@ body.command-open .mobile-dock {
     text-transform: uppercase;
 }
 
+.dashboard-entry-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.12rem;
+}
+
 .dashboard-entry-footer {
     margin-top: 0.12rem;
 }
@@ -5843,6 +5850,16 @@ body.command-open .mobile-dock {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.module-live-panel,
+.module-support-panel {
+    gap: 0.85rem;
+}
+
+.module-live-panel .module-board-shell,
+.module-support-panel .dashboard-command-grid {
+    margin-top: 0.05rem;
 }
 
 @media (min-width:761px) {

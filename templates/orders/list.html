@@ -7,121 +7,101 @@
 <div class="dashboard-view module-view module-view-orders">
 {% include 'partials/modules/command_panel.html' %}
 
-<section class="dashboard-stack dashboard-priority-stack">
-    <article class="panel portal-panel module-workspace-panel">
+<section class="dashboard-stack dashboard-priority-stack dashboard-stack-lean">
+    <article class="panel portal-panel module-workspace-panel dashboard-entry-panel">
         <div class="panel-header">
             <div>
                 <h3>Requests Workspace</h3>
-                <p class="panel-subtitle">Keep requests, deliveries, and follow-up in one workspace.</p>
+                <p class="panel-subtitle">Use quick entry points, then work from one live board.</p>
             </div>
         </div>
-
-        <div class="dashboard-accordion-group" data-dashboard-accordion-group="orders-workspace">
-            <article class="dashboard-accordion-card is-open" data-dashboard-accordion-item data-dashboard-accordion-key="runway" data-dashboard-accordion-default-open="true">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="true"
-                    aria-controls="orders-section-runway"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">Priority follow-up</p>
-                        <span class="dashboard-accordion-label">Runway</span>
-                        <strong>{% if management_view %}Order follow-up queue{% else %}My request follow-up{% endif %}</strong>
-                        <small>Start with the next supplier, draft, or delivery issue that needs action before opening the wider pipeline.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ overdue_delivery_count }}</strong>
-                            <small>Overdue</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ due_today_count }}</strong>
-                            <small>Due today</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ awaiting_approval_count }}</strong>
-                            <small>Drafts</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="orders-section-runway" data-dashboard-accordion-body>
-                    <div class="dashboard-accordion-content">
-                        {% if runway_rows %}
-                        <ul class="dashboard-record-list">
-                            {% for row in runway_rows %}
-                            <li class="dashboard-record-row">
-                                {% if row.href %}
-                                <a class="dashboard-row-link" href="{{ row.href }}">
-                                    <div class="dashboard-record-copy">
-                                        <strong>{{ row.title }}</strong>
-                                        <small>{{ row.meta }}</small>
-                                        <span class="dashboard-record-note">{{ row.note }}</span>
-                                    </div>
-                                    <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
-                                </a>
-                                {% else %}
-                                <div class="dashboard-record-copy">
-                                    <strong>{{ row.title }}</strong>
-                                    <small>{{ row.meta }}</small>
-                                    <span class="dashboard-record-note">{{ row.note }}</span>
-                                </div>
-                                <span class="metric-state metric-state-{{ row.tone }}">{{ row.badge }}</span>
-                                {% endif %}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <p class="empty-state">No open orders or draft requests are showing in this queue.</p>
-                        {% endif %}
-                        <div class="metric-actions dashboard-section-actions">
-                            <a class="table-action metric-action-link" href="{% url 'orders:list' %}?preset=drafts#orders-section-board">Open drafts</a>
-                            <a class="table-action metric-action-link" href="{% url 'orders:list' %}?preset=overdue#orders-section-board">Open overdue</a>
-                            {% if management_view %}
-                            <a class="table-action metric-action-link" href="{% url 'suppliers:list' %}">Open suppliers</a>
-                            {% else %}
-                            <a class="table-action metric-action-link" href="{% url 'orders:add' %}">New request</a>
-                            {% endif %}
-                        </div>
-                    </div>
+        <div class="dashboard-entry-grid">
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Runway</span>
+                <strong>{% if management_view %}Order follow-up queue{% else %}My request follow-up{% endif %}</strong>
+                <p>Start with the next supplier, draft, or delivery issue that needs action.</p>
+                {% if runway_rows %}
+                <div class="dashboard-entry-preview">
+                    <strong>{{ runway_rows.0.title }}</strong>
+                    <small>{{ runway_rows.0.meta }}</small>
+                </div>
+                {% endif %}
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ overdue_delivery_count }}</strong>
+                        <small>Overdue</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ due_today_count }}</strong>
+                        <small>Due today</small>
+                    </span>
+                </div>
+                <div class="dashboard-entry-actions">
+                    <a class="table-action" href="{% url 'orders:list' %}?preset=drafts#orders-section-board">Open drafts</a>
+                    <a class="table-action" href="{% url 'orders:list' %}?preset=overdue#orders-section-board">Open overdue</a>
                 </div>
             </article>
 
-            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="board">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="false"
-                    aria-controls="orders-section-board"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">Live board</p>
-                        <span class="dashboard-accordion-label">Pipeline</span>
-                        <strong>{% if management_view %}Order pipeline{% else %}My request queue{% endif %}</strong>
-                        <small>Filter the live order queue, review record detail, and update status from one consistent working board.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ order_count }}</strong>
-                            <small>Shown</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ pending_count }}</strong>
-                            <small>Pending</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ total_units_in_view }}</strong>
-                            <small>Units</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="orders-section-board" data-dashboard-accordion-body hidden>
-                    <div class="dashboard-accordion-content module-board-shell">
-                        <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Pipeline</span>
+                <strong>{% if management_view %}Order pipeline{% else %}My request queue{% endif %}</strong>
+                <p>Filter, review, and update the live order queue from one board.</p>
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ order_count }}</strong>
+                        <small>Shown</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ pending_count }}</strong>
+                        <small>Pending</small>
+                    </span>
+                </div>
+                <div class="dashboard-entry-actions">
+                    <a class="table-action" href="#orders-section-board">Open board</a>
+                    {% if management_view %}
+                    <a class="table-action" href="{% url 'suppliers:list' %}">Open suppliers</a>
+                    {% else %}
+                    <a class="table-action" href="{% url 'orders:add' %}">New request</a>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="dashboard-entry-card">
+                <span class="dashboard-entry-label">Lanes</span>
+                <strong>Queue lanes</strong>
+                <p>Jump to the workload lane you need without opening more panels.</p>
+                {% if queue_lane_cards %}
+                <div class="dashboard-entry-preview">
+                    <strong>{{ queue_lane_cards.0.value }}</strong>
+                    <small>{{ queue_lane_cards.0.note }}</small>
+                </div>
+                {% endif %}
+                <div class="dashboard-entry-stats">
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ open_order_count }}</strong>
+                        <small>Open</small>
+                    </span>
+                    <span class="dashboard-entry-stat">
+                        <strong>{{ delivered_recent_count }}</strong>
+                        <small>Delivered 7d</small>
+                    </span>
+                </div>
+                <div class="dashboard-entry-actions">
+                    <a class="table-action" href="#orders-section-support">Open lanes</a>
+                </div>
+            </article>
+        </div>
+    </article>
+
+    <article class="panel portal-panel module-live-panel" id="orders-section-board">
+        <div class="panel-header">
+            <div>
+                <h3>{% if management_view %}Order board{% else %}Request board{% endif %}</h3>
+                <p class="panel-subtitle">Live queue first. Extra context only when it helps.</p>
+            </div>
+        </div>
+        <div class="module-board-shell">
+            <div class="filter-shell{% if filters_active %} is-open{% endif %}" data-filter-shell>
                             <div class="filter-preset-row">
                                 {% for preset in filter_presets %}
                                 <a class="preset-chip{% if preset.active %} active{% endif %}" href="{% if preset.query %}?{{ preset.query }}#orders-section-board{% else %}{% url 'orders:list' %}#orders-section-board{% endif %}">{{ preset.label }}</a>
@@ -283,90 +263,25 @@
                         {% else %}
                         <p class="empty-state">No orders match this filter.</p>
                         {% endif %}
-                    </div>
-                </div>
-            </article>
-
-            <article class="dashboard-accordion-card" data-dashboard-accordion-item data-dashboard-accordion-key="pressure">
-                <button
-                    type="button"
-                    class="dashboard-accordion-trigger"
-                    data-dashboard-accordion-trigger
-                    aria-expanded="false"
-                    aria-controls="orders-section-pressure"
-                >
-                    <div class="dashboard-accordion-summary">
-                        <p class="kicker dashboard-workspace-kicker">Queue pressure</p>
-                        <span class="dashboard-accordion-label">Lanes</span>
-                        <strong>Order pressure lanes</strong>
-                        <small>Open a single workload lane at a time instead of scanning separate queue pages for drafts, deliveries, and close-outs.</small>
-                    </div>
-                    <div class="dashboard-accordion-metrics">
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ open_order_count }}</strong>
-                            <small>Open</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ pending_count }}</strong>
-                            <small>Pending</small>
-                        </span>
-                        <span class="dashboard-accordion-metric">
-                            <strong>{{ delivered_recent_count }}</strong>
-                            <small>Delivered 7d</small>
-                        </span>
-                    </div>
-                    <span class="dashboard-accordion-icon" aria-hidden="true"></span>
-                </button>
-                <div class="dashboard-accordion-body" id="orders-section-pressure" data-dashboard-accordion-body hidden>
-                    <div class="dashboard-accordion-content">
-                        <div class="dashboard-section-stats">
-                            <article class="dashboard-section-stat">
-                                <span>Open queue</span>
-                                <strong>{{ open_order_count }}</strong>
-                            </article>
-                            <article class="dashboard-section-stat">
-                                <span>Pending delivery</span>
-                                <strong>{{ pending_count }}</strong>
-                            </article>
-                            <article class="dashboard-section-stat">
-                                <span>Units in view</span>
-                                <strong>{{ total_units_in_view }}</strong>
-                            </article>
-                        </div>
-                        <div class="dashboard-command-grid module-card-grid">
-                            {% for card in queue_lane_cards %}
-                            <a class="dashboard-command-card" href="{{ card.url }}">
-                                <span class="kicker">{{ card.label }}</span>
-                                <strong>{{ card.value }}</strong>
-                                <p>{{ card.copy }}</p>
-                                <small class="panel-subtitle">{{ card.note }}</small>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </article>
         </div>
     </article>
 
-    <article class="panel portal-panel dashboard-collapsible dashboard-snapshot-panel" data-panel-storage-key="orders-snapshot-panel" data-panel-default-collapsed="true">
+    <article class="panel portal-panel module-support-panel" id="orders-section-support">
         <div class="panel-header">
             <div>
-                <h3>Request Snapshot</h3>
-                <p class="panel-subtitle">Open the broader order metrics only when you need the bigger procurement picture.</p>
+                <h3>Queue Lanes</h3>
+                <p class="panel-subtitle">Use quick lanes for drafts, pending deliveries, and close-outs.</p>
             </div>
-            <button
-                type="button"
-                class="table-action panel-collapse-toggle"
-                data-panel-toggle
-                aria-expanded="false"
-                aria-controls="orders-snapshot-panel"
-            >
-                Expand
-            </button>
         </div>
-        <div class="dashboard-collapsible-body" id="orders-snapshot-panel" data-panel-body hidden>
-            {% include 'partials/modules/snapshot_grid.html' %}
+        <div class="dashboard-command-grid module-card-grid">
+            {% for card in queue_lane_cards %}
+            <a class="dashboard-command-card" href="{{ card.url }}">
+                <span class="kicker">{{ card.label }}</span>
+                <strong>{{ card.value }}</strong>
+                <p>{{ card.copy }}</p>
+                <small class="panel-subtitle">{{ card.note }}</small>
+            </a>
+            {% endfor %}
         </div>
     </article>
 </section>
