@@ -4,38 +4,15 @@
 {% block page_title %}POS Sync Center{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero sales-hero">
+<section class="panel portal-hero portal-hero-compact sales-hero">
     <div class="portal-hero-head">
         <p class="kicker">Live Feed Control</p>
         <span class="badge portal-badge">Connectors</span>
     </div>
     <h3 class="portal-hero-title">Sync Center</h3>
     <p class="portal-hero-copy">
-        Manage connectors, mappings, sync runs, and webhooks.
+        Manage connectors, mappings, sync runs, and webhooks from one clean workspace.
     </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        <article class="hero-signal hero-signal-ok">
-            <span class="hero-signal-label">Active connectors</span>
-            <strong>{{ sync_summary.active_connector_count }}</strong>
-            <small>Enabled feeds currently available to sync.</small>
-        </article>
-        <article class="hero-signal hero-signal-neutral">
-            <span class="hero-signal-label">Mapped locations</span>
-            <strong>{{ sync_summary.mapped_location_count }}</strong>
-            <small>Internal locations currently attached to external POS locations.</small>
-        </article>
-        <article class="hero-signal hero-signal-warn">
-            <span class="hero-signal-label">Need attention</span>
-            <strong>{{ sync_summary.connectors_needing_attention }}</strong>
-            <small>Feeds due for sync, missing mapping, or in error.</small>
-        </article>
-        <article class="hero-signal hero-signal-warn">
-            <span class="hero-signal-label">Webhook queue</span>
-            <strong>{{ sync_summary.webhook_queue_count }}</strong>
-            <small>Inbound events waiting to be processed.</small>
-        </article>
-    </div>
     <div class="report-toolbar">
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'sales:integration_add' %}">Add Connector</a>
@@ -51,7 +28,48 @@
     </div>
 </section>
 
-<section class="overview-board">
+<section class="panel dashboard-entry-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Jump to the exact sales integration task you need.</p>
+        </div>
+    </div>
+    <div class="dashboard-entry-grid">
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'sales:integration_add' %}">
+            <span class="dashboard-entry-label">Connectors</span>
+            <strong>{{ sync_summary.active_connector_count }} active feed{{ sync_summary.active_connector_count|pluralize }}</strong>
+            <p>Create or reconnect the sales sources that keep this venue in sync.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ sync_summary.connectors_needing_attention }} need review</span>
+                <span class="dashboard-entry-cta">Add connector</span>
+            </div>
+        </a>
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'sales:mapping_add' %}">
+            <span class="dashboard-entry-label">Mappings</span>
+            <strong>{{ sync_summary.mapped_location_count }} mapped location{{ sync_summary.mapped_location_count|pluralize }}</strong>
+            <p>Connect external tills to internal venues before imports start flowing.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ mappings|length }} in view</span>
+                <span class="dashboard-entry-cta">Add mapping</span>
+            </div>
+        </a>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Sync runs</span>
+            <strong>{{ recent_runs|length }} recent import{{ recent_runs|length|pluralize }}</strong>
+            <p>Clear overdue syncs and keep the webhook queue moving.</p>
+            <div class="dashboard-entry-actions">
+                <form action="{% url 'sales:run_due_syncs' %}" method="post" class="inline-action-form">
+                    {% csrf_token %}
+                    <button class="table-action" type="submit">Run due syncs</button>
+                </form>
+                <a class="table-action" href="{% url 'sales:list' %}">Open sales board</a>
+            </div>
+        </article>
+    </div>
+</section>
+
+<section class="overview-board dashboard-stack-lean">
     <article class="panel portal-panel">
         <div class="panel-header">
             <div>
@@ -121,7 +139,7 @@
     </article>
 </section>
 
-<section class="overview-board">
+<section class="overview-board dashboard-stack-lean">
     <article class="panel portal-panel">
         <div class="panel-header">
             <div>

@@ -187,8 +187,9 @@ class SalesListViewTests(VenueScopedTestCase):
         self.assertTrue(response.context["attention_items"])
         self.assertEqual(len(response.context["hero_signals"]), 4)
         self.assertEqual(len(response.context["metric_cards"]), 4)
-        self.assertContains(response, "POS Sync Health")
-        self.assertContains(response, "Revenue and Margin Handoff")
+        self.assertContains(response, "Quick access")
+        self.assertContains(response, "Connector control")
+        self.assertContains(response, "Daily Sales Snapshots")
 
     def test_sales_list_filters_by_source(self):
         self.client.login(username="sales_view_manager", password="strong-pass-123")

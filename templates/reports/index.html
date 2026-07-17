@@ -4,25 +4,15 @@
 {% block page_title %}Reports{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero report-hero">
+<section class="panel portal-hero portal-hero-compact report-hero">
     <div class="portal-hero-head">
         <p class="kicker">Finance & Operations</p>
         <span class="badge portal-badge">Management Reports</span>
     </div>
     <h3 class="portal-hero-title">Reports</h3>
     <p class="portal-hero-copy">
-        Review stock, spend, loss, and completion in one summary.
+        Review the essentials, then jump straight into the operational area that needs action.
     </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        {% for signal in hero_signals %}
-        <article class="hero-signal hero-signal-{{ signal.tone }}">
-            <span class="hero-signal-label">{{ signal.label }}</span>
-            <strong>{{ signal.value }}</strong>
-            <small>{{ signal.copy }}</small>
-        </article>
-        {% endfor %}
-    </div>
     <div class="report-toolbar">
         <form method="get" class="report-range-form">
             {% for value, label in range_choices %}
@@ -41,99 +31,120 @@
     <p class="report-window-meta">Window: {{ report_window_label }} · Compare: {{ previous_window_label }}</p>
 </section>
 
-<section class="metric-grid report-metric-grid">
-    {% for card in report_kpi_cards %}
-    <article class="metric-card {{ card.tone }}">
-        <h3>{{ card.label }}</h3>
-        <p>{{ card.value }}</p>
-        <span class="metric-note report-delta report-delta-{{ card.delta_tone }}">{{ card.delta_text }}</span>
-    </article>
-    {% endfor %}
-</section>
-
-<section class="panel portal-panel">
-        <div class="panel-header">
-            <div>
-                <h3>Executive Highlights</h3>
-                <p class="panel-subtitle">Key signals for today.</p>
-            </div>
-        </div>
-    <div class="report-highlight-grid">
-        {% for item in executive_highlights %}
-        <article class="report-highlight-card report-highlight-{{ item.tone }}">
-            <h4>{{ item.title }}</h4>
-            <p class="report-highlight-value">{{ item.value }}</p>
-            <p class="report-highlight-meta">{{ item.meta }}</p>
-        </article>
-        {% endfor %}
-    </div>
-</section>
-
-<section class="panel report-section">
+<section class="panel dashboard-entry-panel">
     <div class="panel-header">
-        <h3>Low Stock Summary</h3>
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Use the summary, then move straight to the live operational page that needs work.</p>
+        </div>
     </div>
-    {% if low_stock_rows %}
-    <div class="report-table-wrap">
-        <table class="js-sortable data-table">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>Category</th>
-                    <th>Quantity</th>
-                    <th>Minimum</th>
-                    <th>Supplier</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in low_stock_rows %}
-                <tr>
-                    <td>{{ item.name }}</td>
-                    <td>{{ item.get_category_display }}</td>
-                    <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
-                    <td>{{ item.minimum_level }}</td>
-                    <td>{{ item.supplier.name|default:"-" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="dashboard-entry-grid">
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'stock:list' %}">
+            <span class="dashboard-entry-label">Stock</span>
+            <strong>Inventory pressure</strong>
+            <p>Open live low-stock and count work instead of staying in report mode.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ low_stock_rows|length }} flagged</span>
+                <span class="dashboard-entry-cta">Open stock</span>
+            </div>
+        </a>
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'orders:list' %}">
+            <span class="dashboard-entry-label">Orders</span>
+            <strong>Spend and order flow</strong>
+            <p>Move from supplier spend summary into the current purchase queue.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ supplier_spend_rows|length }} suppliers</span>
+                <span class="dashboard-entry-cta">Open orders</span>
+            </div>
+        </a>
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'breakages:list' %}">
+            <span class="dashboard-entry-label">Loss</span>
+            <strong>Breakage follow-up</strong>
+            <p>Review recurring loss items in the live incident log.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ top_breakage_items|length }} repeat items</span>
+                <span class="dashboard-entry-cta">Open breakages</span>
+            </div>
+        </a>
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'checklists:list' %}">
+            <span class="dashboard-entry-label">Tasks</span>
+            <strong>Completion follow-through</strong>
+            <p>Open checklist work instead of staying in static completion tables.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ checklist_type_rows|length }} checklist groups</span>
+                <span class="dashboard-entry-cta">Open tasks</span>
+            </div>
+        </a>
     </div>
-    {% else %}
-    <p class="empty-state">No low stock items in this period.</p>
-    {% endif %}
 </section>
 
-<section class="dashboard-stack">
+<section class="overview-board dashboard-stack-lean">
     <article class="panel report-section">
         <div class="panel-header">
-            <h3>Incoming Stock by Category</h3>
+            <h3>Low Stock Summary</h3>
         </div>
-        {% if category_volume_rows %}
+        {% if low_stock_rows %}
         <div class="report-table-wrap">
             <table class="js-sortable data-table">
                 <thead>
                     <tr>
+                        <th>Item</th>
                         <th>Category</th>
-                        <th>Units</th>
-                        <th>Estimated Spend</th>
+                        <th>Quantity</th>
+                        <th>Minimum</th>
+                        <th>Supplier</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in category_volume_rows %}
+                    {% for item in low_stock_rows %}
                     <tr>
-                        <td>{{ row.category_label }}</td>
-                        <td>{{ row.total_units }}</td>
-                        <td>£{{ row.total_spend|floatformat:2 }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.get_category_display }}</td>
+                        <td>{{ item.quantity }} {{ item.get_unit_display }}</td>
+                        <td>{{ item.minimum_level }}</td>
+                        <td>{{ item.supplier.name|default:"-" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <p class="empty-state">No delivered order items in this period.</p>
+        <p class="empty-state">No low stock items in this period.</p>
         {% endif %}
     </article>
 
+    <article class="panel report-section">
+        <div class="panel-header">
+            <h3>Order Status Mix</h3>
+        </div>
+        {% if order_status_rows %}
+        <div class="report-table-wrap">
+            <table class="js-sortable data-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Orders</th>
+                        <th>Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in order_status_rows %}
+                    <tr>
+                        <td>{{ row.status_label }}</td>
+                        <td>{{ row.total }}</td>
+                        <td>{{ row.percentage }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-state">No orders created in this period.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="overview-board dashboard-stack-lean">
     <article class="panel report-section">
         <div class="panel-header">
             <h3>Supplier Spend</h3>
@@ -163,38 +174,6 @@
         </div>
         {% else %}
         <p class="empty-state">No supplier spend records for this period.</p>
-        {% endif %}
-    </article>
-</section>
-
-<section class="dashboard-stack">
-    <article class="panel report-section">
-        <div class="panel-header">
-            <h3>Breakage by Issue Type</h3>
-        </div>
-        {% if breakage_issue_rows %}
-        <div class="report-table-wrap">
-            <table class="js-sortable data-table">
-                <thead>
-                    <tr>
-                        <th>Issue Type</th>
-                        <th>Reports</th>
-                        <th>Units</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in breakage_issue_rows %}
-                    <tr>
-                        <td>{{ row.issue_label }}</td>
-                        <td>{{ row.total_reports }}</td>
-                        <td>{{ row.total_units }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p class="empty-state">No breakages logged in this period.</p>
         {% endif %}
     </article>
 
@@ -229,7 +208,7 @@
     </article>
 </section>
 
-<section class="dashboard-stack">
+<section class="overview-board dashboard-stack-lean">
     <article class="panel report-section">
         <div class="panel-header">
             <h3>Checklist Completion by Type</h3>
@@ -259,36 +238,6 @@
         </div>
         {% else %}
         <p class="empty-state">No checklist activity in this period.</p>
-        {% endif %}
-    </article>
-
-    <article class="panel report-section">
-        <div class="panel-header">
-            <h3>Order Status Mix</h3>
-        </div>
-        {% if order_status_rows %}
-        <div class="report-table-wrap">
-            <table class="js-sortable data-table">
-                <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th>Orders</th>
-                        <th>Share</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in order_status_rows %}
-                    <tr>
-                        <td>{{ row.status_label }}</td>
-                        <td>{{ row.total }}</td>
-                        <td>{{ row.percentage }}%</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p class="empty-state">No orders created in this period.</p>
         {% endif %}
     </article>
 </section>

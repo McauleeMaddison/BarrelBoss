@@ -4,33 +4,15 @@
 {% block page_title %}Breakages{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero breakages-hero">
+<section class="panel portal-hero portal-hero-compact breakages-hero">
     <div class="portal-hero-head">
         <p class="kicker">Loss Tracking</p>
         <span class="badge portal-badge">Incident Log</span>
     </div>
     <h3 class="portal-hero-title">Incident Log</h3>
     <p class="portal-hero-copy">
-        Log incidents quickly and review patterns.
+        Log incidents quickly and review the live loss queue without extra visual clutter.
     </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        <article class="hero-signal hero-signal-neutral">
-            <span class="hero-signal-label">Total Records</span>
-            <strong>{{ record_count }} incident{{ record_count|pluralize }}</strong>
-            <small>Full visible incident history inside the current search and issue-type scope.</small>
-        </article>
-        <article class="hero-signal hero-signal-alert">
-            <span class="hero-signal-label">Reported 7 Days</span>
-            <strong>{{ week_count }} recent</strong>
-            <small>Fresh incident flow from the last 7 days that may indicate an active floor issue.</small>
-        </article>
-        <article class="hero-signal hero-signal-warn">
-            <span class="hero-signal-label">Search Mode</span>
-            <strong>{% if filters_active %}Focused view{% else %}Full log{% endif %}</strong>
-            <small>{% if filters_active %}Filters are narrowing the incident queue for faster review.{% else %}Use presets or filters to isolate a specific incident pattern quickly.{% endif %}</small>
-        </article>
-    </div>
     <div class="report-toolbar">
         <a class="action-btn action-link" href="{% url 'breakages:add' %}">Log Incident</a>
         <div class="dashboard-controls">
@@ -40,37 +22,42 @@
     </div>
 </section>
 
-<section class="metric-grid">
-    <article class="metric-card neutral">
-        <div class="metric-card-head">
-            <h3>Total Records</h3>
-            <span class="metric-state metric-state-neutral">Log size</span>
+<section class="panel dashboard-entry-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Keep the loss workflow focused on logging and reviewing incidents.</p>
         </div>
-        <div class="metric-card-body">
-            <p>{{ record_count }}</p>
-            <span class="metric-summary">Every breakage or waste entry in the currently visible incident history.</span>
-            <span class="metric-note">Useful for understanding review volume before diving into issue type patterns.</span>
-            <div class="metric-actions">
-                <a class="table-action metric-action-link" href="#breakageTable">Open log</a>
+    </div>
+    <div class="dashboard-entry-grid">
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Log</span>
+            <strong>{{ record_count }} incident record{{ record_count|pluralize }}</strong>
+            <p>Open the live incident log or capture a new issue immediately.</p>
+            <div class="dashboard-entry-actions">
+                <a class="table-action" href="#breakageTable">Open log</a>
+                <a class="table-action" href="{% url 'breakages:add' %}">Log incident</a>
             </div>
-        </div>
-    </article>
-    <article class="metric-card alert">
-        <div class="metric-card-head">
-            <h3>Reported (7 Days)</h3>
-            <span class="metric-state metric-state-{% if week_count %}alert{% else %}ok{% endif %}">
-                {% if week_count %}Active flow{% else %}Quiet week{% endif %}
-            </span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ week_count }}</p>
-            <span class="metric-summary">Incidents logged in the last 7 days across the entire record set.</span>
-            <span class="metric-note">Best for spotting whether loss activity is building into a current operational problem.</span>
-            <div class="metric-actions">
-                <a class="table-action metric-action-link" href="{% url 'breakages:add' %}">Log incident</a>
+        </article>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Recent flow</span>
+            <strong>{{ week_count }} reported in 7 days</strong>
+            <p>Use the current week count to judge whether a floor issue is building.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{% if week_count %}Active flow{% else %}Quiet week{% endif %}</span>
+                <span class="dashboard-entry-cta">Review below</span>
             </div>
-        </div>
-    </article>
+        </article>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Focus</span>
+            <strong>{% if filters_active %}Filtered incident view{% else %}Full incident log{% endif %}</strong>
+            <p>{% if selected_issue_label %}Issue type: {{ selected_issue_label }}.{% else %}Use presets or filters to isolate a pattern quickly.{% endif %}</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{% if filters_active %}{{ active_filter_count }} active{% else %}Open queue{% endif %}</span>
+                <span class="dashboard-entry-cta">Use filters below</span>
+            </div>
+        </article>
+    </div>
 </section>
 
 <section class="panel" id="breakageTable">

@@ -4,25 +4,15 @@
 {% block page_title %}Staff{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero staff-hero">
+<section class="panel portal-hero portal-hero-compact staff-hero">
     <div class="portal-hero-head">
         <p class="kicker">People Management</p>
         <span class="badge portal-badge">People & Roles</span>
     </div>
     <h3 class="portal-hero-title">Team Directory</h3>
     <p class="portal-hero-copy">
-        Manage staff, roles, and alerts in one place.
+        Manage staff, roles, and alerts from one cleaner roster view.
     </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        {% for signal in hero_signals %}
-        <article class="hero-signal hero-signal-{{ signal.tone }}">
-            <span class="hero-signal-label">{{ signal.label }}</span>
-            <strong>{{ signal.value }}</strong>
-            <small>{{ signal.copy }}</small>
-        </article>
-        {% endfor %}
-    </div>
     <div class="report-toolbar">
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'staff_add' %}">Create Staff Member</a>
@@ -32,102 +22,42 @@
     </div>
 </section>
 
-<section class="metric-grid">
-    <article class="metric-card neutral">
-        <div class="metric-card-head">
-            <h3>Team Records</h3>
-            <span class="metric-state metric-state-neutral">Roster scope</span>
+<section class="panel dashboard-entry-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Move straight to the roster action or filtered slice you need.</p>
         </div>
-        <div class="metric-card-body">
-            <p>{{ team_total }}</p>
-            <span class="metric-summary">{{ recent_joined_count }} joined in the last 7 days within this view.</span>
-            <div class="metric-chart-block">
-                <div class="metric-chart" aria-hidden="true">
-                    {% for point in joined_chart %}
-                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
-                    {% endfor %}
-                </div>
-                <span class="metric-chart-label">7d team growth</span>
+    </div>
+    <div class="dashboard-entry-grid">
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Roster</span>
+            <strong>{{ team_total }} team record{{ team_total|pluralize }}</strong>
+            <p>{{ recent_joined_count }} joined in the last 7 days inside this view.</p>
+            <div class="dashboard-entry-actions">
+                <a class="table-action" href="{% url 'staff_add' %}">Create staff</a>
+                <a class="table-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
             </div>
-            <span class="metric-delta metric-delta-{{ join_trend.direction }}">{{ join_trend.label }}</span>
-            <span class="metric-note">Profiles shown here already reflect your current filters.</span>
-            <div class="metric-actions">
-                <a class="table-action metric-action-link" href="{% url 'staff_add' %}">Create staff</a>
-                <a class="table-action metric-action-link" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">Export CSV</a>
+        </article>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Coverage</span>
+            <strong>{{ team_active }} active · {{ team_inactive }} inactive</strong>
+            <p>Open a tighter roster view instead of scanning every profile.</p>
+            <div class="dashboard-entry-actions">
+                <a class="table-action" href="?preset=inactive">Inactive</a>
+                <a class="table-action" href="?preset=management">Management</a>
             </div>
-        </div>
-    </article>
-    <article class="metric-card ok">
-        <div class="metric-card-head">
-            <h3>Active Coverage</h3>
-            <span class="metric-state metric-state-{% if team_inactive %}warn{% else %}ok{% endif %}">
-                {% if team_inactive %}Monitor{% else %}Healthy{% endif %}
-            </span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ team_active_rate }}%</p>
-            <span class="metric-summary">{{ team_active }} active and {{ team_inactive }} inactive profile(s).</span>
-            <div class="metric-chart-block">
-                <div class="metric-chart" aria-hidden="true">
-                    {% for point in coverage_chart %}
-                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
-                    {% endfor %}
-                </div>
-                <span class="metric-chart-label">Active vs inactive</span>
+        </article>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Alerts</span>
+            <strong>{{ team_shift_alert_rate }}% push ready</strong>
+            <p>{{ team_shift_alerts_enabled }} alerts on · {{ team_shift_alerts_disabled }} off.</p>
+            <div class="dashboard-entry-actions">
+                <a class="table-action" href="?preset=alerts_off">Alerts off</a>
+                <a class="table-action" href="{% url 'venue_invites' %}">Invite staff</a>
             </div>
-            <span class="metric-note">Coverage is based on the currently filtered roster.</span>
-            <div class="metric-actions">
-                <a class="table-action metric-action-link" href="?preset=inactive">Inactive preset</a>
-            </div>
-        </div>
-    </article>
-    <article class="metric-card warn">
-        <div class="metric-card-head">
-            <h3>Management Roles</h3>
-            <span class="metric-state metric-state-warn">Leadership</span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ team_management }}</p>
-            <span class="metric-summary">Landlord and manager accounts currently visible in this scope.</span>
-            <div class="metric-chart-block">
-                <div class="metric-chart" aria-hidden="true">
-                    {% for point in leadership_chart %}
-                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
-                    {% endfor %}
-                </div>
-                <span class="metric-chart-label">Leadership mix</span>
-            </div>
-            <span class="metric-note">Use this to spot whether the roster still has enough coverage at the top level.</span>
-            <div class="metric-actions">
-                <a class="table-action metric-action-link" href="?preset=management">Management preset</a>
-                <a class="table-action metric-action-link" href="{% url 'staff_add' %}">Create staff</a>
-            </div>
-        </div>
-    </article>
-    <article class="metric-card alert">
-        <div class="metric-card-head">
-            <h3>Shift Alerts Enabled</h3>
-            <span class="metric-state metric-state-{% if team_shift_alerts_disabled %}warn{% else %}ok{% endif %}">
-                {% if team_shift_alerts_disabled %}Adoption gap{% else %}Push-ready{% endif %}
-            </span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ team_shift_alert_rate }}%</p>
-            <span class="metric-summary">{{ team_shift_alerts_enabled }} enabled and {{ team_shift_alerts_disabled }} disabled profile(s).</span>
-            <div class="metric-chart-block">
-                <div class="metric-chart" aria-hidden="true">
-                    {% for point in alerts_chart %}
-                    <span class="metric-chart-bar{% if point.is_latest %} is-latest{% endif %}" style="height: {{ point.height }}%"></span>
-                    {% endfor %}
-                </div>
-                <span class="metric-chart-label">Alerts on vs off</span>
-            </div>
-            <span class="metric-note">Push readiness matters most for shift assignment speed and acknowledgement.</span>
-            <div class="metric-actions">
-                <a class="table-action metric-action-link" href="?preset=alerts_off">Alerts off</a>
-            </div>
-        </div>
-    </article>
+        </article>
+    </div>
 </section>
 
 <section class="panel">

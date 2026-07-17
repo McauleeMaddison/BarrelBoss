@@ -4,64 +4,63 @@
 {% block page_title %}Audit Log{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero audit-hero">
+<section class="panel portal-hero portal-hero-compact audit-hero">
     <div class="portal-hero-head">
         <p class="kicker">Governance</p>
         <span class="badge portal-badge">Audit Trail</span>
     </div>
     <h3 class="portal-hero-title">Audit Trail</h3>
     <p class="portal-hero-copy">
-        Track who changed what and when.
+        Track who changed what and when without burying the event log behind extra summaries.
     </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        {% for signal in hero_signals %}
-        <article class="hero-signal hero-signal-{{ signal.tone }}">
-            <span class="hero-signal-label">{{ signal.label }}</span>
-            <strong>{{ signal.value }}</strong>
-            <small>{{ signal.copy }}</small>
-        </article>
-        {% endfor %}
+    <div class="report-toolbar">
+        <div class="dashboard-controls">
+            <span class="panel-header-meta">{{ event_count }} visible</span>
+            <span class="panel-header-meta">{{ today_count }} today</span>
+            <span class="panel-header-meta">{{ critical_count }} critical</span>
+        </div>
     </div>
 </section>
 
-<section class="metric-grid">
-    <article class="metric-card neutral">
-        <div class="metric-card-head">
-            <h3>Visible Events</h3>
-            <span class="metric-state metric-state-neutral">Filtered trail</span>
+<section class="panel dashboard-entry-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Keep the review path short and move straight into the filtered log.</p>
         </div>
-        <div class="metric-card-body">
-            <p>{{ event_count }}</p>
-            <span class="metric-summary">Audit entries after applying the active search, action, model, and range scope.</span>
-            <span class="metric-note">This gives the working trace size before you drill into individual events.</span>
-        </div>
-    </article>
-    <article class="metric-card ok">
-        <div class="metric-card-head">
-            <h3>Events Today</h3>
-            <span class="metric-state metric-state-ok">Current day</span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ today_count }}</p>
-            <span class="metric-summary">Fresh accountability events logged during the current calendar day.</span>
-            <span class="metric-note">Useful when you need a tight view of same-day actions and reversals.</span>
-        </div>
-    </article>
-    <article class="metric-card warn">
-        <div class="metric-card-head">
-            <h3>Critical Changes</h3>
-            <span class="metric-state metric-state-warn">Sensitive events</span>
-        </div>
-        <div class="metric-card-body">
-            <p>{{ critical_count }}</p>
-            <span class="metric-summary">Delete and status update actions that usually deserve first review during investigations.</span>
-            <span class="metric-note">These are the highest-signal changes when tracing accountability or state drift.</span>
-        </div>
-    </article>
+    </div>
+    <div class="dashboard-entry-grid">
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Current view</span>
+            <strong>{{ event_count }} visible event{{ event_count|pluralize }}</strong>
+            <p>{% if filters_active %}This log is already narrowed for faster review.{% else %}Use presets or filters below to narrow the trail quickly.{% endif %}</p>
+            <div class="dashboard-entry-actions">
+                <a class="table-action" href="#auditTable">Open log</a>
+                <a class="table-action" href="{% url 'audit:list' %}">Reset view</a>
+            </div>
+        </article>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Today</span>
+            <strong>{{ today_count }} event{{ today_count|pluralize }} today</strong>
+            <p>Use the current-day trail when you need to confirm what changed during service.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">Same-day review</span>
+                <span class="dashboard-entry-cta">Filter below</span>
+            </div>
+        </article>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Critical</span>
+            <strong>{{ critical_count }} high-signal change{{ critical_count|pluralize }}</strong>
+            <p>Delete and status events remain easy to find without adding another dashboard band.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">Investigation focus</span>
+                <span class="dashboard-entry-cta">Review now</span>
+            </div>
+        </article>
+    </div>
 </section>
 
-<section class="panel">
+<section class="panel" id="auditTable">
     <div class="panel-header">
         <div>
             <h3>Change Log</h3>

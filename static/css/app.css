@@ -4771,6 +4771,17 @@ html[data-theme="light"] .module-view-checklists .portal-hero {
     padding: clamp(1rem, 1.5vw, 1.12rem);
 }
 
+.portal-hero::before {
+    background: linear-gradient(90deg, rgba(240, 199, 119, 0.22), rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0));
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: 0 0;
+}
+
+.portal-hero::after {
+    display: none;
+}
+
 .portal-hero-head,
 .panel-header,
 .report-toolbar {

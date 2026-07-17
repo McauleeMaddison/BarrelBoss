@@ -4,25 +4,15 @@
 {% block page_title %}Sales{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero sales-hero">
+<section class="panel portal-hero portal-hero-compact sales-hero">
     <div class="portal-hero-head">
         <p class="kicker">Sales Operations</p>
         <span class="badge portal-badge">POS Control</span>
     </div>
     <h3 class="portal-hero-title">Sales</h3>
     <p class="portal-hero-copy">
-        Track revenue and sync status in one board.
+        Track revenue, sync health, and manual snapshots without extra dashboard noise.
     </p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        {% for signal in hero_signals %}
-        <article class="hero-signal hero-signal-{{ signal.tone }}">
-            <span class="hero-signal-label">{{ signal.label }}</span>
-            <strong>{{ signal.value }}</strong>
-            <small>{{ signal.copy }}</small>
-        </article>
-        {% endfor %}
-    </div>
     <div class="report-toolbar">
         <div class="settings-actions">
             <a class="action-btn action-link" href="{% url 'sales:sync_center' %}">Open Sync Center</a>
@@ -41,96 +31,45 @@
     </div>
 </section>
 
-<section class="metric-grid">
-    {% for card in metric_cards %}
-    <article class="metric-card {{ card.tone }}">
-        <div class="metric-card-head">
-            <h3>{{ card.label }}</h3>
-            <span class="metric-state metric-state-{{ card.state_tone|default:card.tone }}">{{ card.state }}</span>
+<section class="panel dashboard-entry-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Open the sales task you need without wading through extra panels.</p>
         </div>
-        <div class="metric-card-body">
-            <p>{{ card.value }}</p>
-            <span class="metric-summary">{{ card.summary }}</span>
-            <span class="metric-note">{{ card.note }}</span>
-            {% if card.actions %}
-            <div class="metric-actions">
-                {% for action in card.actions %}
-                {% if action.href %}
-                <a class="table-action metric-action-link" href="{{ action.href }}">{{ action.label }}</a>
-                {% else %}
-                <a class="table-action metric-action-link" href="{% url action.url_name %}{% if action.query %}?{{ action.query }}{% endif %}">{{ action.label }}</a>
-                {% endif %}
-                {% endfor %}
+    </div>
+    <div class="dashboard-entry-grid">
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% url 'sales:sync_center' %}">
+            <span class="dashboard-entry-label">Sync center</span>
+            <strong>Connector control</strong>
+            <p>Manage feeds, mappings, and webhook intake from one place.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{{ connector_rows|length }} live</span>
+                <span class="dashboard-entry-cta">Open workspace</span>
             </div>
-            {% endif %}
-        </div>
-    </article>
-    {% endfor %}
-</section>
-
-<section class="overview-board">
-    <article class="panel portal-panel">
-        <div class="panel-header">
-            <div>
-                <h3>POS Sync Health</h3>
-                <p class="panel-subtitle">Connector status, coverage, and webhook health.</p>
+        </a>
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Capture</span>
+            <strong>{{ snapshot_count }} synced day{{ snapshot_count|pluralize }}</strong>
+            <p>{{ selected_range_label }}{% if selected_source_label %} · {{ selected_source_label }}{% endif %}</p>
+            <div class="dashboard-entry-actions">
+                <form action="{% url 'sales:run_due_syncs' %}" method="post" class="inline-action-form">
+                    {% csrf_token %}
+                    <button class="table-action" type="submit">Run due syncs</button>
+                </form>
+                <a class="table-action" href="{% url 'sales:add' %}">Log snapshot</a>
             </div>
-            <a class="table-action" href="{% url 'sales:sync_center' %}">Manage Feeds</a>
-        </div>
-        {% if connector_rows %}
-        <ul class="focus-list">
-            {% for row in connector_rows %}
-            <li>
-                <div>
-                    <strong>{{ row.integration.label }}</strong>
-                    <small>{{ row.provider }} · {{ row.meta }}</small>
-                    <small>{{ row.detail }}</small>
-                </div>
-                <div class="dashboard-controls">
-                    <span class="metric-state metric-state-{{ row.state_tone }}">{{ row.state }}</span>
-                    <form action="{% url 'sales:integration_run' row.integration.pk %}" method="post" class="inline-action-form">
-                        {% csrf_token %}
-                        <button class="table-action" type="submit">Sync Now</button>
-                    </form>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="empty-state">No live feed is configured yet. Start with a Toast, Lightspeed, Square, or Clover connector.</p>
-        {% endif %}
-    </article>
-
-    <article class="panel portal-panel">
-        <div class="panel-header">
-            <div>
-                <h3>Revenue and Margin Handoff</h3>
-                <p class="panel-subtitle">Keep revenue mix and cellar pressure visible.</p>
+        </article>
+        <a class="dashboard-entry-card dashboard-entry-card-action" href="{% if filter_query %}?{{ filter_query }}&export=csv{% else %}?export=csv{% endif %}">
+            <span class="dashboard-entry-label">Export</span>
+            <strong>Send this sales view</strong>
+            <p>Download the current source and date window without opening another screen.</p>
+            <div class="dashboard-entry-footer">
+                <span class="badge">{% if selected_source_label %}{{ selected_source_label }}{% else %}All sources{% endif %}</span>
+                <span class="dashboard-entry-cta">Download CSV</span>
             </div>
-        </div>
-        <div class="sales-panel-stack">
-            <ul class="focus-list">
-                {% for item in margin_mix %}
-                <li>
-                    <div>
-                        <strong>{{ item.label }}</strong>
-                        <small>{{ item.meta }}</small>
-                    </div>
-                    <span class="badge">{{ item.value }} · {{ item.share }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            <div class="sales-brief-grid">
-                {% for item in ops_handoff %}
-                <article class="hero-signal hero-signal-neutral">
-                    <span class="hero-signal-label">{{ item.label }}</span>
-                    <strong>{{ item.value }}</strong>
-                    <small>{{ item.meta }}</small>
-                </article>
-                {% endfor %}
-            </div>
-        </div>
-    </article>
+        </a>
+    </div>
 </section>
 
 <section class="panel" id="salesTable">

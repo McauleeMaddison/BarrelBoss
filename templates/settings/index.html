@@ -4,22 +4,35 @@
 {% block page_title %}Settings{% endblock %}
 
 {% block content %}
-<section class="panel portal-hero settings-hero">
+<section class="panel portal-hero portal-hero-compact settings-hero">
     <div class="portal-hero-head">
         <p class="kicker">Configuration</p>
         <span class="badge portal-badge">Notification Center</span>
     </div>
     <h3 class="portal-hero-title">Alerts</h3>
     <p class="portal-hero-copy">Manage device alerts and team shift notifications.</p>
-    {% include 'partials/attention_rail.html' with attention_items=attention_items %}
-    <div class="hero-signal-bar">
-        {% for signal in hero_signals %}
-        <article class="hero-signal hero-signal-{{ signal.tone }}">
-            <span class="hero-signal-label">{{ signal.label }}</span>
-            <strong>{{ signal.value }}</strong>
-            <small>{{ signal.copy }}</small>
+</section>
+
+<section class="panel dashboard-entry-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Quick access</h3>
+            <p class="panel-subtitle">Keep alert setup simple on both personal devices and the team level.</p>
+        </div>
+    </div>
+    <div class="dashboard-entry-grid">
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Device</span>
+            <strong>{% if push_subscription_count %}Alerts active on this device{% else %}Alerts off on this device{% endif %}</strong>
+            <p>Turn personal shift notifications on or off without leaving this screen.</p>
         </article>
-        {% endfor %}
+        {% if is_management %}
+        <article class="dashboard-entry-card">
+            <span class="dashboard-entry-label">Team</span>
+            <strong>{{ team_profiles|length }} staff profile{{ team_profiles|length|pluralize }} in alert scope</strong>
+            <p>Managers can keep assignment alerts limited to the people who need them.</p>
+        </article>
+        {% endif %}
     </div>
 </section>
 
