@@ -18,35 +18,15 @@
 <body class="login-page">
 <div class="shell-bg"></div>
 <div class="login-wrap">
-    <section class="login-hero">
-        <img class="login-logo" src="{% static 'images/branding/barrelboss-logo.png' %}" alt="BarrelBoss logo">
-        <p class="kicker">BarrelBoss</p>
-        <h1>Venue operations without clutter.</h1>
-        <p>One sleek workspace for staff and management to run stock, service, handover, and shift work with less friction.</p>
-        <div class="login-value-strip" aria-label="Product highlights">
-            <article class="login-value-card">
-                <span>Built for</span>
-                <strong>Staff + management</strong>
-            </article>
-            <article class="login-value-card">
-                <span>Designed for</span>
-                <strong>Mobile-first floor use</strong>
-            </article>
-            <article class="login-value-card">
-                <span>Focused on</span>
-                <strong>Live operational clarity</strong>
-            </article>
-        </div>
-        <ul class="login-feature-list">
-            <li class="login-feature-item">Keep tasks, stock, rota, and incident reporting in one consistent flow.</li>
-            <li class="login-feature-item">Reduce duplicate actions so teams move through service faster and cleaner.</li>
-            <li class="login-feature-item">Give managers a sharper operational view without burying staff in admin detail.</li>
-        </ul>
-    </section>
-
     <section class="login-card">
-        <h2>Sign In</h2>
-        <p>Use the venue account issued to you to enter the live operations workspace.</p>
+        <div class="login-card-header">
+            <img class="login-logo" src="{% static 'images/branding/barrelboss-logo.png' %}" alt="BarrelBoss logo">
+            <div class="login-brand-copy">
+                <p class="kicker">BarrelBoss</p>
+                <h1>Sign In</h1>
+                <p>Use the venue account issued to you to enter the live operations workspace.</p>
+            </div>
+        </div>
         <form method="post">
             {% csrf_token %}
             {% if form.non_field_errors %}

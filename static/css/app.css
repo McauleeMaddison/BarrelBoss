@@ -3044,13 +3044,9 @@ body.drawer-open .detail-drawer {
 }
 
 .login-wrap {
-    width: min(1100px, 100%);
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    width: min(460px, 100%);
 }
 
-.login-hero,
 .login-card,
 .error-card {
     padding: clamp(1rem, 3vw, 1.4rem);
@@ -3060,14 +3056,7 @@ body.drawer-open .detail-drawer {
     box-shadow: var(--shadow-soft);
 }
 
-.login-hero {
-    position: relative;
-    overflow: hidden;
-    gap: 1.1rem;
-    background: radial-gradient(520px 280px at 85% 0%, rgba(214, 167, 86, 0.18), transparent 56%), linear-gradient(145deg, rgba(16, 23, 36, 0.96), rgba(7, 10, 16, 0.94));
-}
-
-.login-hero::after,
+.login-card::after,
 .error-card::after {
     content: "";
     position: absolute;
@@ -3077,7 +3066,7 @@ body.drawer-open .detail-drawer {
     background: radial-gradient(circle, rgba(240, 199, 119, 0.18) 0%, rgba(240, 199, 119, 0) 68%);
 }
 
-.login-hero > *,
+.login-card > *,
 .error-card > * {
     position: relative;
     z-index: 1;
@@ -3093,22 +3082,35 @@ body.drawer-open .detail-drawer {
     background: rgba(255, 255, 255, 0.04);
 }
 
-.login-hero h1 {
-    margin-top: 1rem;
-    max-width: 12ch;
-    font-size: clamp(2rem, 6vw, 4rem);
-    line-height: 0.98;
+.login-card-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
 }
 
-.login-hero p,
-.login-card p {
+.login-brand-copy {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.login-brand-copy h1 {
+    margin: 0;
+    font-size: clamp(2rem, 7vw, 2.85rem);
+    line-height: 0.95;
+}
+
+.login-card p,
+.login-brand-copy p {
     color: var(--muted);
 }
 
 .login-card {
+    position: relative;
+    overflow: hidden;
     display: grid;
     gap: 0.95rem;
-    background: linear-gradient(145deg, rgba(18, 24, 36, 0.95), rgba(10, 13, 19, 0.94));
+    background: radial-gradient(420px 220px at 100% 0%, rgba(214, 167, 86, 0.18), transparent 55%), linear-gradient(145deg, rgba(18, 24, 36, 0.95), rgba(10, 13, 19, 0.94));
 }
 
 .login-card form {
@@ -3116,14 +3118,6 @@ body.drawer-open .detail-drawer {
     gap: 0.9rem;
 }
 
-.login-value-strip {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-}
-
-.login-value-card,
-.login-feature-item,
 .error-hint-list li,
 .error-status-strip {
     border: 1px solid rgba(214, 167, 86, 0.14);
@@ -3131,26 +3125,6 @@ body.drawer-open .detail-drawer {
     background: rgba(255, 255, 255, 0.04);
 }
 
-.login-value-card {
-    display: grid;
-    gap: 0.22rem;
-    padding: 0.85rem;
-}
-
-.login-value-card span {
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-}
-
-.login-value-card strong {
-    font-size: 0.95rem;
-    line-height: 1.35;
-}
-
-.login-feature-list,
 .error-hint-list {
     list-style: none;
     margin: 0;
@@ -3159,14 +3133,12 @@ body.drawer-open .detail-drawer {
     gap: 0.7rem;
 }
 
-.login-feature-item,
 .error-hint-list li {
     position: relative;
     padding: 0.85rem 0.9rem 0.85rem 1.15rem;
     color: var(--muted-strong);
 }
 
-.login-feature-item::before,
 .error-hint-list li::before {
     content: "";
     position: absolute;
@@ -3414,7 +3386,7 @@ body.command-open .mobile-command-sheet {
     }
 
     .login-wrap {
-        grid-template-columns: 1.15fr 0.85fr;
+        width: min(520px, calc(100% - 2rem));
     }
 }
 
@@ -3635,8 +3607,7 @@ body.command-open .mobile-command-sheet {
     .staff-summary-grid,
     .module-snapshot-grid,
     .workspace-link-row,
-    .staff-pulse-grid,
-    .login-value-strip {
+    .staff-pulse-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
@@ -3705,9 +3676,13 @@ body.command-open .mobile-command-sheet {
     .staff-tool-grid,
     .staff-workspace-grid,
     .module-snapshot-grid,
-    .login-value-strip,
     .portal-command-grid {
         grid-template-columns: 1fr;
+    }
+
+    .login-card-header {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
     }
 
     .dashboard-row-link {
@@ -4053,7 +4028,6 @@ html[data-theme="light"] .mobile-dock,
 html[data-theme="light"] .mobile-command-sheet,
 html[data-theme="light"] .detail-drawer,
 html[data-theme="light"] .login-card,
-html[data-theme="light"] .login-hero,
 html[data-theme="light"] .error-card {
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.96));
 }
@@ -4123,8 +4097,6 @@ html[data-theme="light"] .topbar-mode-chip {
     background: rgba(255, 255, 255, 0.82);
 }
 
-html[data-theme="light"] .login-value-card,
-html[data-theme="light"] .login-feature-item,
 html[data-theme="light"] .error-hint-list li,
 html[data-theme="light"] .error-status-strip,
 html[data-theme="light"] .stock-form-panel .form-grid > .form-field {
