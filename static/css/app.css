@@ -2719,6 +2719,528 @@ body.nav-open .sidebar {
     opacity: 0.78;
 }
 
+.stock-count-stage {
+    position: relative;
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1.05rem;
+    border-radius: 1.35rem;
+    border: 1px solid rgba(214, 167, 86, 0.16);
+    background:
+        radial-gradient(circle at top right, rgba(244, 193, 104, 0.2), transparent 36%),
+        linear-gradient(180deg, rgba(9, 17, 29, 0.92), rgba(18, 28, 44, 0.9));
+    overflow: hidden;
+    box-shadow: 0 28px 60px rgba(4, 9, 17, 0.28);
+}
+
+.stock-count-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.08) 50%, transparent 80%);
+    transform: translateX(-65%);
+    opacity: 0.55;
+    animation: stock-count-sheen 10s linear infinite;
+    pointer-events: none;
+}
+
+.stock-count-stage > * {
+    position: relative;
+    z-index: 1;
+}
+
+.stock-count-stage-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.stock-count-stage-copy {
+    display: grid;
+    gap: 0.45rem;
+    max-width: 42rem;
+}
+
+.stock-count-stage-copy h4,
+.stock-count-drawer-title {
+    margin: 0;
+    color: var(--text);
+    font-size: clamp(1.08rem, 1.4vw, 1.4rem);
+    line-height: 1.15;
+}
+
+.stock-count-stage-link {
+    white-space: nowrap;
+    align-self: center;
+}
+
+.stock-count-stage-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.stock-count-stage-card {
+    position: relative;
+    display: grid;
+    gap: 0.28rem;
+    padding: 0.95rem 1rem;
+    border-radius: 1.05rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.stock-count-stage-card::after {
+    content: "";
+    position: absolute;
+    inset: -35% auto auto -15%;
+    width: 5.2rem;
+    height: 5.2rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 70%);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.stock-count-stage-card-alert {
+    border-color: rgba(255, 111, 125, 0.28);
+    background: linear-gradient(180deg, rgba(255, 111, 125, 0.18), rgba(255, 255, 255, 0.03));
+}
+
+.stock-count-stage-card-warn {
+    border-color: rgba(240, 188, 102, 0.26);
+    background: linear-gradient(180deg, rgba(240, 188, 102, 0.18), rgba(255, 255, 255, 0.03));
+}
+
+.stock-count-stage-card-label {
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.stock-count-stage-card strong {
+    color: var(--text);
+    font-size: clamp(1.42rem, 1.8vw, 1.8rem);
+    line-height: 1;
+}
+
+.stock-count-stage-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.stock-board-row {
+    transition:
+        background-color var(--motion-quick) ease,
+        transform var(--motion-quick) ease;
+}
+
+.stock-board-row-missing td:first-child strong,
+.stock-board-row-stale td:first-child strong {
+    color: #fff4ef;
+}
+
+.stock-count-cell {
+    min-width: 15.5rem;
+}
+
+.stock-count-form,
+.stock-count-review-trigger {
+    width: 100%;
+}
+
+.stock-count-form.is-count-primed .stock-count-trigger {
+    transform: translateY(-1px) scale(0.985);
+    box-shadow: 0 14px 28px rgba(9, 17, 29, 0.24);
+}
+
+.stock-count-trigger,
+.stock-count-review-trigger {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-width: 0;
+    padding: 0.88rem 0.95rem;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(214, 167, 86, 0.16);
+    background:
+        linear-gradient(180deg, rgba(17, 29, 47, 0.96), rgba(9, 17, 29, 0.98));
+    text-align: left;
+    overflow: hidden;
+    transition:
+        transform var(--motion-quick) ease,
+        box-shadow var(--motion-quick) ease,
+        border-color var(--motion-quick) ease,
+        background var(--motion-quick) ease,
+        filter var(--motion-quick) ease;
+}
+
+.stock-count-trigger {
+    box-shadow:
+        0 16px 34px rgba(5, 10, 20, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.stock-count-review-trigger {
+    cursor: pointer;
+    color: inherit;
+    box-shadow:
+        0 14px 30px rgba(5, 10, 20, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.stock-count-trigger::after,
+.stock-count-review-trigger::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 28%, rgba(255, 255, 255, 0.08) 50%, transparent 72%);
+    transform: translateX(-75%);
+    opacity: 0;
+    transition: opacity var(--motion-quick) ease;
+    pointer-events: none;
+}
+
+.stock-count-trigger:hover,
+.stock-count-trigger:focus-visible,
+.stock-count-review-trigger:hover,
+.stock-count-review-trigger:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(214, 167, 86, 0.28);
+    box-shadow:
+        0 18px 40px rgba(5, 10, 20, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.stock-count-trigger:hover::after,
+.stock-count-trigger:focus-visible::after,
+.stock-count-review-trigger:hover::after,
+.stock-count-review-trigger:focus-visible::after {
+    opacity: 1;
+}
+
+.stock-count-trigger:focus-visible,
+.stock-count-review-trigger:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 1px rgba(214, 167, 86, 0.35),
+        0 0 0 4px rgba(214, 167, 86, 0.12),
+        0 18px 40px rgba(5, 10, 20, 0.28);
+}
+
+.stock-count-trigger-glow {
+    position: absolute;
+    inset: auto auto -55% -8%;
+    width: 7rem;
+    height: 7rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 72%);
+    opacity: 0.55;
+    animation: stock-count-orbit 7s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.stock-count-trigger-copy,
+.stock-count-review-copy {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 0.18rem;
+}
+
+.stock-count-trigger-copy strong,
+.stock-count-review-copy strong {
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.stock-count-trigger-copy small,
+.stock-count-review-copy small,
+.stock-count-review-meta {
+    color: var(--muted-strong);
+    font-size: 0.74rem;
+    line-height: 1.4;
+}
+
+.stock-count-trigger-chip {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.42rem 0.58rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--muted-strong);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.stock-count-trigger-dot {
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 999px;
+    background: #72dca0;
+    box-shadow: 0 0 0 0 rgba(114, 220, 160, 0.28);
+    animation: stock-count-pulse 1.8s ease-in-out infinite;
+}
+
+.stock-count-review-meta {
+    justify-self: end;
+    text-align: right;
+}
+
+.stock-count-form-missing .stock-count-trigger,
+.stock-count-review-trigger-missing,
+.stock-count-drawer-card-missing {
+    border-color: rgba(255, 111, 125, 0.3);
+    background:
+        radial-gradient(circle at top right, rgba(255, 111, 125, 0.18), transparent 40%),
+        linear-gradient(180deg, rgba(33, 16, 23, 0.98), rgba(18, 17, 24, 0.98));
+}
+
+.stock-count-form-missing .stock-count-trigger-dot {
+    background: #ff7d93;
+    box-shadow: 0 0 0 0 rgba(255, 125, 147, 0.32);
+}
+
+.stock-count-form-stale .stock-count-trigger,
+.stock-count-review-trigger-stale,
+.stock-count-drawer-card-stale {
+    border-color: rgba(240, 188, 102, 0.28);
+    background:
+        radial-gradient(circle at top right, rgba(240, 188, 102, 0.18), transparent 40%),
+        linear-gradient(180deg, rgba(35, 25, 13, 0.98), rgba(18, 17, 24, 0.98));
+}
+
+.stock-count-form-stale .stock-count-trigger-dot {
+    background: #f3c06f;
+    box-shadow: 0 0 0 0 rgba(243, 192, 111, 0.32);
+}
+
+.stock-count-form-watch .stock-count-trigger,
+.stock-count-review-trigger-watch,
+.stock-count-drawer-card-watch {
+    border-color: rgba(126, 173, 255, 0.26);
+    background:
+        radial-gradient(circle at top right, rgba(126, 173, 255, 0.16), transparent 40%),
+        linear-gradient(180deg, rgba(14, 28, 49, 0.98), rgba(18, 17, 24, 0.98));
+}
+
+.stock-count-form-watch .stock-count-trigger-dot {
+    background: #85b4ff;
+    box-shadow: 0 0 0 0 rgba(133, 180, 255, 0.3);
+}
+
+.stock-count-form-fresh .stock-count-trigger,
+.stock-count-review-trigger-fresh,
+.stock-count-drawer-card-fresh {
+    border-color: rgba(114, 220, 160, 0.22);
+    background:
+        radial-gradient(circle at top right, rgba(114, 220, 160, 0.14), transparent 40%),
+        linear-gradient(180deg, rgba(11, 30, 27, 0.98), rgba(18, 17, 24, 0.98));
+}
+
+.stock-count-drawer-card {
+    gap: 0.9rem;
+}
+
+.stock-count-drawer-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stock-count-drawer-orbit {
+    position: relative;
+    width: 4.6rem;
+    height: 4.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+    overflow: hidden;
+}
+
+.stock-count-drawer-orbit span {
+    position: absolute;
+    inset: 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    animation: stock-count-ring 5s linear infinite;
+}
+
+.stock-count-drawer-orbit span:nth-child(2) {
+    inset: 0.9rem;
+    animation-duration: 4.2s;
+    animation-direction: reverse;
+}
+
+.stock-count-drawer-orbit span:nth-child(3) {
+    inset: 1.35rem;
+    animation-duration: 3.4s;
+}
+
+.stock-count-drawer-action {
+    width: 100%;
+    justify-content: center;
+}
+
+.data-table tr.row-action-pending.row-action-pending-premium td {
+    opacity: 0.66;
+    transform: none;
+    filter: saturate(0.92);
+}
+
+.data-table tr.row-action-pending.row-action-pending-premium td.stock-count-cell {
+    opacity: 1;
+    filter: none;
+}
+
+.data-table tr.row-action-pending.row-action-pending-premium .stock-count-trigger {
+    transform: translateY(-1px) scale(0.985);
+}
+
+@keyframes stock-count-sheen {
+    0% {
+        transform: translateX(-65%);
+    }
+    100% {
+        transform: translateX(165%);
+    }
+}
+
+@keyframes stock-count-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(114, 220, 160, 0.28);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 0.45rem rgba(114, 220, 160, 0);
+        transform: scale(1.08);
+    }
+}
+
+@keyframes stock-count-orbit {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 0.48;
+    }
+    50% {
+        transform: translate3d(8px, -6px, 0) scale(1.06);
+        opacity: 0.72;
+    }
+}
+
+@keyframes stock-count-ring {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    100% {
+        transform: rotate(360deg) scale(1.02);
+    }
+}
+
+@media (max-width: 1100px) {
+    .stock-count-stage-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .stock-count-stage-head,
+    .stock-count-drawer-top {
+        grid-template-columns: 1fr;
+        display: grid;
+    }
+
+    .stock-count-stage-link {
+        justify-self: start;
+    }
+
+    .stock-count-cell {
+        min-width: 0;
+    }
+
+    .stock-count-trigger,
+    .stock-count-review-trigger {
+        grid-template-columns: 1fr;
+    }
+
+    .stock-count-trigger-chip,
+    .stock-count-review-meta {
+        justify-self: start;
+        text-align: left;
+    }
+}
+
+@media (max-width: 620px) {
+    .stock-count-stage {
+        padding: 0.95rem;
+    }
+
+    .stock-count-stage-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stock-count-stage::before,
+    .stock-count-trigger-glow,
+    .stock-count-trigger-dot,
+    .stock-count-drawer-orbit span {
+        animation: none;
+    }
+
+    .stock-count-trigger,
+    .stock-count-review-trigger,
+    .stock-count-stage-card {
+        transition: none;
+    }
+}
+
+html[data-theme="light"] .stock-count-stage {
+    border-color: rgba(194, 145, 54, 0.18);
+    background:
+        radial-gradient(circle at top right, rgba(248, 207, 132, 0.28), transparent 34%),
+        linear-gradient(180deg, rgba(255, 251, 244, 0.98), rgba(245, 238, 226, 0.98));
+    box-shadow: 0 20px 42px rgba(132, 103, 54, 0.12);
+}
+
+html[data-theme="light"] .stock-count-stage-card,
+html[data-theme="light"] .stock-count-trigger,
+html[data-theme="light"] .stock-count-review-trigger,
+html[data-theme="light"] .stock-count-drawer-card {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 241, 231, 0.94));
+    border-color: rgba(194, 145, 54, 0.18);
+    box-shadow:
+        0 14px 28px rgba(132, 103, 54, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+html[data-theme="light"] .stock-count-trigger-chip {
+    background: rgba(194, 145, 54, 0.08);
+}
+
 .task-primary-block,
 .task-due-cell {
     display: grid;

@@ -86,6 +86,51 @@
                             </form>
                         </div>
 
+                        <section class="stock-count-stage{% if missing_count_count or stale_count_count %} is-live{% endif %}" aria-label="Stock count rhythm">
+                            <div class="stock-count-stage-head">
+                                <div class="stock-count-stage-copy">
+                                    <p class="detail-kicker">Count Rhythm</p>
+                                    <h4>Keep the board trusted through every handover.</h4>
+                                    <p class="panel-subtitle">
+                                        {% if missing_count_count %}
+                                        {{ missing_count_count }} line{{ missing_count_count|pluralize }} still need a first verified count. Clear those before relying on the wider board.
+                                        {% elif stale_count_count %}
+                                        {{ stale_count_count }} line{{ stale_count_count|pluralize }} have fallen out of cycle. Refresh them now to tighten the picture.
+                                        {% elif watch_count_count %}
+                                        {{ watch_count_count }} line{{ watch_count_count|pluralize }} are due soon. A quick sweep keeps the count cadence clean.
+                                        {% else %}
+                                        Count discipline is in a healthy state. Use the live board for quick verification instead of carrying separate notes.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <a class="table-action stock-count-stage-link" href="?focus=uncounted#stock-section-board">
+                                    {% if selected_focus == "uncounted" %}Count queue live{% else %}Open count queue{% endif %}
+                                </a>
+                            </div>
+                            <div class="stock-count-stage-grid">
+                                <article class="stock-count-stage-card stock-count-stage-card-alert">
+                                    <span class="stock-count-stage-card-label">Never counted</span>
+                                    <strong>{{ missing_count_count }}</strong>
+                                    <p>First counts still missing.</p>
+                                </article>
+                                <article class="stock-count-stage-card stock-count-stage-card-warn">
+                                    <span class="stock-count-stage-card-label">Overdue</span>
+                                    <strong>{{ stale_count_count }}</strong>
+                                    <p>Lines outside the safe count cycle.</p>
+                                </article>
+                                <article class="stock-count-stage-card">
+                                    <span class="stock-count-stage-card-label">Due soon</span>
+                                    <strong>{{ watch_count_count }}</strong>
+                                    <p>Next pass to keep the board current.</p>
+                                </article>
+                                <article class="stock-count-stage-card">
+                                    <span class="stock-count-stage-card-label">In view</span>
+                                    <strong>{{ display_item_count }}</strong>
+                                    <p>{{ recently_restocked_count }} recently restocked line{{ recently_restocked_count|pluralize }}.</p>
+                                </article>
+                            </div>
+                        </section>
+
                         {% if items %}
                         <div class="report-table-wrap">
                             <table class="js-sortable data-table">
@@ -105,7 +150,7 @@
                                 </thead>
                                 <tbody>
                                     {% for item in items %}
-                                    <tr>
+                                    <tr class="stock-board-row stock-board-row-{{ item.count_status_key }} stock-board-row-band-{{ item.stock_band }}">
                                         <td data-label="Item">
                                             <strong>{{ item.name }}</strong>
                                             <div class="task-inline-meta">
@@ -123,16 +168,54 @@
                                         <td data-label="Urgency">
                                             <span class="badge {{ item.stock_band_badge_class }}">{{ item.stock_band_label }}</span>
                                         </td>
-                                        <td class="stock-actions-cell mobile-action-cell" data-label="{% if is_management %}Review{% else %}Count{% endif %}">
+                                        <td class="stock-actions-cell mobile-action-cell stock-count-cell" data-label="{% if is_management %}Review{% else %}Count{% endif %}">
                                             {% if not is_management %}
-                                            <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="inline-action-form" data-instant-submit-row data-pending-label="Counting…">
+                                            <form
+                                                method="post"
+                                                action="{% url 'stock:mark_counted' item.pk %}"
+                                                class="inline-action-form stock-count-form stock-count-form-{{ item.count_status_key }}"
+                                                data-instant-submit-row
+                                                data-premium-count-form
+                                                data-pending-label="Logging count…"
+                                                data-pending-meta="Updating live board"
+                                            >
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ count_return_path }}">
-                                                <button class="action-btn" type="submit">Count</button>
+                                                <button class="action-btn stock-count-trigger stock-count-trigger-{{ item.count_status_key }}" type="submit">
+                                                    <span class="stock-count-trigger-glow" aria-hidden="true"></span>
+                                                    <span class="stock-count-trigger-copy">
+                                                        <strong data-submit-label>
+                                                            {% if item.count_status_key == "missing" %}
+                                                            First count
+                                                            {% elif item.count_status_key == "stale" %}
+                                                            Recount now
+                                                            {% elif item.count_status_key == "watch" %}
+                                                            Refresh count
+                                                            {% else %}
+                                                            Log check
+                                                            {% endif %}
+                                                        </strong>
+                                                        <small data-submit-meta>
+                                                            {% if item.count_status_key == "missing" %}
+                                                            Start the count cycle
+                                                            {% elif item.count_status_key == "stale" %}
+                                                            Bring this line back in cycle
+                                                            {% elif item.count_status_key == "watch" %}
+                                                            Keep the board current
+                                                            {% else %}
+                                                            Quick trust check
+                                                            {% endif %}
+                                                        </small>
+                                                    </span>
+                                                    <span class="stock-count-trigger-chip">
+                                                        <span class="stock-count-trigger-dot" aria-hidden="true"></span>
+                                                        {{ item.last_counted_label }}
+                                                    </span>
+                                                </button>
                                             </form>
                                             {% else %}
                                             <button
-                                                class="table-action"
+                                                class="stock-count-review-trigger stock-count-review-trigger-{{ item.count_status_key }}"
                                                 type="button"
                                                 data-detail-trigger
                                                 data-detail-template="stock-detail-{{ item.pk }}"
@@ -140,9 +223,47 @@
                                                 data-detail-title="{{ item.name }}"
                                                 data-detail-meta="{{ item.get_category_display }} · {{ item.stock_band_label }}"
                                             >
-                                                Review
+                                                <span class="stock-count-review-copy">
+                                                    <strong>Review line</strong>
+                                                    <small>{{ item.count_status_label }}</small>
+                                                </span>
+                                                <span class="stock-count-review-meta">{{ item.last_counted_label }}</span>
                                             </button>
                                             <template id="stock-detail-{{ item.pk }}">
+                                                <section class="detail-drawer-card stock-count-drawer-card stock-count-drawer-card-{{ item.count_status_key }}">
+                                                    <div class="stock-count-drawer-top">
+                                                        <div>
+                                                            <p class="detail-drawer-label">Count cadence</p>
+                                                            <h4 class="stock-count-drawer-title">{{ item.count_status_label }}</h4>
+                                                            <p class="detail-drawer-copy">{{ item.count_status_note }}</p>
+                                                        </div>
+                                                        <div class="stock-count-drawer-orbit" aria-hidden="true">
+                                                            <span></span>
+                                                            <span></span>
+                                                            <span></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="detail-drawer-grid">
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Last count</strong>
+                                                            <span>{{ item.last_counted_label }}</span>
+                                                        </div>
+                                                        <div class="detail-drawer-row">
+                                                            <strong>Next move</strong>
+                                                            <span>
+                                                                {% if item.count_status_key == "missing" %}
+                                                                Capture the first clean count and reset trust in this line.
+                                                                {% elif item.count_status_key == "stale" %}
+                                                                Refresh the quantity before the next stock decision depends on it.
+                                                                {% elif item.count_status_key == "watch" %}
+                                                                Keep the rhythm tight with a light touch recount.
+                                                                {% else %}
+                                                                Keep the line in cycle with routine checks only.
+                                                                {% endif %}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </section>
                                                 <section class="detail-drawer-card">
                                                     <div class="detail-drawer-card-head">
                                                         <p class="detail-drawer-label">Stock status</p>
@@ -192,7 +313,15 @@
                                                         <form method="post" action="{% url 'stock:mark_counted' item.pk %}" class="detail-drawer-inline-form">
                                                             {% csrf_token %}
                                                             <input type="hidden" name="next" value="{{ return_path }}">
-                                                            <button class="action-btn" type="submit">Mark counted now</button>
+                                                            <button class="action-btn stock-count-drawer-action" type="submit">
+                                                                {% if item.count_status_key == "missing" %}
+                                                                Mark first count
+                                                                {% elif item.count_status_key == "stale" %}
+                                                                Refresh count now
+                                                                {% else %}
+                                                                Log fresh count
+                                                                {% endif %}
+                                                            </button>
                                                         </form>
                                                         {% if item.supplier %}
                                                         <a class="table-action" href="{% url 'suppliers:list' %}?q={{ item.supplier.name|urlencode }}">Open supplier</a>

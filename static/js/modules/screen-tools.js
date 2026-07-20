@@ -33,23 +33,45 @@
     instantRowForms.forEach((form) => {
         let submitted = false;
 
-        form.addEventListener("submit", () => {
+        form.addEventListener("submit", (event) => {
             if (submitted) {
+                event.preventDefault();
                 return;
             }
             submitted = true;
 
             const row = form.closest("tr");
             const button = form.querySelector("button[type='submit']");
+            const premiumCountForm = form.hasAttribute("data-premium-count-form");
+            const labelTarget = button?.querySelector("[data-submit-label]");
+            const metaTarget = button?.querySelector("[data-submit-meta]");
 
             if (row) {
                 row.classList.add("row-action-pending");
+                if (premiumCountForm) {
+                    row.classList.add("row-action-pending-premium");
+                }
             }
 
             if (button) {
                 button.disabled = true;
                 button.classList.add("is-working");
-                button.textContent = form.dataset.pendingLabel || "Working…";
+                if (labelTarget) {
+                    labelTarget.textContent = form.dataset.pendingLabel || "Working…";
+                } else {
+                    button.textContent = form.dataset.pendingLabel || "Working…";
+                }
+                if (metaTarget) {
+                    metaTarget.textContent = form.dataset.pendingMeta || "Updating…";
+                }
+            }
+
+            if (premiumCountForm) {
+                event.preventDefault();
+                form.classList.add("is-count-primed");
+                window.setTimeout(() => {
+                    HTMLFormElement.prototype.submit.call(form);
+                }, 220);
             }
         });
     });
