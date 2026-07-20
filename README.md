@@ -1,41 +1,15 @@
 # BarrelBoss
 
-Professional bar and pub management web app for stock control, supplier ordering, breakage logs, and shift checklists.
-
-## Current Status
-
-Day 1 and Day 2 foundations are in place:
-- Django project scaffold with app modules (`accounts`, `dashboard`, `stock`, `orders`, `suppliers`, `breakages`, `checklists`)
-- Responsive premium dashboard shell and login UI
-- Role model via `StaffProfile` (`Landlord`, `Manager`, `Staff`)
-- Role-based login redirect flow
-- Role-based access control for management sections
-- Baseline tests for profile creation, role redirects, and permissions
-- Day 3 dashboard with richer role-based KPI and task panels
-- Day 4 real stock data model + stock page backed by database queries
-- Day 5 stock CRUD flows (add, edit, remove from active inventory) for management roles
-- Day 6 suppliers CRUD flows with search/filter and management-only access
-- Day 7 real orders model with line items, status workflow, and management-only CRUD
-- Day 8 breakage model with live logging/history and role-based delete controls
-- Day 9 checklist model with assignment workflow, completion toggle, filters, and role-based task controls
-- Day 10 shifts polish with weekly chart + staff/management portal split
-- Web push notifications for shift allocation/update events (staff opt-in per device)
-- CI pipeline for migration integrity, test suite, deploy security checks, and browser smoke tests
-- Playwright browser E2E smoke suite for login/role routing and core CRUD workflows
-- Production-safe demo account bootstrap guard (`ALLOW_DEMO_ACCOUNT_BOOTSTRAP`)
+BarrelBoss is a role-based operations app for bar and pub teams.
 
 ## Stack
 
 - Python 3.9+
 - Django 4.2
-- PostgreSQL (optional; SQLite fallback for local dev)
+- PostgreSQL in production
+- SQLite fallback for local work
 
-## Setup
-
-1. Create and activate a virtual environment.
-2. Install dependencies.
-3. Run migrations.
-4. Start the server.
+## Quick Start
 
 ```bash
 python3 -m venv .venv
@@ -45,236 +19,89 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Open: `http://127.0.0.1:8000/accounts/login/`
+Open `http://127.0.0.1:8000/accounts/login/`.
 
-### Optional Dev Dependencies (Browser E2E)
+## Optional Local Seed
 
-```bash
-pip install -r requirements-dev.txt
-python -m playwright install chromium
-```
-
-## Demo Login Accounts (Local Testing)
-
-Run this once to create/reset role-based demo users:
+Create demo accounts:
 
 ```bash
 python manage.py bootstrap_demo_accounts
 ```
 
-Note: this command is blocked when `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false` (recommended in production).
-
-Default demo credentials:
-- `landlord` / `strong-pass-123` (Landlord portal + Django admin access)
-- `manager` / `strong-pass-123` (Management portal)
-- `staff` / `strong-pass-123` (Staff portal)
-
-Optional custom password for all demo users:
-
-```bash
-python manage.py bootstrap_demo_accounts --password "YourStrongPassword-123!"
-```
-
-### Demo Business Data (Client Preview)
-
-Populate the app with realistic suppliers, stock, orders, checklists, shifts, and breakages:
+Create demo data:
 
 ```bash
 python manage.py bootstrap_demo_data
 ```
 
-Re-run to refresh deterministic preview data (old preview-tagged records are replaced).
-Append mode is also available:
+Default local users:
 
-```bash
-python manage.py bootstrap_demo_data --append
-```
+- `landlord` / `strong-pass-123`
+- `manager` / `strong-pass-123`
+- `staff` / `strong-pass-123`
 
-## Environment Variables
+## Environment
 
-Copy `.env.example` values into your environment (or `.env` with your preferred loader):
-- `DJANGO_SECRET_KEY`
-- `DJANGO_DEBUG`
-- `DJANGO_ALLOWED_HOSTS`
-- `DJANGO_CSRF_TRUSTED_ORIGINS`
-- `DJANGO_TIME_ZONE`
-- `DATABASE_URL`
-- `DATABASE_FALLBACK_URL`
-- `RENDER_EXTERNAL_DATABASE_URL`
-- `DATABASE_SSL_REQUIRE`
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_HOST`
-- `POSTGRES_PORT`
-- `WEB_PUSH_PUBLIC_KEY`
-- `WEB_PUSH_PRIVATE_KEY`
-- `WEB_PUSH_SUBJECT`
-- `DJANGO_EMAIL_BACKEND`
-- `DJANGO_EMAIL_HOST`
-- `DJANGO_EMAIL_PORT`
-- `DJANGO_EMAIL_HOST_USER`
-- `DJANGO_EMAIL_HOST_PASSWORD`
-- `DJANGO_EMAIL_USE_TLS`
-- `DJANGO_EMAIL_USE_SSL`
-- `DJANGO_DEFAULT_FROM_EMAIL`
-- `DJANGO_SERVER_EMAIL`
-- `DJANGO_LOG_LEVEL`
-- `ALLOW_DEMO_ACCOUNT_BOOTSTRAP`
-- `E2E_REQUIRE_BROWSER`
-- `E2E_HEADLESS`
+Use [.env.example](.env.example) as the baseline.
 
-If PostgreSQL variables are not all set, the project defaults to SQLite.
+Core production values:
 
-### Web Push Setup
+- `DJANGO_DEBUG=false`
+- `DJANGO_SECRET_KEY=<strong-secret>`
+- `DJANGO_ALLOWED_HOSTS=<production-domain>`
+- `DJANGO_CSRF_TRUSTED_ORIGINS=https://<production-domain>`
+- `DATABASE_URL=<postgres-url>`
+- `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`
 
-To enable real browser push notifications, set VAPID keys:
+## Roles
 
-```bash
-WEB_PUSH_PUBLIC_KEY=<your-public-vapid-key>
-WEB_PUSH_PRIVATE_KEY=<your-private-vapid-key>
-WEB_PUSH_SUBJECT=mailto:alerts@yourdomain.com
-```
+- `Landlord` and `Manager` use the management portal.
+- `Staff` use the staff portal.
+- Django admin is for superusers only.
 
-Staff then enable alerts from `Settings` on their own device/browser.
+## Verification
 
-## Role Flow
-
-- `Landlord` / `Manager`:
-- redirected to dashboard after login
-- access to orders, suppliers, staff, reports, settings
-
-- `Staff`:
-- redirected to checklists after login
-- access to dashboard, stock, breakages, checklists, shifts, settings (personal push opt-in)
-
-## Tests
+Run tests:
 
 ```bash
 python manage.py test
 ```
 
-Browser E2E smoke tests:
+Run browser smoke locally:
 
 ```bash
+pip install -r requirements-dev.txt
+python -m playwright install chromium
 python manage.py test e2e.smoke_tests
 ```
 
-Release preflight (local or CI quality gates):
+Run release preflight:
 
 ```bash
 ./scripts/release_preflight.sh
 ```
 
-With browser smoke tests included:
+Run deployed smoke:
 
 ```bash
-./scripts/release_preflight.sh --with-e2e
+SMOKE_BASE_URL=https://<deployment-url> \
+SMOKE_MANAGER_USERNAME='<manager-username>' \
+SMOKE_MANAGER_PASSWORD='<manager-password>' \
+SMOKE_STAFF_USERNAME='<staff-username>' \
+SMOKE_STAFF_PASSWORD='<staff-password>' \
+SMOKE_LANDLORD_USERNAME='<landlord-username>' \
+SMOKE_LANDLORD_PASSWORD='<landlord-password>' \
+./.venv/bin/python scripts/hosted_smoke.py
 ```
 
-## CI
+## Health
 
-GitHub Actions workflow: `.github/workflows/ci.yml`
-- migration drift check
-- unapplied migration check
-- Django test suite
-- deploy hardening checks (`check --deploy` + custom production checks)
-- Playwright browser smoke tests
+- `GET /health/live/`
+- `GET /health/ready/`
 
-## Health Endpoints
+## Docs
 
-- `GET /health/live/` returns a simple liveness payload for platform probes.
-- `GET /health/ready/` verifies database and cache readiness and returns `503` when the app is not ready to serve traffic.
-- Every HTTP response now includes `X-Request-ID`, and inbound `X-Request-ID` values are echoed back for incident correlation.
-
-## Deployment (Render + Railway)
-
-### 1. Railway database
-
-1. Create a PostgreSQL service in Railway.
-2. Copy the provided connection string.
-3. Use it as `DATABASE_URL` in Render.
-
-### 2. Render web service
-
-1. Connect this GitHub repo in Render.
-2. Render can auto-detect `render.yaml`, or configure manually with:
-- Build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-- Start command: `gunicorn taptrack.wsgi:application --log-file -`
-- Health check path: `/health/ready/`
-3. Add environment variables:
-- `DJANGO_DEBUG=false`
-- `DJANGO_SECRET_KEY=<strong-random-value>`
-- `DJANGO_ALLOWED_HOSTS=<your-render-domain>`
-- `DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-render-domain>`
-- `DJANGO_DEFAULT_FROM_EMAIL=<real-sender@yourdomain.com>`
-- `DJANGO_EMAIL_BACKEND=<smtp-or-transactional-backend>`
-- `DATABASE_URL=<railway-postgres-url>`
-- `DATABASE_FALLBACK_URL=<optional-public-postgres-url>`
-- `DATABASE_SSL_REQUIRE=true`
-- `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`
-
-If `DATABASE_URL` points to a private Render Postgres hostname such as `dpg-...-a`, set `DATABASE_FALLBACK_URL` (or `RENDER_EXTERNAL_DATABASE_URL`) to the database's external connection string. The app will automatically prefer that fallback during deploys.
-
-### 3. First production release
-
-After first deploy, run migrations once:
-
-```bash
-python manage.py migrate
-```
-
-Then create an admin user:
-
-```bash
-python manage.py createsuperuser
-```
-
-### Render Staging One-Click Seed + Verify
-
-In Render Shell (staging), run:
-
-```bash
-./scripts/render_staging_seed_and_verify.sh
-```
-
-This command:
-- runs migrations
-- seeds demo preview data with a temporary `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=true` for that command only
-- runs critical smoke test classes for role routing + stock/order/checklist/shift flows
-
-Optional non-interactive superuser creation in Render shell:
-
-```bash
-export DJANGO_SUPERUSER_USERNAME=admin
-export DJANGO_SUPERUSER_EMAIL=admin@example.com
-export DJANGO_SUPERUSER_PASSWORD='Strong-Admin-Pass-123!'
-./scripts/render_staging_seed_and_verify.sh
-```
-
-Troubleshooting:
-- If you see `Invalid DATABASE_URL` / `No support for ''`, your `DATABASE_URL` env var is empty or malformed.
-- Set it to a full connection URL (for example `postgresql://USER:PASSWORD@HOST:5432/DBNAME`) in Render Environment, then re-run the script.
-- If Render fails with `could not translate host name "dpg-..." to address`, your service is trying to use a private Render Postgres hostname that does not resolve from this deploy environment.
-- Keep the web service and Postgres in the same Render workspace and region, or set `DATABASE_FALLBACK_URL` / `RENDER_EXTERNAL_DATABASE_URL` to the database's external connection string.
-
-### 4. Notes
-
-- `DATABASE_URL` is preferred and fully supported.
-- `DATABASE_FALLBACK_URL` and `RENDER_EXTERNAL_DATABASE_URL` are supported for Render deploys that need to fall back from a private/internal database hostname to a public/external one.
-- If `DATABASE_URL` is missing, project can still use `POSTGRES_*` fallback or local SQLite.
-- Static files are served via WhiteNoise in production.
-
-## 14-Day Launch Plan
-
-Use this rollout checklist to get to business-ready in 2 weeks:
 - [Docs Index](docs/README.md)
-- [Launch Readiness Plan](docs/planning/launch-readiness-14-days.md)
-- [Staged UAT Script](docs/uat/staging-script.md)
-- [UAT Results Template](docs/uat/results-template.md)
-- [UAT Runs Archive](docs/uat/runs/README.md)
 - [Production Ops Runbook](docs/operations/production-ops-runbook.md)
-
-## Next Build Step
-
-Day 11-12: run staged UAT on mobile + desktop, log findings, and complete backup/monitoring setup using the production ops runbook.
+- [Staged UAT Script](docs/uat/staging-script.md)

@@ -1,65 +1,45 @@
-# BarrelBoss Production Ops Runbook
+# BarrelBoss Production Runbook
 
-This runbook covers launch hardening, backup/monitoring operations, and incident handling.
+## Baseline
 
-## 1. Production Configuration Baseline
-Set these environment variables in production:
+Set these before go-live:
+
 - `DJANGO_DEBUG=false`
-- `DJANGO_SECRET_KEY=<long-random-secret>`
+- `DJANGO_SECRET_KEY=<strong-secret>`
 - `DJANGO_ALLOWED_HOSTS=<production-domain>`
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://<production-domain>`
 - `RENDER_EXTERNAL_HOSTNAME=<production-domain>`
+- `DATABASE_URL=<postgres-url>`
+- `DATABASE_FALLBACK_URL=<optional-external-postgres-url>`
+- `DATABASE_SSL_REQUIRE=true`
 - `DJANGO_EMAIL_BACKEND=<smtp-or-transactional-backend>`
-- `DJANGO_EMAIL_HOST=<smtp-host>`
-- `DJANGO_EMAIL_PORT=<smtp-port>`
 - `DJANGO_DEFAULT_FROM_EMAIL=<real-sender@yourdomain.com>`
 - `DJANGO_SERVER_EMAIL=<alerts@yourdomain.com>`
-- `DJANGO_LOG_LEVEL=INFO`
-- `DATABASE_URL=<production-postgres-url>`
-- `DATABASE_FALLBACK_URL=<external-postgres-url-if-render-private-host-is-not-routable>`
-- `DATABASE_SSL_REQUIRE=true`
-- `DATABASE_CONNECT_TIMEOUT=15`
-- `DJANGO_SECURE_SSL_REDIRECT=true`
-- `DJANGO_SECURE_HSTS_SECONDS=31536000`
-- `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=true`
-- `DJANGO_SECURE_HSTS_PRELOAD=true`
 - `ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`
-- `LOGIN_THROTTLE_FAILURE_LIMIT=5`
-- `LOGIN_THROTTLE_WINDOW_SECONDS=900`
-- `LOGIN_THROTTLE_LOCKOUT_SECONDS=900`
-- `SESSION_IDLE_TIMEOUT_SECONDS=1800`
-- `SESSION_COOKIE_AGE=43200`
 
-Validation command:
+Validate settings:
+
 ```bash
-DJANGO_DEBUG=false DJANGO_SECRET_KEY='<strong-secret>' DJANGO_ALLOWED_HOSTS='example.com' DJANGO_CSRF_TRUSTED_ORIGINS='https://example.com' python manage.py check --deploy
+DJANGO_DEBUG=false \
+DJANGO_SECRET_KEY='<strong-secret>' \
+DJANGO_ALLOWED_HOSTS='example.com' \
+DJANGO_CSRF_TRUSTED_ORIGINS='https://example.com' \
+python manage.py check --deploy
 ```
 
-Operational probes:
-- `GET /health/live/`
-- `GET /health/ready/`
-- Track `X-Request-ID` from user reports, load balancer logs, and app logs when investigating incidents.
+## Release Flow
 
-## 2. Account and Access Hardening
-- Ensure demo credentials are not used in production.
-- Disable demo bootstrap command in production (`ALLOW_DEMO_ACCOUNT_BOOTSTRAP=false`).
-- Enforce unique named accounts for real staff.
-- Keep landlord accounts minimal and auditable.
-- Keep the Django admin reserved for superusers only. Venue managers should use the in-app management portal instead.
-- Login is rate-limited per IP and per username/IP pair to slow brute-force attempts.
-- Idle sessions expire automatically and force a fresh sign-in after the configured inactivity window.
+1. Deploy to staging.
+2. Run local preflight:
 
-## 3. Deployment Procedure
-1. Deploy release candidate to staging.
-2. Run UAT and collect sign-off.
-3. Deploy to production.
-4. Run migrations:
 ```bash
-python manage.py migrate
+./scripts/release_preflight.sh
 ```
-5. Run read-only hosted smoke checks:
+
+3. Run hosted smoke against the deployed URL:
+
 ```bash
-SMOKE_BASE_URL=https://<production-domain> \
+SMOKE_BASE_URL=https://<deployment-url> \
 SMOKE_MANAGER_USERNAME='<manager-username>' \
 SMOKE_MANAGER_PASSWORD='<manager-password>' \
 SMOKE_STAFF_USERNAME='<staff-username>' \
@@ -68,47 +48,36 @@ SMOKE_LANDLORD_USERNAME='<landlord-username>' \
 SMOKE_LANDLORD_PASSWORD='<landlord-password>' \
 ./.venv/bin/python scripts/hosted_smoke.py
 ```
-6. Run a short manual pass on high-risk write flows:
-- login/logout
-- stock create/edit/archive
-- order create/status update
-- checklist assign/complete
-- shift schedule/edit
-- password reset request
 
-## 4. Backup Policy
-- Configure automatic daily PostgreSQL backups (Railway managed backups or external backup job).
-- Retain at least 14 days of backups.
-- Perform a monthly restore drill into a non-production environment.
+4. Run a short manual write pass: login and logout, stock create/edit/archive, order create/status update, checklist assign/complete, shift schedule/edit, password reset request.
 
-## 5. Monitoring and Alerting
-Minimum monitoring stack:
-- Platform uptime alerts (Render/Railway service checks).
-- Application error tracking (Sentry or equivalent).
-- DB health checks (connection errors, storage growth, failed backups).
+5. Deploy production and run post-deploy smoke again.
 
-Alert priorities:
-- P1: app down, login failure for all users, migration failure.
-- P2: core workflow degradation (stock/order/checklist/shift save errors).
-- P3: non-blocking UI issues.
+## Monitoring
 
-## 6. Incident Response
-1. Acknowledge incident and assign incident owner.
-2. Capture scope: affected routes, user roles, start time, latest deploy SHA.
-3. Mitigate:
-- rollback deployment if release-related.
-- disable problematic action paths if needed.
-4. Validate recovery with smoke checks.
-5. Publish incident summary and corrective actions.
+Minimum coverage:
 
-## 7. Rollback Procedure
-- Re-deploy previous known-good build.
-- If schema changed, apply safe backward plan (or data hotfix) before rollback when needed.
-- Re-run smoke checks and monitor for 30 minutes.
+- Render health checks
+- app error alerts
+- database backup status
+- uptime alerting
 
-## 8. Release Checklist
-- `./scripts/release_preflight.sh` (includes migration drift, unapplied migration, tests, deploy checks)
-- `./scripts/release_preflight.sh --with-e2e` (run when browser stack is available)
-- `./.venv/bin/python scripts/hosted_smoke.py` against the deployed URL before go-live signoff
-- UAT sign-off complete
-- Backup status confirmed
+Probe endpoints:
+
+- `GET /health/live/`
+- `GET /health/ready/`
+
+Track `X-Request-ID` when investigating incidents.
+
+## Backup
+
+- Enable automatic PostgreSQL backups.
+- Keep at least 14 days.
+- Test one restore path before launch.
+
+## Rollback
+
+1. Re-deploy the last known-good build.
+2. Confirm schema safety before rollback if migrations shipped.
+3. Re-run hosted smoke.
+4. Monitor for 30 minutes.

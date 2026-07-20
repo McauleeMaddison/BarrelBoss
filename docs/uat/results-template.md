@@ -1,28 +1,32 @@
-# UAT Results Template
+# UAT Results
 
-## Session Metadata
+## Metadata
+
 - Date:
-- Build/Commit:
-- Environment URL:
-- Tester(s):
-- Devices/Browsers:
+- Build:
+- URL:
+- Testers:
+- Devices:
 
-## Scenario Results
-| Scenario | Role | Device | Result (Pass/Fail) | Notes |
+## Scenarios
+
+| Scenario | Role | Device | Result | Notes |
 | --- | --- | --- | --- | --- |
-| Authentication & role routing |  |  |  |  |
-| Stock workflow |  |  |  |  |
-| Supplier + order workflow |  |  |  |  |
-| Checklist + shift workflow |  |  |  |  |
-| Reports/settings/audit |  |  |  |  |
+| Auth and routing |  |  |  |  |
+| Stock |  |  |  |  |
+| Suppliers and orders |  |  |  |  |
+| Checklists and shifts |  |  |  |  |
+| Reports, settings, and audit |  |  |  |  |
 
-## Defect Log
-| ID | Severity | Scenario | Steps to Reproduce | Expected | Actual | Screenshot/Video |
+## Defects
+
+| ID | Severity | Scenario | Steps | Expected | Actual | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 |  |  |  |  |  |  |  |
 
 ## Sign-off
-- Release recommendation: `Go` / `No-Go`
-- Open critical defects count:
-- Open high defects count:
+
+- Recommendation: `Go` / `No-Go`
+- Open critical defects:
+- Open high defects:
 - Approved by:

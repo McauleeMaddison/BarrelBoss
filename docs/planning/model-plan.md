@@ -1,79 +1,33 @@
-# TapTrack v1 Model Plan
+# BarrelBoss Model Plan
 
-## Role Approach
-- Use Django `User` for authentication.
-- Add role choices later in an `accounts.StaffProfile` model (`LANDLORD`, `MANAGER`, `STAFF`).
-- Permission split for v1:
-- `Landlord/Admin`: full CRUD on stock, suppliers, orders, breakages, checklists, staff.
-- `Staff`: read stock, create low-stock reports, log breakages, mark checklist tasks complete, confirm deliveries.
+## Roles
 
-## Planned Models
+- `Landlord`
+- `Manager`
+- `Staff`
 
-### `accounts.StaffProfile`
-- `id`
-- `user` (OneToOne to `auth.User`)
-- `phone`
-- `job_title`
-- `role`
-- `is_active`
-- `notes`
+Management roles control stock, suppliers, orders, staffing, reports, and settings. Staff stay within task and floor workflows.
 
-### `suppliers.Supplier`
-- `id`
-- `name`
-- `contact_name`
-- `phone`
-- `email`
-- `category_supplied`
-- `notes`
+## Core Models
 
-### `stock.StockItem`
-- `id`
-- `name`
-- `category`
-- `quantity`
-- `unit`
-- `minimum_level`
-- `cost`
-- `supplier` (FK to `Supplier`, nullable)
-- `last_restocked`
-- `notes`
+- `accounts.StaffProfile`
+  - user, role, phone, job title, notes
+- `suppliers.Supplier`
+  - name, contact details, category, notes
+- `stock.StockItem`
+  - name, category, quantity, unit, minimum level, cost, supplier, notes
+- `orders.Order`
+  - supplier, created by, dates, status, notes
+- `orders.OrderItem`
+  - order, stock item, quantity
+- `breakages.Breakage`
+  - item, quantity, issue type, reported by, notes
+- `checklists.Checklist`
+  - title, type, assignee, due date, completion state
 
-### `orders.Order`
-- `id`
-- `supplier` (FK to `Supplier`)
-- `created_by` (FK to `auth.User`)
-- `order_date`
-- `delivery_date`
-- `status` (`Draft`, `Ordered`, `Pending Delivery`, `Delivered`, `Cancelled`)
-- `notes`
+## Rules
 
-### `orders.OrderItem`
-- `id`
-- `order` (FK to `Order`)
-- `stock_item` (FK to `StockItem`)
-- `quantity`
-
-### `breakages.Breakage`
-- `id`
-- `item_name`
-- `quantity`
-- `issue_type` (`Broken`, `Missing`, `Damaged`, `Replacement Needed`)
-- `reported_by` (FK to `auth.User`)
-- `created_at`
-- `notes`
-
-### `checklists.Checklist`
-- `id`
-- `title`
-- `checklist_type` (`Opening`, `Closing`, `Delivery`, `Cleaning`)
-- `assigned_to` (FK to `auth.User`)
-- `due_date`
-- `completed`
-- `completed_at`
-
-## Phase 2 Implementation Notes
-- Build models with clear `choices` for status/type fields.
-- Add indexes for commonly filtered fields (`status`, `category`, `completed`).
-- Add model-level validation for non-negative quantities.
-- Use `DecimalField` for money (`cost`).
+- Use explicit choices for role and status fields.
+- Index common filters.
+- Keep quantities non-negative.
+- Use `DecimalField` for money.
