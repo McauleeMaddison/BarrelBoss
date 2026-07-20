@@ -1279,8 +1279,8 @@ def _staff_dashboard_payload(user, venue):
             "slug": "tasks",
             "label": "My tasks",
             "eyebrow": "Today",
-            "title": "Tasks assigned to you",
-            "copy": "Stay ahead of your checklist work before handover starts.",
+            "title": "Assigned tasks",
+            "copy": "Stay ahead of checklist work before handover starts.",
             "stats": [
                 {
                     "label": "Open tasks",
@@ -1308,8 +1308,8 @@ def _staff_dashboard_payload(user, venue):
             "slug": "stock",
             "label": "Stock",
             "eyebrow": "Cellar and bar",
-            "title": "View stock availability",
-            "copy": "Check what is running low, then raise a request from the same workspace.",
+            "title": "Stock availability",
+            "copy": "Check what is running low, then raise a request from the same board.",
             "stats": [
                 {
                     "label": "Stock view",
@@ -1341,8 +1341,8 @@ def _staff_dashboard_payload(user, venue):
             "slug": "rota",
             "label": "My rota",
             "eyebrow": "Schedule",
-            "title": "Your upcoming shifts",
-            "copy": "See your next shift and your weekly hours at a glance.",
+            "title": "Upcoming shifts",
+            "copy": "See your next shift and weekly hours at a glance.",
             "stats": [
                 {
                     "label": "Hours this week",
@@ -1370,7 +1370,7 @@ def _staff_dashboard_payload(user, venue):
             "slug": "handover",
             "label": "End of shift",
             "eyebrow": "Quick reports",
-            "title": "Submit shift issues",
+            "title": "Handover reports",
             "copy": "Use the handover forms for stock requests and incident reports before you finish.",
             "stats": [
                 {
@@ -1513,8 +1513,8 @@ def _staff_dashboard_payload(user, venue):
     quick_actions = [
         {
             "label": "Tasks",
-            "title": "Open task queue",
-            "copy": "See what needs doing next.",
+            "title": "Task queue",
+            "copy": "Open what needs doing next.",
             "stat": (
                 f"{tasks_overdue} overdue"
                 if tasks_overdue
@@ -1544,7 +1544,7 @@ def _staff_dashboard_payload(user, venue):
         },
         {
             "label": "Stock",
-            "title": "View stock",
+            "title": "Stock board",
             "copy": "Check live stock availability.",
             "stat": "Live stock view",
             "url_name": "stock:list",
@@ -1553,8 +1553,8 @@ def _staff_dashboard_payload(user, venue):
         },
         {
             "label": "Request",
-            "title": "Request stock",
-            "copy": "Raise a stock request for replenishment.",
+            "title": "Stock request",
+            "copy": "Raise a replenishment request.",
             "stat": f"{my_open_request_count} open" if my_open_request_count else "Ready to send",
             "url_name": "orders:add",
             "action_label": "Request stock",
@@ -1669,10 +1669,7 @@ def _staff_dashboard_payload(user, venue):
     return {
         "portal_title": "Staff Portal",
         "overview_heading": "Today",
-        "overview_copy": (
-            f"Everything {staff_first_name} need for this shift, "
-            "from tasks to stock requests, in one place."
-        ),
+        "overview_copy": "Everything you need this shift, from tasks to stock requests, in one place.",
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,

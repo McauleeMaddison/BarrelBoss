@@ -91,6 +91,7 @@ def _count_status_payload(item, *, now):
             "count_status_badge_class": "badge-stock-critical",
             "count_status_note": "No stock count has been recorded for this line yet.",
             "last_counted_label": "Never counted",
+            "last_counted_compact_label": "No count yet",
         }
 
     local_count = timezone.localtime(item.last_counted_at)
@@ -111,12 +112,18 @@ def _count_status_payload(item, *, now):
         badge_class = "badge-stock-healthy"
         status_note = f"Counted {age_days} day(s) ago."
 
+    if age_days == 0:
+        compact_label = f"Today · {local_count.strftime('%H:%M')}"
+    else:
+        compact_label = local_count.strftime("%d %b · %H:%M")
+
     return {
         "count_status_key": status_key,
         "count_status_label": status_label,
         "count_status_badge_class": badge_class,
         "count_status_note": status_note,
         "last_counted_label": local_count.strftime("%d %b %Y %H:%M"),
+        "last_counted_compact_label": compact_label,
     }
 
 
@@ -282,6 +289,69 @@ def list_items(request):
         items = inventory_items
     else:
         items = [item for item in inventory_items if item.stock_band == selected_urgency]
+
+    count_category_groups_map = defaultdict(list)
+    for item in items:
+        count_category_groups_map[item.category].append(item)
+
+    count_category_groups = []
+    count_group_priority = {"missing": 0, "stale": 1, "watch": 2, "fresh": 3}
+    for category_value, category_items in count_category_groups_map.items():
+        sorted_category_items = sorted(
+            category_items,
+            key=lambda item: (
+                count_group_priority[item.count_status_key],
+                urgency_priority[item.stock_band],
+                item.name.lower(),
+            ),
+        )
+        due_count = sum(
+            1 for item in category_items if item.count_status_key in {"missing", "stale"}
+        )
+        urgent_count = sum(
+            1 for item in category_items if item.stock_band in {"critical", "low"}
+        )
+        if due_count:
+            tone = "alert" if any(
+                item.count_status_key == "missing" for item in category_items
+            ) else "warn"
+            summary = (
+                f"{due_count} line(s) need a fresh count before this category is fully trusted."
+            )
+        elif urgent_count:
+            tone = "warn"
+            summary = (
+                f"{urgent_count} line(s) are under pressure, but the count cycle is current."
+            )
+        else:
+            tone = "ok"
+            summary = "Count rhythm is stable here. Keep it moving with light touch checks."
+
+        count_category_groups.append(
+            {
+                "key": category_value,
+                "label": dict(StockItem.Category.choices).get(category_value, category_value),
+                "total_items": len(category_items),
+                "due_count": due_count,
+                "urgent_count": urgent_count,
+                "tone": tone,
+                "summary": summary,
+                "items": sorted_category_items[:4],
+                "overflow_count": max(len(sorted_category_items) - 4, 0),
+                "open_url": _stock_workspace_url(
+                    focus=selected_focus,
+                    q=query,
+                    category=category_value,
+                    urgency=selected_urgency,
+                ),
+                "cta_label": (
+                    "Category in view"
+                    if selected_category == category_value
+                    else "Open category"
+                ),
+            }
+        )
+    count_category_groups.sort(key=lambda group: group["label"].lower())
 
     if request.GET.get("export") == "csv":
         response = HttpResponse(content_type="text/csv")
@@ -669,6 +739,7 @@ def list_items(request):
         "recently_restocked_count": recently_restocked_count,
         "supplier_action_rows": supplier_action_rows,
         "count_discipline_rows": count_discipline_rows,
+        "count_category_groups": count_category_groups,
         "focus_zone_cards": focus_zone_cards,
         "category_choices": StockItem.Category.choices,
         "selected_category": selected_category,

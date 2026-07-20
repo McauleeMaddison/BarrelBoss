@@ -114,6 +114,18 @@ class StockListViewTests(VenueScopedTestCase):
         self.assertNotContains(response, "Jameson")
         self.assertEqual(response.context["selected_urgency"], "critical")
 
+    def test_stock_list_builds_count_groups_by_category(self):
+        self.client.login(username="stock_user", password="strong-pass-123")
+        response = self.client.get(reverse("stock:list"))
+
+        self.assertEqual(response.status_code, 200)
+        groups = response.context["count_category_groups"]
+        self.assertEqual([group["label"] for group in groups], ["Beer Barrels", "Spirits"])
+        self.assertEqual(groups[0]["due_count"], 1)
+        self.assertEqual(groups[1]["due_count"], 1)
+        self.assertEqual(groups[0]["items"][0].name, "Carling 50L")
+        self.assertEqual(groups[1]["items"][0].name, "Jameson")
+
     def test_stock_filter_summary_deduplicates_preset_and_focus(self):
         self.client.login(username="stock_user", password="strong-pass-123")
         response = self.client.get(
