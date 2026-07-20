@@ -26,6 +26,19 @@ def _greeting_line():
     return "Good evening"
 
 
+def _friendly_staff_name(user):
+    full_name = user.get_full_name().strip()
+    if full_name:
+        return full_name
+
+    username = (user.get_username() or "").strip()
+    if not username:
+        return "Team member"
+
+    cleaned = username.replace("_", " ").replace(".", " ").replace("-", " ")
+    return " ".join(part.capitalize() for part in cleaned.split()) or "Team member"
+
+
 def _build_trend(current_value, previous_value, suffix):
     change = current_value - previous_value
     if change > 0:
@@ -994,6 +1007,8 @@ def _management_dashboard_payload(venue):
 
 def _staff_dashboard_payload(user, venue):
     today = timezone.localdate()
+    staff_name = _friendly_staff_name(user)
+    staff_first_name = staff_name.split()[0] if staff_name else "you"
 
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
@@ -1128,9 +1143,9 @@ def _staff_dashboard_payload(user, venue):
             else _format_short_date(next_shift.shift_date)
         )
     else:
-        next_shift_note = "No upcoming shift scheduled."
+        next_shift_note = "No shift is currently booked. If you expected one, check with management."
         next_shift_short = "No shift booked"
-        next_shift_value = "None"
+        next_shift_value = "Off rota"
 
     metrics = [
         {
@@ -1176,14 +1191,14 @@ def _staff_dashboard_payload(user, venue):
                 f"{tasks_overdue} overdue task(s) and "
                 f"{tasks_due_today} due today."
                 if tasks_due_today or tasks_overdue
-                else "No urgent checklist tasks are assigned to you."
+                else "No urgent checklist work is waiting on you."
             ),
             "trend": _build_trend(
                 completed_tasks_this_week,
                 completed_tasks_last_week,
                 "completed vs previous 7 days",
             ),
-            "note": "Complete assigned tasks before handover.",
+            "note": "Finish your assigned checks before handover.",
             "chart_label": "7d task output",
             "chart_points": _build_chart_points(task_completion_series),
             "actions": [
@@ -1199,12 +1214,12 @@ def _staff_dashboard_payload(user, venue):
             "tone": "neutral",
             "state": "Available",
             "state_tone": "ok",
-            "summary": "Check current stock levels before requesting anything.",
+            "summary": "Check live stock levels before raising a request.",
             "trend": {
                 "label": "Live stock view",
                 "direction": "flat",
             },
-            "note": "Submit a stock request only when a line needs replenishment.",
+            "note": "Raise a request only when a line actually needs topping up.",
             "chart_label": "Stock check",
             "chart_points": _build_chart_points([1, 1, 1, 1, 1, 1, 1]),
             "actions": [
@@ -1224,13 +1239,13 @@ def _staff_dashboard_payload(user, venue):
             "tone": "neutral",
             "state": f"{shifts_this_week_count} shift(s)",
             "state_tone": "ok" if shifts_this_week_count else "warn",
-            "summary": "Your own scheduled hours for this week.",
+            "summary": "Your scheduled hours for the current week.",
             "trend": _build_trend(
                 round(hours_this_week),
                 round(hours_last_week),
                 "hours vs last week",
             ),
-            "note": "Only your own rota is shown.",
+            "note": "This board only shows your own rota.",
             "chart_label": "7d rota load",
             "chart_points": _build_chart_points(hours_series),
             "actions": [
@@ -1265,7 +1280,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "My tasks",
             "eyebrow": "Today",
             "title": "Tasks assigned to you",
-            "copy": "Clear your own checklist work before handover.",
+            "copy": "Stay ahead of your checklist work before handover starts.",
             "stats": [
                 {
                     "label": "Open tasks",
@@ -1294,7 +1309,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "Stock",
             "eyebrow": "Cellar and bar",
             "title": "View stock availability",
-            "copy": "Check what is low, then raise a request from the same workspace.",
+            "copy": "Check what is running low, then raise a request from the same workspace.",
             "stats": [
                 {
                     "label": "Stock view",
@@ -1310,7 +1325,7 @@ def _staff_dashboard_payload(user, venue):
                 },
             ],
             "rows": [],
-            "empty_state": "Open the stock page to check current levels.",
+            "empty_state": "Open the stock board to check live levels.",
             "actions": [
                 {
                     "label": "View stock",
@@ -1327,7 +1342,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "My rota",
             "eyebrow": "Schedule",
             "title": "Your upcoming shifts",
-            "copy": "See your own upcoming shifts and this week's hours.",
+            "copy": "See your next shift and your weekly hours at a glance.",
             "stats": [
                 {
                     "label": "Hours this week",
@@ -1356,7 +1371,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "End of shift",
             "eyebrow": "Quick reports",
             "title": "Submit shift issues",
-            "copy": "Use the handover forms for stock requests and incident reports.",
+            "copy": "Use the handover forms for stock requests and incident reports before you finish.",
             "stats": [
                 {
                     "label": "Open requests",
@@ -1487,8 +1502,8 @@ def _staff_dashboard_payload(user, venue):
         attention_items.append(
             {
                 "label": "Today",
-                "value": "Clear board",
-                "copy": "No overdue tasks or immediate shift blockers are showing.",
+                "value": "Quiet handover",
+                "copy": "No overdue tasks or immediate shift blockers are showing right now.",
                 "tone": "ok",
                 "action_label": "View stock",
                 "url_name": "stock:list",
@@ -1498,8 +1513,8 @@ def _staff_dashboard_payload(user, venue):
     quick_actions = [
         {
             "label": "Tasks",
-            "title": "My tasks",
-            "copy": "Open your assigned tasks.",
+            "title": "Open task queue",
+            "copy": "See what needs doing next.",
             "stat": (
                 f"{tasks_overdue} overdue"
                 if tasks_overdue
@@ -1530,7 +1545,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Stock",
             "title": "View stock",
-            "copy": "Check current availability.",
+            "copy": "Check live stock availability.",
             "stat": "Live stock view",
             "url_name": "stock:list",
             "action_label": "View stock",
@@ -1539,8 +1554,8 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Request",
             "title": "Request stock",
-            "copy": "Raise a stock request.",
-            "stat": f"{my_open_request_count} open" if my_open_request_count else "Form ready",
+            "copy": "Raise a stock request for replenishment.",
+            "stat": f"{my_open_request_count} open" if my_open_request_count else "Ready to send",
             "url_name": "orders:add",
             "action_label": "Request stock",
             "href": _dashboard_href("orders:add"),
@@ -1548,7 +1563,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Breakage",
             "title": "Report breakage",
-            "copy": "Log breakage or waste.",
+            "copy": "Log breakage or waste quickly.",
             "stat": (
                 f"{my_breakages_this_week} this week"
                 if my_breakages_this_week
@@ -1561,7 +1576,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Rota",
             "title": "My rota",
-            "copy": "Check your next shifts.",
+            "copy": "Check your next shift and hours.",
             "stat": next_shift_short,
             "url_name": "shifts:list",
             "action_label": "Open rota",
@@ -1654,7 +1669,10 @@ def _staff_dashboard_payload(user, venue):
     return {
         "portal_title": "Staff Portal",
         "overview_heading": "Today",
-        "overview_copy": "Your shift, tasks, stock, and handover tools in one place.",
+        "overview_copy": (
+            f"Everything {staff_first_name} need for this shift, "
+            "from tasks to stock requests, in one place."
+        ),
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,

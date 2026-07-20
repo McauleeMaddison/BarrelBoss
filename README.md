@@ -110,6 +110,16 @@ Copy `.env.example` values into your environment (or `.env` with your preferred 
 - `WEB_PUSH_PUBLIC_KEY`
 - `WEB_PUSH_PRIVATE_KEY`
 - `WEB_PUSH_SUBJECT`
+- `DJANGO_EMAIL_BACKEND`
+- `DJANGO_EMAIL_HOST`
+- `DJANGO_EMAIL_PORT`
+- `DJANGO_EMAIL_HOST_USER`
+- `DJANGO_EMAIL_HOST_PASSWORD`
+- `DJANGO_EMAIL_USE_TLS`
+- `DJANGO_EMAIL_USE_SSL`
+- `DJANGO_DEFAULT_FROM_EMAIL`
+- `DJANGO_SERVER_EMAIL`
+- `DJANGO_LOG_LEVEL`
 - `ALLOW_DEMO_ACCOUNT_BOOTSTRAP`
 - `E2E_REQUIRE_BROWSER`
 - `E2E_HEADLESS`
@@ -171,6 +181,12 @@ GitHub Actions workflow: `.github/workflows/ci.yml`
 - deploy hardening checks (`check --deploy` + custom production checks)
 - Playwright browser smoke tests
 
+## Health Endpoints
+
+- `GET /health/live/` returns a simple liveness payload for platform probes.
+- `GET /health/ready/` verifies database and cache readiness and returns `503` when the app is not ready to serve traffic.
+- Every HTTP response now includes `X-Request-ID`, and inbound `X-Request-ID` values are echoed back for incident correlation.
+
 ## Deployment (Render + Railway)
 
 ### 1. Railway database
@@ -185,11 +201,14 @@ GitHub Actions workflow: `.github/workflows/ci.yml`
 2. Render can auto-detect `render.yaml`, or configure manually with:
 - Build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
 - Start command: `gunicorn taptrack.wsgi:application --log-file -`
+- Health check path: `/health/ready/`
 3. Add environment variables:
 - `DJANGO_DEBUG=false`
 - `DJANGO_SECRET_KEY=<strong-random-value>`
 - `DJANGO_ALLOWED_HOSTS=<your-render-domain>`
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-render-domain>`
+- `DJANGO_DEFAULT_FROM_EMAIL=<real-sender@yourdomain.com>`
+- `DJANGO_EMAIL_BACKEND=<smtp-or-transactional-backend>`
 - `DATABASE_URL=<railway-postgres-url>`
 - `DATABASE_FALLBACK_URL=<optional-public-postgres-url>`
 - `DATABASE_SSL_REQUIRE=true`

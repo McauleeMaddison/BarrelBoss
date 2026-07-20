@@ -1,3 +1,4 @@
+import uuid
 from urllib.parse import quote
 
 from django.conf import settings
@@ -6,9 +7,12 @@ from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.utils import timezone
 
+from taptrack.observability import bind_request_id, release_request_id
+
 from .tenancy import resolve_active_membership
 
 SESSION_ACTIVITY_KEY = "barrelboss_last_activity"
+REQUEST_ID_HEADER = "X-Request-ID"
 
 
 def _content_security_policy():
@@ -52,6 +56,25 @@ class ActiveVenueMiddleware:
                 request.active_organisation = membership.venue.organisation
 
         return self.get_response(request)
+
+
+class RequestIdMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        inbound_request_id = (request.headers.get(REQUEST_ID_HEADER) or "").strip()
+        request_id = inbound_request_id[:120] if inbound_request_id else uuid.uuid4().hex
+        request.request_id = request_id
+
+        token = bind_request_id(request_id)
+        try:
+            response = self.get_response(request)
+        finally:
+            release_request_id(token)
+
+        response.headers.setdefault(REQUEST_ID_HEADER, request_id)
+        return response
 
 
 class SessionIdleTimeoutMiddleware:

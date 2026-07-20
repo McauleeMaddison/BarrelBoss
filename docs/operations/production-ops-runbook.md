@@ -8,6 +8,11 @@ Set these environment variables in production:
 - `DJANGO_SECRET_KEY=<long-random-secret>`
 - `DJANGO_ALLOWED_HOSTS=<production-domain>`
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://<production-domain>`
+- `DJANGO_EMAIL_BACKEND=<smtp-or-transactional-backend>`
+- `DJANGO_EMAIL_HOST=<smtp-host>`
+- `DJANGO_EMAIL_PORT=<smtp-port>`
+- `DJANGO_DEFAULT_FROM_EMAIL=<real-sender@yourdomain.com>`
+- `DJANGO_LOG_LEVEL=INFO`
 - `DATABASE_URL=<production-postgres-url>`
 - `DATABASE_SSL_REQUIRE=true`
 - `DJANGO_SECURE_SSL_REDIRECT=true`
@@ -25,6 +30,11 @@ Validation command:
 ```bash
 DJANGO_DEBUG=false DJANGO_SECRET_KEY='<strong-secret>' DJANGO_ALLOWED_HOSTS='example.com' DJANGO_CSRF_TRUSTED_ORIGINS='https://example.com' python manage.py check --deploy
 ```
+
+Operational probes:
+- `GET /health/live/`
+- `GET /health/ready/`
+- Track `X-Request-ID` from user reports, load balancer logs, and app logs when investigating incidents.
 
 ## 2. Account and Access Hardening
 - Ensure demo credentials are not used in production.
@@ -48,6 +58,7 @@ python manage.py migrate
 - manager dashboard
 - staff dashboard
 - stock/order/checklist/shift create actions
+- `curl -fsS https://<production-domain>/health/ready/`
 
 ## 4. Backup Policy
 - Configure automatic daily PostgreSQL backups (Railway managed backups or external backup job).

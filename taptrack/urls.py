@@ -18,6 +18,8 @@ admin.site.has_permission = MethodType(_admin_superuser_only, admin.site)
 
 urlpatterns = [
     path("", core_views.home_redirect, name="home"),
+    path("health/live/", core_views.live_health, name="health_live"),
+    path("health/ready/", core_views.ready_health, name="health_ready"),
     path("service-worker.js", core_views.service_worker, name="service_worker"),
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),

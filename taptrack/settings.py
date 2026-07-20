@@ -100,6 +100,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "apps.accounts.middleware.RequestIdMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.accounts.middleware.ActiveVenueMiddleware",
@@ -199,6 +200,7 @@ DEFAULT_FROM_EMAIL = trim_env("DJANGO_DEFAULT_FROM_EMAIL") or (
 SERVER_EMAIL = trim_env("DJANGO_SERVER_EMAIL") or DEFAULT_FROM_EMAIL or "root@localhost"
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "86400"))
 POS_WEBHOOK_MAX_BODY_BYTES = int(os.getenv("POS_WEBHOOK_MAX_BODY_BYTES", "131072"))
+DJANGO_LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "INFO").upper()
 
 LOGIN_THROTTLE_FAILURE_LIMIT = int(os.getenv("LOGIN_THROTTLE_FAILURE_LIMIT", "5"))
 LOGIN_THROTTLE_WINDOW_SECONDS = int(os.getenv("LOGIN_THROTTLE_WINDOW_SECONDS", "900"))
@@ -245,5 +247,38 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = env_flag("DJANGO_SECURE_HSTS_PRELOAD", True)
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {
+            "()": "taptrack.observability.RequestIdFilter",
+        }
+    },
+    "formatters": {
+        "structured": {
+            "format": "%(asctime)s %(levelname)s [%(name)s] [request_id=%(request_id)s] %(message)s",
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["request_id"],
+            "formatter": "structured",
+        }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": DJANGO_LOG_LEVEL,
+    },
+    "loggers": {
+        "django.server": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        }
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

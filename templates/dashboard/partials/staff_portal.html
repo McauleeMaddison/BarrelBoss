@@ -1,9 +1,10 @@
+{% load public_ui %}
 <div class="dashboard-view dashboard-view-staff">
 <section class="panel portal-hero dashboard-hero dashboard-hero-premium portal-hero-compact">
     <div class="dashboard-hero-grid dashboard-hero-grid-premium">
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
-                <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
+                <p class="kicker">{{ greeting }}, {{ request.user|display_name|default:"team member" }}.</p>
                 <span class="badge portal-badge">Staff</span>
             </div>
             <h3 class="portal-hero-title">{{ overview_heading }}</h3>

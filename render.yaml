@@ -6,7 +6,7 @@ services:
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     preDeployCommand: bash scripts/predeploy_check_and_migrate.sh
     startCommand: gunicorn taptrack.wsgi:application --bind 0.0.0.0:$PORT --log-file - --access-logfile - --timeout 120 --graceful-timeout 30 --keep-alive 75 --worker-tmp-dir /dev/shm
-    healthCheckPath: /accounts/login/
+    healthCheckPath: /health/ready/
     envVars:
       - key: DJANGO_DEBUG
         value: "false"

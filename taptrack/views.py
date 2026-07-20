@@ -6,6 +6,9 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.core.cache import cache
+from django.db import connections
+from django.db.utils import DatabaseError
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -85,6 +88,66 @@ def home_redirect(request):
             return redirect("venue_setup")
         return redirect(role_home_name(request.user, request=request))
     return redirect("login")
+
+
+def _health_response(request, *, status, checks=None, status_code=200):
+    response = JsonResponse(
+        {
+            "status": status,
+            "service": "barrelboss",
+            "request_id": getattr(request, "request_id", "-"),
+            "checks": checks or {},
+            "timestamp": timezone.now().isoformat(),
+        },
+        status=status_code,
+    )
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def _check_database_health():
+    try:
+        connection = connections["default"]
+        connection.ensure_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        return {"status": "ok"}
+    except DatabaseError as exc:
+        return {"status": "error", "detail": exc.__class__.__name__}
+
+
+def _check_cache_health(request_id):
+    cache_key = f"barrelboss-health:{request_id}"
+    try:
+        cache.set(cache_key, "ok", timeout=5)
+        cached_value = cache.get(cache_key)
+        cache.delete(cache_key)
+        if cached_value != "ok":
+            return {"status": "error", "detail": "CacheRoundTripFailed"}
+        return {"status": "ok"}
+    except Exception as exc:
+        return {"status": "error", "detail": exc.__class__.__name__}
+
+
+@require_GET
+def live_health(request):
+    return _health_response(request, status="ok")
+
+
+@require_GET
+def ready_health(request):
+    checks = {
+        "database": _check_database_health(),
+        "cache": _check_cache_health(getattr(request, "request_id", "-")),
+    }
+    is_ready = all(check["status"] == "ok" for check in checks.values())
+    return _health_response(
+        request,
+        status="ok" if is_ready else "degraded",
+        checks=checks,
+        status_code=200 if is_ready else 503,
+    )
 
 
 @management_required

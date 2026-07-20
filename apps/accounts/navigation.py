@@ -357,14 +357,14 @@ def build_workspace_navigation(request):
         secondary_links = [
             _nav_item(
                 current,
-                label="Breakages",
+                label="Log breakage",
                 url_name="breakages:add",
                 group="breakages",
-                description="Log issue",
+                description="Record damage",
             ),
             _nav_item(
                 current,
-                label="Restock",
+                label="Stock request",
                 url_name="orders:add",
                 group="orders",
                 description="Raise request",
@@ -373,7 +373,7 @@ def build_workspace_navigation(request):
         quick_actions = []
         bar_title = "Shift workspace"
         bar_copy = "Keep the core shift tools close."
-        secondary_title = "Capture"
+        secondary_title = "Report & request"
         command_title = "More tools"
         command_copy = "Open the remaining shift tools."
         mobile_dock_links = [

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from pathlib import Path
 
 from django.test import Client, SimpleTestCase, TestCase, override_settings
@@ -118,3 +120,45 @@ class ErrorPageTests(TestCase):
             "same-origin",
         )
         self.assertIn("Permissions-Policy", response.headers)
+        self.assertIn("X-Request-ID", response.headers)
+
+    def test_request_id_header_is_echoed_when_supplied(self):
+        response = self.client.get(
+            reverse("login"),
+            HTTP_X_REQUEST_ID="public-ready-request-123",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers["X-Request-ID"],
+            "public-ready-request-123",
+        )
+
+    def test_live_health_endpoint_returns_ok(self):
+        response = self.client.get(reverse("health_live"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "ok")
+        self.assertEqual(response.json()["service"], "barrelboss")
+        self.assertIn("X-Request-ID", response.headers)
+
+    def test_ready_health_endpoint_reports_ok_checks(self):
+        response = self.client.get(reverse("health_ready"))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["checks"]["database"]["status"], "ok")
+        self.assertEqual(payload["checks"]["cache"]["status"], "ok")
+
+    @patch(
+        "taptrack.views._check_database_health",
+        return_value={"status": "error", "detail": "DatabaseError"},
+    )
+    def test_ready_health_endpoint_returns_503_when_database_fails(self, _mock_health):
+        response = self.client.get(reverse("health_ready"))
+
+        self.assertEqual(response.status_code, 503)
+        payload = response.json()
+        self.assertEqual(payload["status"], "degraded")
+        self.assertEqual(payload["checks"]["database"]["status"], "error")
