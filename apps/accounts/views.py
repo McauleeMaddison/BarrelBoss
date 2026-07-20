@@ -1,6 +1,8 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,6 +21,8 @@ from .security import (
 )
 from .tenancy import set_active_venue, user_has_active_venue, venue_memberships_for_user
 from .models import VenueInvite
+
+logger = logging.getLogger(__name__)
 
 
 class RoleLoginView(LoginView):
@@ -85,6 +89,26 @@ class RoleLoginView(LoginView):
         return self.get_redirect_url() or reverse(
             role_home_name(self.request.user, request=self.request)
         )
+
+
+class PublicPasswordResetView(PasswordResetView):
+    template_name = "registration/password_reset_form.html"
+    email_template_name = "registration/password_reset_email.html"
+    subject_template_name = "registration/password_reset_subject.txt"
+
+    def form_valid(self, form):
+        try:
+            return super().form_valid(form)
+        except Exception:
+            logger.exception("Password reset email delivery failed.")
+            form.add_error(
+                None,
+                "Password reset email is temporarily unavailable. Please try again shortly.",
+            )
+            return self.render_to_response(
+                self.get_context_data(form=form),
+                status=503,
+            )
 
 
 @login_required

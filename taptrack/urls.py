@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
-from apps.accounts.views import RoleLoginView
+from apps.accounts.views import PublicPasswordResetView, RoleLoginView
 
 from . import views as core_views
 
@@ -29,7 +29,7 @@ urlpatterns = [
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path(
         "accounts/password-reset/",
-        auth_views.PasswordResetView.as_view(template_name="registration/password_reset_form.html"),
+        PublicPasswordResetView.as_view(),
         name="password_reset",
     ),
     path(

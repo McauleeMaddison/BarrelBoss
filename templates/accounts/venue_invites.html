@@ -16,12 +16,10 @@
 
     <form method="post" class="stock-edit-form">
         {% csrf_token %}
-        {% if form.non_field_errors %}
-        <div class="form-errors">{{ form.non_field_errors }}</div>
-        {% endif %}
+        {% include 'partials/form_state_summary.html' with form=form %}
         <div class="form-grid">
             {% for field in form %}
-            <div class="form-field">
+            <div class="form-field{% if field.errors %} has-error{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}
@@ -31,7 +29,7 @@
             {% endfor %}
         </div>
         <div class="form-actions">
-            <button type="submit" class="action-btn">Create Invite</button>
+            <button type="submit" class="action-btn" data-pending-label="Creating invite…">Create Invite</button>
         </div>
     </form>
 </section>

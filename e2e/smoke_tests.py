@@ -9,8 +9,10 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.utils import timezone
 
 from apps.accounts.models import StaffProfile
+from apps.breakages.models import Breakage
 from apps.checklists.models import Checklist
 from apps.orders.models import Order, OrderItem
+from apps.sales.models import SalesSnapshot
 from apps.shifts.models import Shift
 from apps.stock.models import StockItem
 from apps.suppliers.models import Supplier
@@ -119,11 +121,19 @@ class BrowserSmokeTests(StaticLiveServerTestCase):
             "is_active": True,
         }
 
-    def _login(self, username, password):
-        self.page.goto(f"{self.live_server_url}/accounts/login/")
-        self.page.get_by_label("Username").fill(username)
-        self.page.get_by_label("Password").fill(password)
-        self.page.get_by_role("button", name="Sign In").click()
+    def _login(self, username, password, page=None):
+        target_page = page or self.page
+        target_page.goto(f"{self.live_server_url}/accounts/login/")
+        target_page.get_by_label("Username").fill(username)
+        target_page.get_by_label("Password").fill(password)
+        target_page.get_by_role("button", name="Sign In").click()
+
+    def test_login_flow_lands_on_management_dashboard(self):
+        self._login("e2e_manager", "strong-pass-123")
+
+        expect(self.page).to_have_url(re.compile(r".*/dashboard/management/$"))
+        expect(self.page.get_by_text("Management", exact=False)).to_be_visible()
+        expect(self.page.get_by_role("heading", name="Today")).to_be_visible()
 
     def test_manager_can_complete_core_crud_flows(self):
         self._login("e2e_manager", "strong-pass-123")
@@ -195,6 +205,36 @@ class BrowserSmokeTests(StaticLiveServerTestCase):
         self.page.goto(f"{self.live_server_url}/suppliers/")
         expect(self.page).to_have_url(re.compile(r".*/dashboard/staff/$"))
         expect(self.page.get_by_text("Access denied", exact=False)).to_be_visible()
+
+    def test_mobile_dock_stays_centered_and_opens_more_tools(self):
+        mobile_context = self._browser.new_context(viewport={"width": 430, "height": 932})
+        mobile_page = mobile_context.new_page()
+        mobile_page.set_default_timeout(12000)
+
+        try:
+            self._login("e2e_staff", "strong-pass-123", page=mobile_page)
+            expect(mobile_page).to_have_url(re.compile(r".*/dashboard/staff/$"))
+
+            dock = mobile_page.locator(".mobile-dock")
+            expect(dock).to_be_visible()
+
+            dock_box = dock.bounding_box()
+            self.assertIsNotNone(dock_box)
+            self.assertGreaterEqual(dock_box["x"], 8)
+            self.assertLessEqual(dock_box["x"] + dock_box["width"], 422)
+            dock_center = dock_box["x"] + (dock_box["width"] / 2)
+            self.assertLess(abs(dock_center - 215), 24)
+
+            toggle = mobile_page.locator("[data-command-toggle]")
+            expect(toggle).to_be_visible()
+            toggle.click()
+
+            sheet = mobile_page.locator("#mobile-command-sheet")
+            expect(sheet).to_have_attribute("aria-hidden", "false")
+            expect(sheet.get_by_text("Requests", exact=True)).to_be_visible()
+            expect(sheet.get_by_text("Report breakage", exact=True)).to_be_visible()
+        finally:
+            mobile_context.close()
 
     def test_manager_can_soft_delete_stock_item_from_ui(self):
         stock_item = StockItem.objects.create(
@@ -295,6 +335,81 @@ class BrowserSmokeTests(StaticLiveServerTestCase):
 
         self.staff_user.staff_profile.refresh_from_db()
         self.assertTrue(self.staff_user.staff_profile.notify_on_shift_assignment)
+
+    def test_manager_can_create_supplier_from_ui(self):
+        supplier_name = "E2E Premium Supplies"
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/suppliers/add/")
+        self.page.locator("#id_name").fill(supplier_name)
+        self.page.locator("#id_contact_name").fill("Jamie Porter")
+        self.page.locator("#id_phone").fill("02071234567")
+        self.page.locator("#id_email").fill("orders@premiumsupplies.example")
+        self.page.locator("#id_category_supplied").select_option(label="Cleaning")
+        self.page.locator("#id_notes").fill("Weekly delivery slot confirmed")
+        self.page.get_by_role("button", name="Create Supplier").click()
+
+        expect(self.page).to_have_url(re.compile(r".*/suppliers/$"))
+        self.assertTrue(Supplier.objects.filter(name=supplier_name).exists())
+
+    def test_staff_can_log_breakage_from_ui(self):
+        item_name = "E2E Coupe Glass"
+        self._login("e2e_staff", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/breakages/add/")
+        self.page.locator("#id_item_name").fill(item_name)
+        self.page.locator("#id_quantity").fill("2")
+        self.page.locator("#id_issue_type").select_option(label="Broken")
+        self.page.locator("#id_notes").fill("Dropped during glass polish")
+        self.page.get_by_role("button", name="Log Incident").click()
+
+        expect(self.page).to_have_url(re.compile(r".*/breakages/$"))
+        self.assertTrue(
+            Breakage.objects.filter(
+                item_name=item_name,
+                reported_by=self.staff_user,
+            ).exists()
+        )
+
+    def test_manager_can_log_sales_snapshot_from_ui(self):
+        location_name = "Garden Terrace"
+        reference = "E2E-SALES-1001"
+        today = timezone.localdate()
+
+        self._login("e2e_manager", "strong-pass-123")
+
+        self.page.goto(f"{self.live_server_url}/sales/add/")
+        self.page.locator("#id_business_date").fill(today.isoformat())
+        self.page.locator("#id_location_name").fill(location_name)
+        self.page.locator("#id_source").select_option(label="Square")
+        self.page.locator("#id_sync_mode").select_option(label="CSV Upload")
+        self.page.locator("#id_external_reference").fill(reference)
+        self.page.locator("#id_gross_sales").fill("980.00")
+        self.page.locator("#id_net_sales").fill("940.00")
+        self.page.locator("#id_discounts").fill("20.00")
+        self.page.locator("#id_refunds").fill("20.00")
+        self.page.locator("#id_tips").fill("110.00")
+        self.page.locator("#id_transactions").fill("88")
+        self.page.locator("#id_covers").fill("75")
+        self.page.locator("#id_cash_sales").fill("140.00")
+        self.page.locator("#id_card_sales").fill("720.00")
+        self.page.locator("#id_digital_sales").fill("80.00")
+        self.page.locator("#id_beer_sales").fill("410.00")
+        self.page.locator("#id_spirits_sales").fill("180.00")
+        self.page.locator("#id_wine_sales").fill("90.00")
+        self.page.locator("#id_soft_sales").fill("110.00")
+        self.page.locator("#id_food_sales").fill("100.00")
+        self.page.locator("#id_other_sales").fill("50.00")
+        self.page.locator("#id_notes").fill("Manual close from smoke coverage")
+        self.page.get_by_role("button", name="Save Snapshot").click()
+
+        expect(self.page).to_have_url(re.compile(r".*/sales/$"))
+        self.assertTrue(
+            SalesSnapshot.objects.filter(
+                location_name=location_name,
+                external_reference=reference,
+            ).exists()
+        )
 
     def test_manager_can_update_stock_order_checklist_and_shift_records(self):
         today = timezone.localdate()

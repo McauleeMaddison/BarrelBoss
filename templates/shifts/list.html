@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load public_ui %}
 
 {% block title %}Shifts | BarrelBoss{% endblock %}
 {% block page_title %}Shifts{% endblock %}
@@ -104,7 +105,7 @@
                                         <td>{{ shift.end_time|time:"H:i" }}</td>
                                         <td>{{ shift.break_minutes }} min</td>
                                         <td><span class="shift-hours-pill">{{ shift.duration_hours|floatformat:2 }}h</span></td>
-                                        <td class="shift-notes">{{ shift.notes|default:'-' }}</td>
+                                        <td class="shift-notes">{{ shift.notes|public_note|default:'-' }}</td>
                                         <td class="stock-actions-cell mobile-action-cell">
                                             <button
                                                 class="table-action"
@@ -153,7 +154,7 @@
                                                             <span>{{ shift.duration_hours|floatformat:2 }}h</span>
                                                         </div>
                                                     </div>
-                                                    <p class="detail-drawer-copy">{{ shift.notes|default:"No notes recorded for this shift." }}</p>
+                                                    <p class="detail-drawer-copy">{{ shift.notes|public_note|default:"No notes recorded for this shift." }}</p>
                                                 </section>
                                                 {% if is_management %}
                                                 <section class="detail-drawer-section">

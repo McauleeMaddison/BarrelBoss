@@ -178,7 +178,27 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 CSRF_FAILURE_VIEW = "taptrack.views.csrf_failure"
+EMAIL_BACKEND = os.getenv(
+    "DJANGO_EMAIL_BACKEND",
+    (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),
+)
+EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("DJANGO_EMAIL_PORT", "25"))
+EMAIL_HOST_USER = trim_env("DJANGO_EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = trim_env("DJANGO_EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = env_flag("DJANGO_EMAIL_USE_TLS", False)
+EMAIL_USE_SSL = env_flag("DJANGO_EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(os.getenv("DJANGO_EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = trim_env("DJANGO_DEFAULT_FROM_EMAIL") or (
+    "BarrelBoss <no-reply@localhost>" if DEBUG else ""
+)
+SERVER_EMAIL = trim_env("DJANGO_SERVER_EMAIL") or DEFAULT_FROM_EMAIL or "root@localhost"
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "86400"))
+POS_WEBHOOK_MAX_BODY_BYTES = int(os.getenv("POS_WEBHOOK_MAX_BODY_BYTES", "131072"))
 
 LOGIN_THROTTLE_FAILURE_LIMIT = int(os.getenv("LOGIN_THROTTLE_FAILURE_LIMIT", "5"))
 LOGIN_THROTTLE_WINDOW_SECONDS = int(os.getenv("LOGIN_THROTTLE_WINDOW_SECONDS", "900"))

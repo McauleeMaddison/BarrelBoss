@@ -1,0 +1,29 @@
+{% if form.errors or form.non_field_errors or formset.errors or formset.non_form_errors %}
+<section class="form-state-panel form-state-panel-error" role="alert" aria-live="assertive">
+    <div class="form-state-head">
+        <strong>Review the highlighted fields</strong>
+        <span>Fix the items below and submit again.</span>
+    </div>
+
+    {% if form.non_field_errors %}
+    <ul class="form-state-list">
+        {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if formset.non_form_errors %}
+    <ul class="form-state-list">
+        {% for error in formset.non_form_errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if form.errors or formset.errors %}
+    <p class="form-state-copy">Every field with an error is marked inline so it can be corrected quickly.</p>
+    {% endif %}
+</section>
+{% endif %}
+

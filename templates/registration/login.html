@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>BarrelBoss | Sign In</title>
     <script src="{% static 'js/core/theme-init.js' %}?v=20260714-secure-ready1"></script>
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260717-minimal-ui5">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260720-premium-ui3">
     <link rel="stylesheet" href="{% static 'css/layouts.css' %}?v=20260714-public-ready8">
     {% include 'partials/head/branding_links.html' %}
 </head>
@@ -27,12 +27,18 @@
                 <p>Use the venue account issued to you to enter the live operations workspace.</p>
             </div>
         </div>
+        {% if messages %}
+            <div class="messages" aria-live="polite">
+                {% for message in messages %}
+                    <div class="message message-{{ message.tags|default:'info'|slugify }}" role="status">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
         <form method="post">
             {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="form-errors">{{ form.non_field_errors }}</div>
-            {% elif form.errors %}
-                <p class="error-text">Your username or password was not recognized.</p>
+            {% include 'partials/form_state_summary.html' with form=form %}
+            {% if form.errors and not form.non_field_errors %}
+                <p class="error-text">Your username or password was not recognized. Check the highlighted fields and try again.</p>
             {% endif %}
             <label for="id_username">Username</label>
             <input
@@ -59,7 +65,7 @@
                     Show
                 </button>
             </div>
-            <button type="submit" class="login-submit-btn">Sign In</button>
+            <button type="submit" class="login-submit-btn" data-pending-label="Signing in…">Sign In</button>
             <input type="hidden" name="next" value="{{ next }}">
         </form>
         <p class="login-security-note">Access is venue-scoped and role-based. Staff only see the tools they need for the current workflow.</p>

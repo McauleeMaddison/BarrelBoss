@@ -18,14 +18,11 @@
 
     <form method="post" class="stock-edit-form">
         {% csrf_token %}
-
-        {% if form.non_field_errors %}
-        <div class="form-errors">{{ form.non_field_errors }}</div>
-        {% endif %}
+        {% include 'partials/form_state_summary.html' with form=form %}
 
         <div class="form-grid">
             {% for field in form %}
-            <div class="form-field {% if field.name == 'opening_handover_prompt' or field.name == 'closing_handover_prompt' or field.name == 'supplier_names' or field.name == 'manager_invite_emails' or field.name == 'staff_invite_emails' or field.name == 'opening_checklist_items' or field.name == 'closing_checklist_items' or field.name == 'delivery_checklist_items' or field.name == 'stock_seed_items' %}full-width{% endif %}">
+            <div class="form-field{% if field.errors %} has-error{% endif %} {% if field.name == 'opening_handover_prompt' or field.name == 'closing_handover_prompt' or field.name == 'supplier_names' or field.name == 'manager_invite_emails' or field.name == 'staff_invite_emails' or field.name == 'opening_checklist_items' or field.name == 'closing_checklist_items' or field.name == 'delivery_checklist_items' or field.name == 'stock_seed_items' %}full-width{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
                 {% if field.help_text %}
@@ -39,7 +36,7 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="action-btn">Create Venue</button>
+            <button type="submit" class="action-btn" data-pending-label="Creating venue…">Create Venue</button>
             {% if active_venue %}<a class="table-action" href="{% url role_home_url_name %}">Cancel</a>{% endif %}
         </div>
     </form>

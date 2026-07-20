@@ -281,4 +281,52 @@
             );
         });
     });
+
+    const statefulForms = document.querySelectorAll(
+        "form[method='post']:not([data-instant-submit-row])",
+    );
+    statefulForms.forEach((form) => {
+        let submitted = false;
+
+        form.addEventListener("submit", (event) => {
+            if (submitted) {
+                event.preventDefault();
+                return;
+            }
+
+            submitted = true;
+            form.classList.add("is-submitting");
+            form.setAttribute("aria-busy", "true");
+
+            const submitControls = form.querySelectorAll(
+                "button[type='submit'], input[type='submit']",
+            );
+            submitControls.forEach((control) => {
+                control.disabled = true;
+                control.classList.add("is-working");
+            });
+
+            const submitter = event.submitter instanceof HTMLElement
+                ? event.submitter
+                : form.querySelector("button[type='submit'], input[type='submit']");
+
+            if (submitter instanceof HTMLButtonElement) {
+                const pendingLabel =
+                    submitter.dataset.pendingLabel
+                    || form.dataset.pendingLabel
+                    || "Working…";
+                submitter.dataset.originalLabel = submitter.textContent;
+                submitter.textContent = pendingLabel;
+            }
+
+            if (submitter instanceof HTMLInputElement && submitter.type === "submit") {
+                const pendingLabel =
+                    submitter.dataset.pendingLabel
+                    || form.dataset.pendingLabel
+                    || "Working…";
+                submitter.dataset.originalLabel = submitter.value;
+                submitter.value = pendingLabel;
+            }
+        });
+    });
 })();

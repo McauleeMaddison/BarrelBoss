@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load public_ui %}
 
 {% block title %}Breakages | BarrelBoss{% endblock %}
 {% block page_title %}Breakages{% endblock %}
@@ -123,7 +124,7 @@
                                         <span>{{ row.created_at|date:"Y-m-d H:i" }}</span>
                                     </div>
                                 </div>
-                                <p class="detail-drawer-copy">{{ row.notes|default:"No extra incident notes were recorded." }}</p>
+                                <p class="detail-drawer-copy">{{ row.notes|public_note|default:"No extra incident notes were recorded." }}</p>
                             </section>
                             {% if is_management %}
                             <section class="detail-drawer-section">

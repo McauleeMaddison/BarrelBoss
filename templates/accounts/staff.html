@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load public_ui %}
 
 {% block title %}Staff | BarrelBoss{% endblock %}
 {% block page_title %}Staff{% endblock %}
@@ -170,7 +171,7 @@
                 </div>
                 <div>
                     <dt>Notes</dt>
-                    <dd>{{ profile.user.staff_profile.notes|default:"-"|truncatechars:80 }}</dd>
+                    <dd>{{ profile.user.staff_profile.notes|public_note|default:"-"|truncatechars:80 }}</dd>
                 </div>
             </dl>
 

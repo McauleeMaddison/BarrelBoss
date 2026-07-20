@@ -16,14 +16,11 @@
 
     <form method="post" class="stock-edit-form">
         {% csrf_token %}
-
-        {% if form.non_field_errors %}
-        <div class="form-errors">{{ form.non_field_errors }}</div>
-        {% endif %}
+        {% include 'partials/form_state_summary.html' with form=form formset=formset %}
 
         <div class="form-grid">
             {% for field in form %}
-            <div class="form-field {% if field.name == 'notes' %}full-width{% endif %}">
+            <div class="form-field{% if field.errors %} has-error{% endif %} {% if field.name == 'notes' %}full-width{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}
@@ -35,9 +32,6 @@
 
         <h4 class="form-subtitle">Order Lines</h4>
         {{ formset.management_form }}
-        {% if formset.non_form_errors %}
-        <div class="form-errors">{{ formset.non_form_errors }}</div>
-        {% endif %}
 
         <div class="order-items-grid">
             {% for item_form in formset %}
@@ -46,7 +40,7 @@
                     {{ hidden_field }}
                 {% endfor %}
 
-                <div class="form-field">
+                <div class="form-field{% if item_form.stock_item.errors %} has-error{% endif %}">
                     <label for="{{ item_form.stock_item.id_for_label }}">Stock Item</label>
                     {{ item_form.stock_item }}
                     {% if item_form.stock_item.errors %}
@@ -54,7 +48,7 @@
                     {% endif %}
                 </div>
 
-                <div class="form-field">
+                <div class="form-field{% if item_form.quantity.errors %} has-error{% endif %}">
                     <label for="{{ item_form.quantity.id_for_label }}">Quantity</label>
                     {{ item_form.quantity }}
                     {% if item_form.quantity.errors %}
@@ -73,7 +67,7 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="action-btn">{{ submit_label }}</button>
+            <button type="submit" class="action-btn" data-pending-label="Saving order…">{{ submit_label }}</button>
             <a class="table-action" href="{% url 'orders:list' %}">Cancel</a>
         </div>
     </form>

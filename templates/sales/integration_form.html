@@ -16,14 +16,11 @@
 
     <form method="post" class="stock-edit-form">
         {% csrf_token %}
-
-        {% if form.non_field_errors %}
-        <div class="form-errors">{{ form.non_field_errors }}</div>
-        {% endif %}
+        {% include 'partials/form_state_summary.html' with form=form %}
 
         <div class="form-grid">
             {% for field in form %}
-            <div class="form-field {% if field.name == 'notes' %}full-width{% endif %}">
+            <div class="form-field{% if field.errors %} has-error{% endif %} {% if field.name == 'notes' %}full-width{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}
@@ -34,7 +31,7 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="action-btn">{{ submit_label }}</button>
+            <button type="submit" class="action-btn" data-pending-label="Saving connector…">{{ submit_label }}</button>
             <a class="table-action" href="{% url 'sales:sync_center' %}">Cancel</a>
         </div>
     </form>

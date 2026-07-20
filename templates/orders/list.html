@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load public_ui %}
 
 {% block title %}Orders | BarrelBoss{% endblock %}
 {% block page_title %}Requests{% if management_view %} & Orders{% endif %}{% endblock %}
@@ -140,7 +141,7 @@
                                                             <span>{{ order.created_by_display }}</span>
                                                         </div>
                                                     </div>
-                                                    <p class="detail-drawer-copy">{{ order.notes|default:"No notes recorded for this order." }}</p>
+                                                    <p class="detail-drawer-copy">{{ order.notes|public_note|default:"No notes recorded for this order." }}</p>
                                                 </section>
                                                 <section class="detail-drawer-section">
                                                     <p class="detail-drawer-label">Actions</p>

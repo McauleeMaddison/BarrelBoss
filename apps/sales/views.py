@@ -4,11 +4,13 @@ import secrets
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib import messages
 from django.db.models import Count, F, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.crypto import constant_time_compare
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -995,7 +997,10 @@ def run_integration_sync(request, pk):
             f"{integration.label} synced successfully with {run.snapshots_imported} snapshot(s).",
         )
     except Exception as exc:
-        messages.error(request, f"{integration.label} sync failed: {exc}")
+        messages.error(
+            request,
+            f"{integration.label} sync failed. Review connector settings and try again.",
+        )
     return redirect("sales:sync_center")
 
 
@@ -1050,8 +1055,16 @@ def receive_pos_webhook(request, pk):
         PosIntegration.objects.filter(is_enabled=True, webhook_enabled=True),
         pk=pk,
     )
+    raw_body = request.body or b""
+    if len(raw_body) > settings.POS_WEBHOOK_MAX_BODY_BYTES:
+        return JsonResponse({"detail": "Webhook payload too large."}, status=413)
+
+    content_type = (request.content_type or "").split(";")[0].strip().lower()
+    if content_type and content_type != "application/json":
+        return JsonResponse({"detail": "Unsupported content type."}, status=415)
+
     try:
-        payload = json.loads(request.body.decode("utf-8") or "{}")
+        payload = json.loads(raw_body.decode("utf-8") or "{}")
     except ValueError:
         return JsonResponse({"detail": "Invalid JSON payload."}, status=400)
 
@@ -1063,10 +1076,14 @@ def receive_pos_webhook(request, pk):
     )
 
     provided_secret = request.headers.get("X-BarrelBoss-Webhook-Secret", "")
-    if integration.webhook_secret and provided_secret != integration.webhook_secret:
+    if (
+        not integration.webhook_secret
+        or not provided_secret
+        or not constant_time_compare(provided_secret, integration.webhook_secret)
+    ):
         event.status = PosWebhookEvent.Status.REJECTED
         event.processed_at = timezone.now()
-        event.notes = "Webhook secret did not match."
+        event.notes = "Webhook secret missing or did not match."
         event.save(update_fields=["status", "processed_at", "notes"])
         return JsonResponse({"detail": "Invalid webhook secret."}, status=403)
 
@@ -1091,7 +1108,7 @@ def receive_pos_webhook(request, pk):
         event.processed_at = timezone.now()
         event.notes = str(exc)
         event.save(update_fields=["status", "processed_at", "notes"])
-        return JsonResponse({"detail": str(exc)}, status=500)
+        return JsonResponse({"detail": "Webhook processing failed."}, status=500)
 
     event.status = PosWebhookEvent.Status.PROCESSED
     event.processed_at = timezone.now()

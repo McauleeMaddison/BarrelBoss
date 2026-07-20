@@ -4,6 +4,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core import mail
 from django.core.cache import cache
 from django.core.checks import run_checks
 from django.core.management import call_command
@@ -297,6 +298,60 @@ class LoginSecurityTests(VenueScopedTestCase):
         self.client.login(username="secure_landlord", password="strong-pass-123")
         response = self.client.get("/admin/", follow=False)
         self.assertEqual(response.status_code, 200)
+
+
+class PasswordResetFlowTests(VenueScopedTestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = self.create_user(
+            username="reset_ready",
+            password="strong-pass-123",
+            email="reset_ready@barrelboss.test",
+        )
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="BarrelBoss <no-reply@barrelboss.test>",
+    )
+    def test_password_reset_sends_email_and_redirects(self):
+        mail.outbox = []
+
+        response = self.client.post(
+            reverse("password_reset"),
+            {"email": self.user.email},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("password_reset_done"),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+        self.assertEqual(mail.outbox[0].subject.strip(), "BarrelBoss password reset")
+        self.assertIn("/accounts/reset/", mail.outbox[0].body)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="BarrelBoss <no-reply@barrelboss.test>",
+    )
+    @patch(
+        "django.contrib.auth.forms.PasswordResetForm.save",
+        side_effect=RuntimeError("smtp unavailable"),
+    )
+    def test_password_reset_failure_returns_503_with_friendly_error(self, _mock_save):
+        response = self.client.post(
+            reverse("password_reset"),
+            {"email": self.user.email},
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(
+            response,
+            "Password reset email is temporarily unavailable. Please try again shortly.",
+            status_code=503,
+        )
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class SettingsAndPushTests(VenueScopedTestCase):
@@ -918,6 +973,23 @@ class ReportsPageTests(VenueScopedTestCase):
 
 
 class DeploymentHardeningChecksTests(TestCase):
+    def _production_settings(self, **overrides):
+        settings = {
+            "DEBUG": False,
+            "ALLOW_DEMO_ACCOUNT_BOOTSTRAP": False,
+            "SECRET_KEY": "Strong-Unique-Prod-Secret-1234567890",
+            "ALLOWED_HOSTS": ["barrelboss.example.com"],
+            "CSRF_TRUSTED_ORIGINS": ["https://barrelboss.example.com"],
+            "SESSION_COOKIE_SECURE": True,
+            "CSRF_COOKIE_SECURE": True,
+            "SECURE_SSL_REDIRECT": True,
+            "SECURE_HSTS_SECONDS": 31536000,
+            "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "DEFAULT_FROM_EMAIL": "BarrelBoss <no-reply@barrelboss.co.uk>",
+        }
+        settings.update(overrides)
+        return settings
+
     def _deployment_check_ids(self):
         return {
             issue.id
@@ -925,52 +997,56 @@ class DeploymentHardeningChecksTests(TestCase):
             if issue.id and issue.id.startswith("accounts.E2")
         }
 
-    @override_settings(
-        DEBUG=False,
-        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
-        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
-        ALLOWED_HOSTS=["barrelboss.example.com"],
-        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
-    )
     def test_hardened_settings_pass_custom_deploy_checks(self):
-        self.assertEqual(self._deployment_check_ids(), set())
+        with self.settings(**self._production_settings()):
+            self.assertEqual(self._deployment_check_ids(), set())
 
-    @override_settings(
-        DEBUG=False,
-        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True,
-        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
-        ALLOWED_HOSTS=["barrelboss.example.com"],
-        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
-    )
     def test_demo_bootstrap_enabled_fails_deploy_check(self):
-        self.assertIn("accounts.E201", self._deployment_check_ids())
+        with self.settings(**self._production_settings(ALLOW_DEMO_ACCOUNT_BOOTSTRAP=True)):
+            self.assertIn("accounts.E201", self._deployment_check_ids())
 
-    @override_settings(
-        DEBUG=False,
-        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
-        SECRET_KEY="django-insecure-unsafe-default",
-        ALLOWED_HOSTS=["barrelboss.example.com"],
-        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
-    )
     def test_insecure_secret_key_fails_deploy_check(self):
-        self.assertIn("accounts.E202", self._deployment_check_ids())
+        with self.settings(**self._production_settings(SECRET_KEY="django-insecure-unsafe-default")):
+            self.assertIn("accounts.E202", self._deployment_check_ids())
 
-    @override_settings(
-        DEBUG=False,
-        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
-        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
-        ALLOWED_HOSTS=["localhost", "127.0.0.1"],
-        CSRF_TRUSTED_ORIGINS=["https://barrelboss.example.com"],
-    )
     def test_local_only_allowed_hosts_fail_deploy_check(self):
-        self.assertIn("accounts.E203", self._deployment_check_ids())
+        with self.settings(
+            **self._production_settings(ALLOWED_HOSTS=["localhost", "127.0.0.1"])
+        ):
+            self.assertIn("accounts.E203", self._deployment_check_ids())
 
-    @override_settings(
-        DEBUG=False,
-        ALLOW_DEMO_ACCOUNT_BOOTSTRAP=False,
-        SECRET_KEY="Strong-Unique-Prod-Secret-1234567890",
-        ALLOWED_HOSTS=["barrelboss.example.com"],
-        CSRF_TRUSTED_ORIGINS=["http://barrelboss.example.com"],
-    )
     def test_non_https_csrf_origins_fail_deploy_check(self):
-        self.assertIn("accounts.E204", self._deployment_check_ids())
+        with self.settings(
+            **self._production_settings(CSRF_TRUSTED_ORIGINS=["http://barrelboss.example.com"])
+        ):
+            self.assertIn("accounts.E204", self._deployment_check_ids())
+
+    def test_session_cookie_secure_fails_deploy_check(self):
+        with self.settings(**self._production_settings(SESSION_COOKIE_SECURE=False)):
+            self.assertIn("accounts.E205", self._deployment_check_ids())
+
+    def test_csrf_cookie_secure_fails_deploy_check(self):
+        with self.settings(**self._production_settings(CSRF_COOKIE_SECURE=False)):
+            self.assertIn("accounts.E206", self._deployment_check_ids())
+
+    def test_ssl_redirect_fails_deploy_check(self):
+        with self.settings(**self._production_settings(SECURE_SSL_REDIRECT=False)):
+            self.assertIn("accounts.E207", self._deployment_check_ids())
+
+    def test_hsts_seconds_fails_deploy_check(self):
+        with self.settings(**self._production_settings(SECURE_HSTS_SECONDS=0)):
+            self.assertIn("accounts.E208", self._deployment_check_ids())
+
+    def test_insecure_email_backend_fails_deploy_check(self):
+        with self.settings(
+            **self._production_settings(
+                EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend",
+            )
+        ):
+            self.assertIn("accounts.E209", self._deployment_check_ids())
+
+    def test_placeholder_default_from_email_fails_deploy_check(self):
+        with self.settings(
+            **self._production_settings(DEFAULT_FROM_EMAIL="BarrelBoss <no-reply@example.com>")
+        ):
+            self.assertIn("accounts.E210", self._deployment_check_ids())

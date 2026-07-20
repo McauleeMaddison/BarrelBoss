@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load public_ui %}
 
 {% block title %}Checklists | BarrelBoss{% endblock %}
 {% block page_title %}Tasks{% if is_management %} & Checks{% endif %}{% endblock %}
@@ -98,7 +99,7 @@
                                                     <span>{{ task.get_checklist_type_display }}</span>
                                                     <span>{{ task.assignee_label }}</span>
                                                 </div>
-                                                <small class="task-note-preview">{{ task.note_preview|truncatechars:100 }}</small>
+                                                <small class="task-note-preview">{{ task.note_preview|public_note|default:"No handover note recorded."|truncatechars:100 }}</small>
                                             </div>
                                         </td>
                                         <td data-label="Type">{{ task.get_checklist_type_display }}</td>
@@ -162,7 +163,7 @@
                                                             <span>{{ task.completed_at_label }}</span>
                                                         </div>
                                                     </div>
-                                                    <p class="detail-drawer-copy">{{ task.note_preview }}</p>
+                                                    <p class="detail-drawer-copy">{{ task.note_preview|public_note|default:"No handover note recorded." }}</p>
                                                 </section>
                                                 <section class="detail-drawer-section">
                                                     <p class="detail-drawer-label">Actions</p>

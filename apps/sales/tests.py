@@ -3,7 +3,7 @@ from datetime import time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -305,6 +305,68 @@ class SalesSyncCenterTests(VenueScopedTestCase):
                 business_date=timezone.localdate(),
             ).exists()
         )
+
+    def test_webhook_endpoint_rejects_requests_without_matching_secret(self):
+        response = self.client.post(
+            reverse("sales:webhook", args=[self.integration.pk]),
+            data=json.dumps(
+                {
+                    "event_type": "sales.closed",
+                    "event_id": "evt-rejected-1002",
+                    "business_date": timezone.localdate().isoformat(),
+                    "external_location_id": "garden-pos",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        rejected_event = PosWebhookEvent.objects.get(
+            integration=self.integration,
+            external_event_id="evt-rejected-1002",
+        )
+        self.assertEqual(rejected_event.status, PosWebhookEvent.Status.REJECTED)
+        self.assertEqual(
+            rejected_event.notes,
+            "Webhook secret missing or did not match.",
+        )
+
+    def test_webhook_endpoint_rejects_unsupported_content_type(self):
+        response = self.client.post(
+            reverse("sales:webhook", args=[self.integration.pk]),
+            data=json.dumps(
+                {
+                    "event_type": "sales.closed",
+                    "event_id": "evt-unsupported-1003",
+                    "business_date": timezone.localdate().isoformat(),
+                    "external_location_id": "garden-pos",
+                }
+            ),
+            content_type="text/plain",
+            HTTP_X_BARRELBOSS_WEBHOOK_SECRET="secret-123",
+        )
+
+        self.assertEqual(response.status_code, 415)
+        self.assertFalse(PosWebhookEvent.objects.filter(integration=self.integration).exists())
+
+    @override_settings(POS_WEBHOOK_MAX_BODY_BYTES=16)
+    def test_webhook_endpoint_rejects_oversized_payload(self):
+        response = self.client.post(
+            reverse("sales:webhook", args=[self.integration.pk]),
+            data=json.dumps(
+                {
+                    "event_type": "sales.closed",
+                    "event_id": "evt-oversized-1004",
+                    "business_date": timezone.localdate().isoformat(),
+                    "external_location_id": "garden-pos",
+                }
+            ),
+            content_type="application/json",
+            HTTP_X_BARRELBOSS_WEBHOOK_SECRET="secret-123",
+        )
+
+        self.assertEqual(response.status_code, 413)
+        self.assertFalse(PosWebhookEvent.objects.filter(integration=self.integration).exists())
 
 
 class SalesCrudViewTests(VenueScopedTestCase):

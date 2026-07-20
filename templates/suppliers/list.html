@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load public_ui %}
 
 {% block title %}Suppliers | BarrelBoss{% endblock %}
 {% block page_title %}Suppliers{% endblock %}
@@ -156,7 +157,7 @@
                                         <span>{{ supplier.email|default:"-" }}</span>
                                     </div>
                                 </div>
-                                <p class="detail-drawer-copy">{{ supplier.notes|default:"No supplier notes recorded." }}</p>
+                                <p class="detail-drawer-copy">{{ supplier.notes|public_note|default:"No supplier notes recorded." }}</p>
                             </section>
                             <section class="detail-drawer-section">
                                 <p class="detail-drawer-label">Actions</p>
