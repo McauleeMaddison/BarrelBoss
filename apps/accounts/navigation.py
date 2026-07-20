@@ -137,35 +137,35 @@ def build_workspace_navigation(request):
                 label="Today",
                 url_name=home_url_name,
                 group="home",
-                description="Control board",
+                description="Overview",
             ),
             _nav_item(
                 current,
                 label="Tasks",
                 url_name="checklists:list",
                 group="checklists",
-                description="Standards and checks",
+                description="Standards",
             ),
             _nav_item(
                 current,
                 label="Stock",
                 url_name="stock:list",
                 group="stock",
-                description="Cellar and back bar",
+                description="Inventory",
             ),
             _nav_item(
                 current,
-                label="Rota",
+                label="Orders",
                 url_name="orders:list",
                 group="orders",
-                description="Approvals and deliveries",
+                description="Purchasing",
             ),
             _nav_item(
                 current,
                 label="Rota",
                 url_name="shifts:list",
                 group="shifts",
-                description="Coverage and hours",
+                description="Scheduling",
             ),
         ]
         secondary_links = [
@@ -174,68 +174,68 @@ def build_workspace_navigation(request):
                 label="Breakages",
                 url_name="breakages:list",
                 group="breakages",
-                description="Loss log",
+                description="Incidents",
             ),
             _nav_item(
                 current,
                 label="Sales",
                 url_name="sales:list",
                 group="sales",
-                description="Trade pulse",
+                description="Revenue",
             ),
             _nav_item(
                 current,
                 label="Suppliers",
                 url_name="suppliers:list",
                 group="suppliers",
-                description="Partners and contacts",
+                description="Vendors",
             ),
             _nav_item(
                 current,
                 label="Staff",
                 url_name="staff",
                 group="staff",
-                description="People and access",
+                description="Team",
             ),
             _nav_item(
                 current,
                 label="Reports",
                 url_name="reports",
                 group="reports",
-                description="Downloadable summaries",
+                description="Exports",
             ),
             _nav_item(
                 current,
                 label="Activity",
                 url_name="audit:list",
                 group="audit",
-                description="Audit trail",
+                description="Audit",
             ),
             _nav_item(
                 current,
                 label="Settings",
                 url_name="settings",
                 group="settings",
-                description="Venue setup",
+                description="Alerts",
             ),
         ]
         quick_actions = []
         bar_title = "Management workspace"
-        bar_copy = "Keep sign-off, cellar counts, and supplier follow-up one jump away."
+        bar_copy = "Keep the core management boards close."
         secondary_title = "Support"
         command_title = "More tools"
-        command_copy = "Open rota and the secondary management tools without crowding the main dock."
+        command_copy = "Open the remaining management tools."
         mobile_dock_links = [
             _nav_item(
                 current,
                 label="Today",
                 url_name=home_url_name,
                 group="home",
-                description="Control board",
+                description="Overview",
             ),
             _nav_item(
                 current,
-                label="Tasks",
+                label="Sign-off",
                 url_name="checklists:list",
                 group="checklists",
                 query="preset=today&status=pending",
@@ -243,19 +243,19 @@ def build_workspace_navigation(request):
             ),
             _nav_item(
                 current,
-                label="Stock",
+                label="Cellar",
                 url_name="stock:list",
                 group="stock",
                 query="focus=cellar",
-                description="Counts & gaps",
+                description="Cellar",
             ),
             _nav_item(
                 current,
-                label="Requests",
+                label="Deliveries",
                 url_name="orders:list",
                 group="orders",
-                query="preset=drafts",
-                description="Approvals",
+                query="preset=pending",
+                description="Inbound",
             ),
         ]
         mobile_command_links = [
@@ -264,56 +264,56 @@ def build_workspace_navigation(request):
                 label="Rota",
                 url_name="shifts:list",
                 group="shifts",
-                description="Coverage and hours",
+                description="Scheduling",
             ),
             _nav_item(
                 current,
                 label="Breakages",
                 url_name="breakages:list",
                 group="breakages",
-                description="Loss log",
+                description="Incidents",
             ),
             _nav_item(
                 current,
                 label="Sales",
                 url_name="sales:list",
                 group="sales",
-                description="Trade pulse",
+                description="Revenue",
             ),
             _nav_item(
                 current,
                 label="Suppliers",
                 url_name="suppliers:list",
                 group="suppliers",
-                description="Partners and contacts",
+                description="Vendors",
             ),
             _nav_item(
                 current,
                 label="Staff",
                 url_name="staff",
                 group="staff",
-                description="People and access",
+                description="Team",
             ),
             _nav_item(
                 current,
                 label="Reports",
                 url_name="reports",
                 group="reports",
-                description="Downloadable summaries",
+                description="Exports",
             ),
             _nav_item(
                 current,
                 label="Activity",
                 url_name="audit:list",
                 group="audit",
-                description="Audit trail",
+                description="Audit",
             ),
             _nav_item(
                 current,
                 label="Settings",
                 url_name="settings",
                 group="settings",
-                description="Venue setup",
+                description="Alerts",
             ),
         ]
     else:
@@ -323,35 +323,35 @@ def build_workspace_navigation(request):
                 label="Today",
                 url_name=home_url_name,
                 group="home",
-                description="Your shift board",
+                description="Overview",
             ),
             _nav_item(
                 current,
                 label="Tasks",
                 url_name="checklists:list",
                 group="checklists",
-                description="Assigned work",
+                description="My queue",
             ),
             _nav_item(
                 current,
                 label="Stock",
                 url_name="stock:list",
                 group="stock",
-                description="Live availability",
+                description="Availability",
             ),
             _nav_item(
                 current,
                 label="Rota",
                 url_name="shifts:list",
                 group="shifts",
-                description="Upcoming shifts",
+                description="My shifts",
             ),
             _nav_item(
                 current,
                 label="Requests",
                 url_name="orders:list",
                 group="orders",
-                description="Submitted issues",
+                description="My requests",
             ),
         ]
         secondary_links = [
@@ -360,29 +360,29 @@ def build_workspace_navigation(request):
                 label="Breakages",
                 url_name="breakages:add",
                 group="breakages",
-                description="Send a loss report",
+                description="Log issue",
             ),
             _nav_item(
                 current,
                 label="Restock",
                 url_name="orders:add",
                 group="orders",
-                description="Raise a stock request",
+                description="Raise request",
             ),
         ]
         quick_actions = []
         bar_title = "Shift workspace"
-        bar_copy = "Surface the tasks, stock, and handover actions bar staff need most."
+        bar_copy = "Keep the core shift tools close."
         secondary_title = "Capture"
         command_title = "More tools"
-        command_copy = "Open rota and the remaining shift tools without repeating the main dock."
+        command_copy = "Open the remaining shift tools."
         mobile_dock_links = [
             _nav_item(
                 current,
                 label="Today",
                 url_name=home_url_name,
                 group="home",
-                description="Shift board",
+                description="Overview",
             ),
             _nav_item(
                 current,
@@ -397,37 +397,37 @@ def build_workspace_navigation(request):
                 label="Stock",
                 url_name="stock:list",
                 group="stock",
-                description="Live availability",
+                description="Availability",
             ),
-            _nav_item(
-                current,
-                label="Requests",
-                url_name="orders:list",
-                group="orders",
-                description="Submitted issues",
-            ),
-        ]
-        mobile_command_links = [
             _nav_item(
                 current,
                 label="Rota",
                 url_name="shifts:list",
                 group="shifts",
-                description="Upcoming shifts",
+                description="My shifts",
+            ),
+        ]
+        mobile_command_links = [
+            _nav_item(
+                current,
+                label="Requests",
+                url_name="orders:list",
+                group="orders",
+                description="My requests",
             ),
             _nav_item(
                 current,
                 label="Request stock",
                 url_name="orders:add",
                 group="orders",
-                description="Raise a stock request",
+                description="Raise request",
             ),
             _nav_item(
                 current,
                 label="Report breakage",
                 url_name="breakages:add",
                 group="breakages",
-                description="Send a loss report",
+                description="Log issue",
             ),
         ]
 
@@ -449,5 +449,5 @@ def build_workspace_navigation(request):
         "mobile_command_title": command_title,
         "mobile_command_copy": command_copy,
         "mobile_command_button_label": "More",
-        "mobile_command_button_copy": "Rota + tools",
+        "mobile_command_button_copy": "More tools",
     }

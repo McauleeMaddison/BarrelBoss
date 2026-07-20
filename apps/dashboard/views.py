@@ -592,11 +592,8 @@ def _management_dashboard_payload(venue):
             "slug": "cellar",
             "label": "Cellar watch",
             "eyebrow": "Cellar pressure",
-            "title": "Low-stock cellar lines and restock pressure",
-            "copy": (
-                "Keep live cellar shortages visible here before supplier cut-off or service "
-                "risk forces a scramble."
-            ),
+            "title": "Cellar gaps and restock pressure",
+            "copy": "Check the live shortages first, then decide whether orders need moving today.",
             "stats": [
                 {"label": "Low-stock lines", "value": low_stock_count},
                 {"label": "Beer barrels low", "value": low_stock_barrel_count},
@@ -613,11 +610,8 @@ def _management_dashboard_payload(venue):
             "slug": "orders",
             "label": "Delivery queue",
             "eyebrow": "Approvals and inbound",
-            "title": "Order approvals and incoming deliveries",
-            "copy": (
-                "Review drafts and incoming stock in one queue instead of treating "
-                "purchasing as a separate page."
-            ),
+            "title": "Approvals and incoming deliveries",
+            "copy": "Keep draft sign-off and inbound stock in one board instead of bouncing between screens.",
             "stats": [
                 {"label": "Awaiting approval", "value": pending_order_count},
                 {"label": "Due today", "value": deliveries_due_today},
@@ -634,11 +628,8 @@ def _management_dashboard_payload(venue):
             "slug": "trade",
             "label": "Trade pulse",
             "eyebrow": "Sales and sync",
-            "title": "Trade pace, covers, and sales feed health",
-            "copy": (
-                "Tie live trade back into rota and cellar decisions without sending managers "
-                "into a separate till-only workflow."
-            ),
+            "title": "Trade pace and sync health",
+            "copy": "Use sales, covers, and feed status here before changing rota or ordering decisions.",
             "stats": [
                 {"label": "Net sales today", "value": f"£{net_sales_today:,.0f}"},
                 {"label": "Covers today", "value": covers_today},
@@ -655,11 +646,8 @@ def _management_dashboard_payload(venue):
             "slug": "standards",
             "label": "Standards",
             "eyebrow": "Tasks and loss",
-            "title": "Checklist drift and breakage follow-up",
-            "copy": (
-                "Keep overdue standards work and live loss records in front of the shift lead "
-                "before handover."
-            ),
+            "title": "Tasks and loss follow-up",
+            "copy": "Use one board for overdue standards work and any live loss that still needs attention.",
             "stats": [
                 {"label": "Overdue tasks", "value": overdue_task_count},
                 {"label": "Due today", "value": tasks_due_today_count},
@@ -713,7 +701,7 @@ def _management_dashboard_payload(venue):
     if next_draft:
         focus_list.append(
             {
-                "task": f"Approve request {next_draft.reference}",
+                "task": f"Approve {next_draft.reference}",
                 "owner": next_draft.created_by.username if next_draft.created_by else "Staff",
                 "due": next_draft.created_at.astimezone(timezone.get_current_timezone()).strftime("%H:%M"),
                 "state": "Pending",
@@ -725,7 +713,7 @@ def _management_dashboard_payload(venue):
     if overdue_task:
         focus_list.append(
             {
-                "task": f"Resolve overdue checklist task: {overdue_task.title}",
+                "task": overdue_task.title,
                 "owner": overdue_task.assigned_to.username if overdue_task.assigned_to else "Unassigned",
                 "due": overdue_task.due_date.strftime("%d %b"),
                 "state": "Overdue",
@@ -740,7 +728,7 @@ def _management_dashboard_payload(venue):
     if due_delivery:
         focus_list.append(
             {
-                "task": f"Confirm delivery progress for {due_delivery.reference}",
+                "task": f"Check {due_delivery.reference} delivery",
                 "owner": due_delivery.supplier.name,
                 "due": due_delivery.delivery_date.strftime("%d %b"),
                 "state": "Scheduled",
@@ -987,7 +975,7 @@ def _management_dashboard_payload(venue):
         "portal_title": "Management Portal",
         "overview_heading": "Management",
         "overview_copy": (
-            f"{pending_order_count} awaiting approval, "
+            f"{pending_order_count} approvals, "
             f"{connectors_needing_attention} sync issue(s), "
             f"{deliveries_due_today} delivery(ies) due today."
         ),
@@ -1277,10 +1265,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "My tasks",
             "eyebrow": "Today",
             "title": "Tasks assigned to you",
-            "copy": (
-                "Complete your own checklist jobs before handover. "
-                "Only your assigned work and live task status are shown here."
-            ),
+            "copy": "Clear your own checklist work before handover.",
             "stats": [
                 {
                     "label": "Open tasks",
@@ -1309,10 +1294,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "Stock",
             "eyebrow": "Cellar and bar",
             "title": "View stock availability",
-            "copy": (
-                "Check what is available, low, or running out. "
-                "Raise a stock request from the same workspace when a line needs topping up."
-            ),
+            "copy": "Check what is low, then raise a request from the same workspace.",
             "stats": [
                 {
                     "label": "Stock view",
@@ -1345,10 +1327,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "My rota",
             "eyebrow": "Schedule",
             "title": "Your upcoming shifts",
-            "copy": (
-                "Only your own upcoming shifts are shown. "
-                "Staff cannot view or manage anyone else's rota."
-            ),
+            "copy": "See your own upcoming shifts and this week's hours.",
             "stats": [
                 {
                     "label": "Hours this week",
@@ -1377,10 +1356,7 @@ def _staff_dashboard_payload(user, venue):
             "label": "End of shift",
             "eyebrow": "Quick reports",
             "title": "Submit shift issues",
-            "copy": (
-                "Use these quick forms at the end of shift. "
-                "Keep stock requests and incident reports recorded in one clean handover flow."
-            ),
+            "copy": "Use the handover forms for stock requests and incident reports.",
             "stats": [
                 {
                     "label": "Open requests",
@@ -1523,7 +1499,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Tasks",
             "title": "My tasks",
-            "copy": "Open the tasks assigned to you and mark them complete.",
+            "copy": "Open your assigned tasks.",
             "stat": (
                 f"{tasks_overdue} overdue"
                 if tasks_overdue
@@ -1554,7 +1530,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Stock",
             "title": "View stock",
-            "copy": "Check what is available, low, or running out.",
+            "copy": "Check current availability.",
             "stat": "Live stock view",
             "url_name": "stock:list",
             "action_label": "View stock",
@@ -1563,7 +1539,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Request",
             "title": "Request stock",
-            "copy": "Submit a low-stock request from the current shift.",
+            "copy": "Raise a stock request.",
             "stat": f"{my_open_request_count} open" if my_open_request_count else "Form ready",
             "url_name": "orders:add",
             "action_label": "Request stock",
@@ -1572,7 +1548,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Breakage",
             "title": "Report breakage",
-            "copy": "Log breakage or waste before the end of shift.",
+            "copy": "Log breakage or waste.",
             "stat": (
                 f"{my_breakages_this_week} this week"
                 if my_breakages_this_week
@@ -1585,7 +1561,7 @@ def _staff_dashboard_payload(user, venue):
         {
             "label": "Rota",
             "title": "My rota",
-            "copy": "Check your own upcoming shifts.",
+            "copy": "Check your next shifts.",
             "stat": next_shift_short,
             "url_name": "shifts:list",
             "action_label": "Open rota",
@@ -1678,7 +1654,7 @@ def _staff_dashboard_payload(user, venue):
     return {
         "portal_title": "Staff Portal",
         "overview_heading": "Today",
-        "overview_copy": "See your shift, tasks, stock, and issues in one place.",
+        "overview_copy": "Your shift, tasks, stock, and handover tools in one place.",
         "metrics": metrics,
         "attention_items": attention_items,
         "activity": activity,

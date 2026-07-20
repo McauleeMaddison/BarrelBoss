@@ -4,9 +4,10 @@
 {% block page_title %}Breakages{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <h3>Delete breakage record for {{ record.item_name }}?</h3>
-    <p>This permanently removes the incident from reporting history.</p>
+<section class="panel stock-form-panel detail-panel">
+    <p class="detail-kicker">Incidents</p>
+    <h3 class="detail-title">Delete breakage record for {{ record.item_name }}?</h3>
+    <p class="panel-subtitle">This removes the incident from reporting history.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}

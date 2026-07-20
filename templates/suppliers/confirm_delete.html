@@ -4,9 +4,10 @@
 {% block page_title %}Suppliers{% endblock %}
 
 {% block content %}
-<section class="panel stock-form-panel">
-    <h3>Delete supplier: {{ supplier.name }}?</h3>
-    <p>This permanently removes the supplier record. Related stock items remain active with an empty supplier field.</p>
+<section class="panel stock-form-panel detail-panel">
+    <p class="detail-kicker">Vendors</p>
+    <h3 class="detail-title">Delete supplier: {{ supplier.name }}?</h3>
+    <p class="panel-subtitle">This removes the supplier record. Stock items keep an empty supplier field.</p>
 
     <form method="post" class="delete-form">
         {% csrf_token %}

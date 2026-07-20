@@ -1,6 +1,6 @@
 <div class="dashboard-view dashboard-view-management">
-<section class="panel portal-hero dashboard-hero portal-hero-compact">
-    <div class="dashboard-hero-grid dashboard-hero-grid-single">
+<section class="panel portal-hero dashboard-hero dashboard-hero-premium portal-hero-compact">
+    <div class="dashboard-hero-grid dashboard-hero-grid-premium">
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
                 <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"manager" }}.</p>
@@ -10,6 +10,38 @@
             <p class="portal-hero-copy">{{ overview_copy }}</p>
             {% include 'partials/attention_rail.html' with attention_items=attention_items|slice:":1" %}
         </div>
+
+        <div class="dashboard-hero-aside dashboard-hero-aside-premium">
+            {% with spotlight=metrics|first %}
+            <article class="dashboard-hero-spotlight">
+                <div class="dashboard-hero-spotlight-head">
+                    <span class="dashboard-entry-label">{{ spotlight.label }}</span>
+                    <span class="metric-state metric-state-{{ spotlight.state_tone }}">{{ spotlight.state }}</span>
+                </div>
+                <strong class="dashboard-hero-spotlight-value">{{ spotlight.value }}</strong>
+                <p class="dashboard-hero-spotlight-copy">{{ spotlight.summary }}</p>
+                <span class="dashboard-hero-spotlight-trend dashboard-hero-spotlight-trend-{{ spotlight.trend.direction }}">{{ spotlight.trend.label }}</span>
+                <div class="dashboard-hero-spotlight-actions">
+                    {% for action in spotlight.actions|slice:":2" %}
+                    <a class="quick-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                    {% endfor %}
+                </div>
+            </article>
+            {% endwith %}
+
+            <div class="dashboard-signal-grid">
+                {% for metric in metrics|slice:"1:3" %}
+                <article class="dashboard-signal-card">
+                    <div class="dashboard-signal-card-head">
+                        <span class="dashboard-entry-label">{{ metric.label }}</span>
+                        <span class="metric-state metric-state-{{ metric.state_tone }}">{{ metric.state }}</span>
+                    </div>
+                    <strong>{{ metric.value }}</strong>
+                    <p>{{ metric.note }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </section>
 
@@ -18,26 +50,52 @@
         <div class="panel-header">
             <div>
                 <h3>Today</h3>
-                <p class="panel-subtitle">Open the working board you need and stay out of the way of service.</p>
+                <p class="panel-subtitle">Open the board you need and act.</p>
             </div>
         </div>
-        <div class="dashboard-entry-grid">
+        <div class="dashboard-entry-grid dashboard-entry-grid-premium">
             {% for section in portal_sections %}
-            <a class="dashboard-entry-card" href="{{ section.module_href|default:'#' }}">
-                <span class="dashboard-entry-label">{{ section.label }}</span>
-                <strong>{{ section.title }}</strong>
-                <p>{{ section.copy }}</p>
-                <div class="dashboard-entry-footer">
-                    {% if section.stats %}
-                    <span class="badge">{{ section.stats.0.value }} {{ section.stats.0.label }}</span>
-                    {% elif section.rows %}
-                    <span class="badge">{{ section.rows.0.badge|default:"Open" }}</span>
-                    {% else %}
-                    <span class="badge">Open</span>
-                    {% endif %}
-                    <span class="dashboard-entry-cta">Open board</span>
+            <article class="dashboard-entry-card dashboard-entry-card-premium">
+                <a class="dashboard-entry-card-link" href="{{ section.module_href|default:'#' }}">
+                    <div class="dashboard-entry-kicker">
+                        <span class="dashboard-entry-label">{{ section.label }}</span>
+                        <span class="badge">{{ section.eyebrow }}</span>
+                    </div>
+                    <strong>{{ section.title }}</strong>
+                    <p>{{ section.copy }}</p>
+                </a>
+
+                <div class="dashboard-entry-stats">
+                    {% for stat in section.stats %}
+                    <div class="dashboard-entry-stat">
+                        <strong>{{ stat.value }}</strong>
+                        <small>{{ stat.label }}</small>
+                    </div>
+                    {% endfor %}
                 </div>
-            </a>
+
+                {% if section.rows %}
+                <div class="dashboard-entry-preview-list">
+                    {% for row in section.rows|slice:":1" %}
+                    <a class="dashboard-entry-preview dashboard-entry-preview-row" href="{{ row.href }}">
+                        <div class="dashboard-entry-preview-copy">
+                            <strong>{{ row.title }}</strong>
+                            <small>{{ row.meta }}</small>
+                        </div>
+                        <span class="badge badge-{{ row.tone|default:'neutral' }}">{{ row.badge }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state dashboard-entry-empty">{{ section.empty_state }}</p>
+                {% endif %}
+
+                <div class="dashboard-entry-actions">
+                    {% for action in section.actions %}
+                    <a class="{% if forloop.first %}action-btn action-link{% else %}table-action{% endif %}" href="{{ action.href }}">{{ action.label }}</a>
+                    {% endfor %}
+                </div>
+            </article>
             {% endfor %}
         </div>
     </article>
@@ -47,8 +105,9 @@
             <div class="panel-header">
                 <div>
                     <h3>Next up</h3>
-                    <p class="panel-subtitle">Work the live blockers in order and keep service moving.</p>
+                    <p class="panel-subtitle">Work the live blockers in order.</p>
                 </div>
+                <span class="panel-header-meta">{{ focus_list|length }} priorities</span>
             </div>
             <ul class="focus-list">
                 {% for item in focus_list %}
@@ -69,8 +128,9 @@
             <div class="panel-header">
                 <div>
                     <h3>Activity inbox</h3>
-                    <p class="panel-subtitle">See what changed without opening every board separately.</p>
+                    <p class="panel-subtitle">See what changed without opening every board.</p>
                 </div>
+                <span class="panel-header-meta">{{ activity|length }} updates</span>
             </div>
             <div class="dashboard-activity-filters">
                 <button class="preset-chip active" type="button" data-activity-filter="all">All</button>

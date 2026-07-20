@@ -1,6 +1,6 @@
 <div class="dashboard-view dashboard-view-staff">
-<section class="panel portal-hero portal-hero-compact">
-    <div class="dashboard-hero-grid dashboard-hero-grid-single">
+<section class="panel portal-hero dashboard-hero dashboard-hero-premium portal-hero-compact">
+    <div class="dashboard-hero-grid dashboard-hero-grid-premium">
         <div class="dashboard-hero-copy">
             <div class="portal-hero-head">
                 <p class="kicker">{{ greeting }}, {{ request.user.get_username|default:"team member" }}.</p>
@@ -8,30 +8,104 @@
             </div>
             <h3 class="portal-hero-title">{{ overview_heading }}</h3>
             <p class="portal-hero-copy">{{ overview_copy }}</p>
+            <div class="dashboard-hero-action-rail">
+                {% for action in quick_actions|slice:":3" %}
+                <a class="dashboard-hero-action-chip" href="{{ action.href }}">
+                    <span class="dashboard-hero-action-label">{{ action.label }}</span>
+                    <strong>{{ action.title }}</strong>
+                    <small>{{ action.stat }}</small>
+                </a>
+                {% endfor %}
+            </div>
             {% include 'partials/attention_rail.html' with attention_items=attention_items|slice:":1" %}
+        </div>
+
+        <div class="dashboard-hero-aside dashboard-hero-aside-premium">
+            {% with spotlight=metrics|first %}
+            <article class="dashboard-hero-spotlight">
+                <div class="dashboard-hero-spotlight-head">
+                    <span class="dashboard-entry-label">{{ spotlight.label }}</span>
+                    <span class="metric-state metric-state-{{ spotlight.state_tone }}">{{ spotlight.state }}</span>
+                </div>
+                <strong class="dashboard-hero-spotlight-value">{{ spotlight.value }}</strong>
+                <p class="dashboard-hero-spotlight-copy">{{ spotlight.summary }}</p>
+                <span class="dashboard-hero-spotlight-trend dashboard-hero-spotlight-trend-{{ spotlight.trend.direction }}">{{ spotlight.trend.label }}</span>
+                <div class="dashboard-hero-spotlight-actions">
+                    {% for action in spotlight.actions|slice:":2" %}
+                    <a class="quick-action-link" href="{{ action.href }}">{{ action.label }}</a>
+                    {% endfor %}
+                </div>
+            </article>
+            {% endwith %}
+
+            <div class="dashboard-signal-grid">
+                {% for metric in metrics|slice:"1:4" %}
+                <article class="dashboard-signal-card">
+                    <div class="dashboard-signal-card-head">
+                        <span class="dashboard-entry-label">{{ metric.label }}</span>
+                        <span class="metric-state metric-state-{{ metric.state_tone }}">{{ metric.state }}</span>
+                    </div>
+                    <strong>{{ metric.value }}</strong>
+                    <p>{{ metric.note }}</p>
+                </article>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </section>
 
 <section class="dashboard-stack dashboard-priority-stack dashboard-stack-lean">
     <article class="panel portal-panel dashboard-entry-panel">
-        <div class="panel-header">
-            <div>
-                <h3>Today</h3>
-                <p class="panel-subtitle">Open the board you need and get back to the floor.</p>
-            </div>
-        </div>
-        <div class="dashboard-entry-grid">
-            {% for action in quick_actions %}
-            <a class="dashboard-entry-card dashboard-entry-card-action" href="{{ action.href }}">
-                <span class="dashboard-entry-label">{{ action.label }}</span>
-                <strong>{{ action.title }}</strong>
-                <p>{{ action.copy }}</p>
-                <div class="dashboard-entry-footer">
-                    <span class="badge">{{ action.stat }}</span>
-                    <span class="dashboard-entry-cta">{{ action.action_label }}</span>
+            <div class="panel-header">
+                <div>
+                    <h3>Today</h3>
+                    <p class="panel-subtitle">Open the board you need and get back to the floor.</p>
                 </div>
-            </a>
+            <span class="panel-header-meta">{{ portal_sections|length }} workspaces</span>
+        </div>
+        <div class="dashboard-entry-grid dashboard-entry-grid-premium">
+            {% for section in portal_sections %}
+            <article class="dashboard-entry-card dashboard-entry-card-premium">
+                <a class="dashboard-entry-card-link" href="{{ section.module_href|default:'#' }}">
+                    <div class="dashboard-entry-kicker">
+                        <span class="dashboard-entry-label">{{ section.label }}</span>
+                        <span class="badge">{{ section.eyebrow }}</span>
+                    </div>
+                    <strong>{{ section.title }}</strong>
+                    <p>{{ section.copy }}</p>
+                </a>
+
+                <div class="dashboard-entry-stats">
+                    {% for stat in section.stats %}
+                    <div class="dashboard-entry-stat">
+                        <strong>{{ stat.value }}</strong>
+                        <small>{{ stat.label }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if section.rows %}
+                <div class="dashboard-entry-preview-list">
+                    {% for row in section.rows|slice:":1" %}
+                    <a class="dashboard-entry-preview dashboard-entry-preview-row" href="{{ row.href }}">
+                        <div class="dashboard-entry-preview-copy">
+                            <strong>{{ row.title }}</strong>
+                            <small>{{ row.meta }}</small>
+                        </div>
+                        <span class="badge badge-{{ row.tone|default:'neutral' }}">{{ row.badge }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state dashboard-entry-empty">{{ section.empty_state }}</p>
+                {% endif %}
+
+                <div class="dashboard-entry-actions">
+                    {% for action in section.actions %}
+                    <a class="{% if forloop.first %}action-btn action-link{% else %}table-action{% endif %}" href="{{ action.href }}">{{ action.label }}</a>
+                    {% endfor %}
+                </div>
+            </article>
             {% endfor %}
         </div>
     </article>
@@ -41,8 +115,9 @@
             <div class="panel-header">
                 <div>
                     <h3>Next up</h3>
-                    <p class="panel-subtitle">Open the next job, clear it, and move on.</p>
+                    <p class="panel-subtitle">Open the next job and clear it.</p>
                 </div>
+                <span class="panel-header-meta">{{ focus_list|length }} priorities</span>
             </div>
             <ul class="focus-list">
                 {% for item in focus_list %}
@@ -63,8 +138,9 @@
             <div class="panel-header">
                 <div>
                     <h3>Recent activity</h3>
-                    <p class="panel-subtitle">Keep your own shift updates visible in one list.</p>
+                    <p class="panel-subtitle">Keep your own shift updates in one list.</p>
                 </div>
+                <span class="panel-header-meta">{{ activity|length }} updates</span>
             </div>
             <div class="dashboard-activity-filters">
                 <button class="preset-chip active" type="button" data-activity-filter="all">All</button>
