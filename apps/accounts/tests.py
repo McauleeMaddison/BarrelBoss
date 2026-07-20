@@ -144,6 +144,11 @@ class RoleRoutingTests(VenueScopedTestCase):
             password="strong-pass-123",
             role=StaffProfile.Role.MANAGER,
         )
+        self.landlord_user = self.create_superuser_with_membership(
+            username="landlord_member",
+            email="landlord_member@barrelboss.test",
+            password="strong-pass-123",
+        )
 
     def test_staff_login_redirects_to_staff_portal(self):
         response = self.client.post(
@@ -160,6 +165,17 @@ class RoleRoutingTests(VenueScopedTestCase):
         response = self.client.post(
             reverse("login"),
             {"username": "manager_member", "password": "strong-pass-123"},
+        )
+        self.assertRedirects(
+            response,
+            reverse("dashboard:management_portal"),
+            fetch_redirect_response=False,
+        )
+
+    def test_landlord_login_redirects_to_management_portal(self):
+        response = self.client.post(
+            reverse("login"),
+            {"username": "landlord_member", "password": "strong-pass-123"},
         )
         self.assertRedirects(
             response,

@@ -8,13 +8,17 @@ Set these environment variables in production:
 - `DJANGO_SECRET_KEY=<long-random-secret>`
 - `DJANGO_ALLOWED_HOSTS=<production-domain>`
 - `DJANGO_CSRF_TRUSTED_ORIGINS=https://<production-domain>`
+- `RENDER_EXTERNAL_HOSTNAME=<production-domain>`
 - `DJANGO_EMAIL_BACKEND=<smtp-or-transactional-backend>`
 - `DJANGO_EMAIL_HOST=<smtp-host>`
 - `DJANGO_EMAIL_PORT=<smtp-port>`
 - `DJANGO_DEFAULT_FROM_EMAIL=<real-sender@yourdomain.com>`
+- `DJANGO_SERVER_EMAIL=<alerts@yourdomain.com>`
 - `DJANGO_LOG_LEVEL=INFO`
 - `DATABASE_URL=<production-postgres-url>`
+- `DATABASE_FALLBACK_URL=<external-postgres-url-if-render-private-host-is-not-routable>`
 - `DATABASE_SSL_REQUIRE=true`
+- `DATABASE_CONNECT_TIMEOUT=15`
 - `DJANGO_SECURE_SSL_REDIRECT=true`
 - `DJANGO_SECURE_HSTS_SECONDS=31536000`
 - `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=true`
@@ -53,12 +57,24 @@ Operational probes:
 ```bash
 python manage.py migrate
 ```
-5. Run quick smoke checks:
+5. Run read-only hosted smoke checks:
+```bash
+SMOKE_BASE_URL=https://<production-domain> \
+SMOKE_MANAGER_USERNAME='<manager-username>' \
+SMOKE_MANAGER_PASSWORD='<manager-password>' \
+SMOKE_STAFF_USERNAME='<staff-username>' \
+SMOKE_STAFF_PASSWORD='<staff-password>' \
+SMOKE_LANDLORD_USERNAME='<landlord-username>' \
+SMOKE_LANDLORD_PASSWORD='<landlord-password>' \
+./.venv/bin/python scripts/hosted_smoke.py
+```
+6. Run a short manual pass on high-risk write flows:
 - login/logout
-- manager dashboard
-- staff dashboard
-- stock/order/checklist/shift create actions
-- `curl -fsS https://<production-domain>/health/ready/`
+- stock create/edit/archive
+- order create/status update
+- checklist assign/complete
+- shift schedule/edit
+- password reset request
 
 ## 4. Backup Policy
 - Configure automatic daily PostgreSQL backups (Railway managed backups or external backup job).
@@ -93,5 +109,6 @@ Alert priorities:
 ## 8. Release Checklist
 - `./scripts/release_preflight.sh` (includes migration drift, unapplied migration, tests, deploy checks)
 - `./scripts/release_preflight.sh --with-e2e` (run when browser stack is available)
+- `./.venv/bin/python scripts/hosted_smoke.py` against the deployed URL before go-live signoff
 - UAT sign-off complete
 - Backup status confirmed

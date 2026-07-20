@@ -15,7 +15,7 @@ Runs launch-readiness quality gates:
   - unapplied migration check
   - Django test suite
   - deploy hardening checks
-  - optional browser E2E smoke tests
+  - optional local browser E2E smoke tests
 EOF
 }
 
@@ -87,3 +87,5 @@ if [[ "$RUN_E2E" == "true" ]]; then
 fi
 
 printf "\nRelease preflight completed successfully.\n"
+printf "After a Render deploy, run hosted smoke with:\n"
+printf "  SMOKE_BASE_URL=https://<deployment-url> ./.venv/bin/python scripts/hosted_smoke.py\n"

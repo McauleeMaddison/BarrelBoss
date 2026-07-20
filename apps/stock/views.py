@@ -131,9 +131,9 @@ def _safe_next_url(request, fallback):
     return fallback
 
 
-def _staff_count_return_url(*, query="", category="", urgency="all"):
+def _count_return_url(*, focus="", query="", category="", urgency="all"):
     return _stock_workspace_url(
-        focus="uncounted",
+        focus=focus or None,
         q=query or None,
         category=category or None,
         urgency=urgency if urgency != "all" else None,
@@ -689,15 +689,17 @@ def list_items(request):
         "selected_preset_label": selected_preset_label,
         "active_filter_labels": active_filter_labels,
         "filters_panel_open": filters_panel_open,
-        "return_path": request.get_full_path(),
-        "count_return_path": (
-            request.get_full_path()
-            if management_view
-            else _staff_count_return_url(
-                query=query,
-                category=selected_category,
-                urgency=selected_urgency,
-            )
+        "return_path": _count_return_url(
+            focus=selected_focus,
+            query=query,
+            category=selected_category,
+            urgency=selected_urgency,
+        ),
+        "count_return_path": _count_return_url(
+            focus=selected_focus,
+            query=query,
+            category=selected_category,
+            urgency=selected_urgency,
         ),
         "filter_presets": filter_presets,
         "attention_items": attention_items,

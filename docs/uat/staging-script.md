@@ -13,6 +13,20 @@ Use this script to execute a role-based UAT round against a staging deployment b
   - Desktop: Chrome, Safari/Edge
   - Mobile: iPhone Safari, Android Chrome
 
+## Automated Gate Before Manual UAT
+Run the read-only hosted smoke suite first so auth, routing, health, and mobile dock regressions are caught before the manual pass:
+
+```bash
+SMOKE_BASE_URL=https://<staging-domain> \
+SMOKE_MANAGER_USERNAME='<manager-username>' \
+SMOKE_MANAGER_PASSWORD='<manager-password>' \
+SMOKE_STAFF_USERNAME='<staff-username>' \
+SMOKE_STAFF_PASSWORD='<staff-password>' \
+SMOKE_LANDLORD_USERNAME='<landlord-username>' \
+SMOKE_LANDLORD_PASSWORD='<landlord-password>' \
+./.venv/bin/python scripts/hosted_smoke.py
+```
+
 ## Pass/Fail Rule
 - A scenario is **Pass** only if expected behavior completes with no visual blockers and no backend errors.
 - Any auth/permission leak, data-loss risk, or failed save is **Fail (Critical)**.

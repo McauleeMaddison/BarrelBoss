@@ -161,6 +161,23 @@ class StockListViewTests(VenueScopedTestCase):
         self.assertEqual(response.context["selected_category"], StockItem.Category.BEER_BARRELS)
         self.assertEqual(response.context["pagination_query"], "category=BEER_BARRELS")
 
+    def test_staff_count_return_path_preserves_current_filtered_view(self):
+        self.client.login(username="stock_user", password="strong-pass-123")
+        response = self.client.get(
+            reverse("stock:list"),
+            {
+                "focus": "cellar",
+                "urgency": "critical",
+                "q": "Carling",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["count_return_path"],
+            f"{reverse('stock:list')}?focus=cellar&q=Carling&urgency=critical#stock-section-board",
+        )
+
 
 class StockCrudViewTests(VenueScopedTestCase):
     def setUp(self):
@@ -326,6 +343,21 @@ class StockCrudViewTests(VenueScopedTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(response.context["items"]), [])
         self.assertContains(response, "No inventory items match this filter.")
+
+    def test_staff_count_can_return_to_current_stock_view(self):
+        self.item.last_counted_at = None
+        self.item.save(update_fields=["last_counted_at", "updated_at"])
+        self.client.login(username="stock_staff", password="strong-pass-123")
+        next_url = f"{reverse('stock:list')}?focus=service#stock-section-board"
+        response = self.client.post(
+            reverse("stock:mark_counted", args=[self.item.pk]),
+            {"next": next_url},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_focus"], "service")
+        self.assertContains(response, "Sanitiser")
 
     def test_staff_cannot_delete_item(self):
         self.client.login(username="stock_staff", password="strong-pass-123")
